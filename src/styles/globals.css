@@ -14,7 +14,12 @@ body {
 body {
   font-family: Inter, ui-sans-serif, system-ui;
   background: #f5f5f5;
-  color: #2d2d2d;
+  color: #111827;
+}
+
+html.dark body {
+  background: #050b18;
+  color: #e5e7eb;
 }
 
 /* A small helper for horizontal card scrolling on mobile */

@@ -47,8 +47,8 @@ export default function ScoreRing({ value, size = 140, strokeWidth = 12 }: Props
       </svg>
 
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-3xl font-bold text-lp-secondary leading-none">{v}</div>
-        <div className="text-xs font-semibold tracking-wide text-black/50 mt-1">/ 100</div>
+        <div className="text-3xl font-bold text-lp-secondary dark:text-white leading-none">{v}</div>
+        <div className="text-xs font-semibold tracking-wide text-black/50 dark:text-white/55 mt-1">/ 100</div>
       </div>
     </div>
   )

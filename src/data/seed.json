@@ -1,0 +1,198 @@
+{
+  "user": {
+    "name": "Dennis Parker",
+    "email": "dennis@example.com",
+    "avatarInitials": "DP"
+  },
+  "preferences": {
+    "theme": "light",
+    "units": "metric",
+    "notificationsEnabled": true
+  },
+  "notifications": [
+    {
+      "id": "n1",
+      "title": "Weekly summary ready",
+      "message": "Your weekly insights have been refreshed.",
+      "timestamp": 1734000000000,
+      "read": false
+    },
+    {
+      "id": "n2",
+      "title": "Focus streak",
+      "message": "Great consistency — keep your focus streak going.",
+      "timestamp": 1733950000000,
+      "read": true
+    }
+  ],
+  "physical": {
+    "weeklySteps": [
+      { "day": "Mon", "steps": 5200 },
+      { "day": "Tue", "steps": 7100 },
+      { "day": "Wed", "steps": 6400 },
+      { "day": "Thu", "steps": 8200 },
+      { "day": "Fri", "steps": 6500 },
+      { "day": "Sat", "steps": 9300 },
+      { "day": "Sun", "steps": 4800 }
+    ],
+    "weeklyDistanceKm": [
+      { "day": "Mon", "km": 3.4 },
+      { "day": "Tue", "km": 4.9 },
+      { "day": "Wed", "km": 4.2 },
+      { "day": "Thu", "km": 5.6 },
+      { "day": "Fri", "km": 4.2 },
+      { "day": "Sat", "km": 6.8 },
+      { "day": "Sun", "km": 3.1 }
+    ],
+    "weeklyCaloriesKcal": [
+      { "day": "Mon", "kcal": 180 },
+      { "day": "Tue", "kcal": 240 },
+      { "day": "Wed", "kcal": 210 },
+      { "day": "Thu", "kcal": 280 },
+      { "day": "Fri", "kcal": 210 },
+      { "day": "Sat", "kcal": 330 },
+      { "day": "Sun", "kcal": 160 }
+    ],
+    "sleepHours": [
+      { "day": "Mon", "hours": 7.1 },
+      { "day": "Tue", "hours": 6.6 },
+      { "day": "Wed", "hours": 7.4 },
+      { "day": "Thu", "hours": 6.9 },
+      { "day": "Fri", "hours": 7.2 },
+      { "day": "Sat", "hours": 8.0 },
+      { "day": "Sun", "hours": 7.6 }
+    ],
+    "activityLog": [
+      {
+        "id": "pa1",
+        "timestamp": 1734000000000,
+        "steps": 1200,
+        "distanceKm": 0.8,
+        "caloriesKcal": 45,
+        "note": "Evening walk"
+      }
+    ]
+  },
+  "digital": {
+    "weeklyScreenTimeMin": [
+      { "day": "Mon", "minutes": 185 },
+      { "day": "Tue", "minutes": 160 },
+      { "day": "Wed", "minutes": 210 },
+      { "day": "Thu", "minutes": 150 },
+      { "day": "Fri", "minutes": 150 },
+      { "day": "Sat", "minutes": 240 },
+      { "day": "Sun", "minutes": 130 }
+    ],
+    "appUsageCategoriesMin": [
+      { "category": "Social", "minutes": 75 },
+      { "category": "Productive", "minutes": 70 },
+      { "category": "Entertainment", "minutes": 35 }
+    ],
+    "focusMode": false,
+    "screenSessions": [
+      { "id": "ds1", "timestamp": 1734000000000, "category": "Social", "minutes": 15 }
+    ]
+  },
+  "productivity": {
+    "focusMinutesByDay": [
+      { "day": "Mon", "minutes": 55 },
+      { "day": "Tue", "minutes": 70 },
+      { "day": "Wed", "minutes": 45 },
+      { "day": "Thu", "minutes": 80 },
+      { "day": "Fri", "minutes": 65 },
+      { "day": "Sat", "minutes": 25 },
+      { "day": "Sun", "minutes": 30 }
+    ],
+    "studySessionsByDay": [
+      { "day": "Mon", "sessions": 1 },
+      { "day": "Tue", "sessions": 2 },
+      { "day": "Wed", "sessions": 1 },
+      { "day": "Thu", "sessions": 2 },
+      { "day": "Fri", "sessions": 2 },
+      { "day": "Sat", "sessions": 0 },
+      { "day": "Sun", "sessions": 1 }
+    ],
+    "focusTimer": {
+      "status": "idle",
+      "durationSec": 1500,
+      "remainingSec": 1500,
+      "startedAt": null
+    },
+    "focusSessions": [
+      {
+        "id": "fs_1",
+        "label": "Deep work",
+        "startedAt": 1733955000000,
+        "endedAt": 1733957700000,
+        "durationSec": 2700
+      }
+    ]
+  },
+  "environment": {
+    "ecoActions": [
+      {
+        "id": "ea1",
+        "timestamp": 1733990000000,
+        "type": "Recycled plastic",
+        "impactKgCO2": 0.4
+      }
+    ],
+    "recycledItemsByDay": [
+      { "day": "Mon", "items": 2 },
+      { "day": "Tue", "items": 1 },
+      { "day": "Wed", "items": 3 },
+      { "day": "Thu", "items": 2 },
+      { "day": "Fri", "items": 2 },
+      { "day": "Sat", "items": 4 },
+      { "day": "Sun", "items": 1 }
+    ],
+    "plasticUsageByDay": [
+      { "day": "Mon", "items": 2 },
+      { "day": "Tue", "items": 3 },
+      { "day": "Wed", "items": 1 },
+      { "day": "Thu", "items": 2 },
+      { "day": "Fri", "items": 2 },
+      { "day": "Sat", "items": 4 },
+      { "day": "Sun", "items": 1 }
+    ],
+    "transportMode": "Walking",
+    "transportModeSplit": [
+      { "mode": "Walking", "trips": 7 },
+      { "mode": "Cycling", "trips": 3 },
+      { "mode": "Driving", "trips": 2 }
+    ],
+    "carbonKgByDay": [
+      { "day": "Mon", "kg": 4.2 },
+      { "day": "Tue", "kg": 5.0 },
+      { "day": "Wed", "kg": 3.4 },
+      { "day": "Thu", "kg": 4.5 },
+      { "day": "Fri", "kg": 4.1 },
+      { "day": "Sat", "kg": 6.0 },
+      { "day": "Sun", "kg": 3.2 }
+    ]
+  },
+  "mood": {
+    "moodByDay": [
+      { "day": "Mon", "emoji": "🙂" },
+      { "day": "Tue", "emoji": "😄" },
+      { "day": "Wed", "emoji": "😐" },
+      { "day": "Thu", "emoji": "🙂" },
+      { "day": "Fri", "emoji": "🙂" },
+      { "day": "Sat", "emoji": "😄" },
+      { "day": "Sun", "emoji": "😕" }
+    ],
+    "stressByDay": [
+      { "day": "Mon", "score": 2 },
+      { "day": "Tue", "score": 2 },
+      { "day": "Wed", "score": 3 },
+      { "day": "Thu", "score": 2 },
+      { "day": "Fri", "score": 2 },
+      { "day": "Sat", "score": 1 },
+      { "day": "Sun", "score": 3 }
+    ],
+    "today": {
+      "emoji": "🙂",
+      "stressScore": 2
+    }
+  }
+}

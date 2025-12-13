@@ -32,7 +32,7 @@ export default function StatCard({ to, title, subtitle, value, Icon, tone = 'pri
           </div>
         </div>
 
-        <div className="mt-3 text-2xl font-bold text-lp-secondary">{value}</div>
+        <div className="mt-3 text-2xl font-bold text-lp-secondary dark:text-white">{value}</div>
       </Card>
     </Link>
   )

@@ -7,13 +7,14 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { useChartTheme } from '../../theme/useChartTheme'
 
 type Props = {
   data: Array<{ day: string; emoji: string }>
 }
 
 // Recharts needs a numeric value to draw bars.
-// We map emojis to a dummy scale for visualization and show emoji in tooltip.
+// We map emojis to a scale for visualization and show emoji in tooltip.
 const emojiScore: Record<string, number> = {
   '😄': 5,
   '🙂': 4,
@@ -23,20 +24,25 @@ const emojiScore: Record<string, number> = {
 }
 
 export default function MoodTimelineChart({ data }: Props) {
+  const t = useChartTheme()
   const mapped = data.map((d) => ({ ...d, score: emojiScore[d.emoji] ?? 3 }))
 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={mapped} margin={{ left: 6, right: 6, top: 8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.07)" />
-        <XAxis dataKey="day" tick={{ fill: 'rgba(0,0,0,0.6)', fontSize: 12 }} />
+        <CartesianGrid strokeDasharray="3 3" stroke={t.grid} />
+        <XAxis dataKey="day" tick={{ fill: t.axis, fontSize: 12 }} />
         <YAxis hide domain={[0, 5]} />
         <Tooltip
           formatter={(_, __, p) => {
             const payload = (p as any)?.payload
             return [payload?.emoji ?? '', 'Mood']
           }}
-          contentStyle={{ borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)' }}
+          contentStyle={{
+            borderRadius: 12,
+            border: `1px solid ${t.tooltipBorder}`,
+            background: t.tooltipBg,
+          }}
         />
         <Bar dataKey="score" fill="#00BCD4" radius={[10, 10, 10, 10]} />
       </BarChart>

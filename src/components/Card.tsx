@@ -8,7 +8,8 @@ export default function Card({ className = '', children }: Props) {
   return (
     <div
       className={
-        'rounded-2xl bg-lp-white shadow-card border border-black/5 ' +
+        'rounded-2xl bg-white dark:bg-slate-950 shadow-card ' +
+        'border border-black/10 dark:border-white/10 ' +
         'animate-fadeIn ' +
         className
       }

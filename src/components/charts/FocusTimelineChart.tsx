@@ -7,6 +7,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { useChartTheme } from '../../theme/useChartTheme'
 
 type Item = {
   id: string
@@ -21,6 +22,8 @@ type Props = {
 
 // We render sessions as horizontal bars: X = hours in day.
 export default function FocusTimelineChart({ sessions }: Props) {
+  const t = useChartTheme()
+
   const data: Item[] = sessions.map((s) => ({
     id: s.id,
     label: `${s.day} • ${s.startHour}:00`,
@@ -35,20 +38,26 @@ export default function FocusTimelineChart({ sessions }: Props) {
         layout="vertical"
         margin={{ left: 6, right: 6, top: 8, bottom: 0 }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.07)" />
+        <CartesianGrid strokeDasharray="3 3" stroke={t.grid} />
         <XAxis
           type="number"
           domain={[0, 24]}
-          tick={{ fill: 'rgba(0,0,0,0.6)', fontSize: 12 }}
+          tick={{ fill: t.axis, fontSize: 12 }}
           ticks={[0, 6, 12, 18, 24]}
         />
         <YAxis
           type="category"
           dataKey="label"
           width={90}
-          tick={{ fill: 'rgba(0,0,0,0.6)', fontSize: 12 }}
+          tick={{ fill: t.axis, fontSize: 12 }}
         />
-        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)' }} />
+        <Tooltip
+          contentStyle={{
+            borderRadius: 12,
+            border: `1px solid ${t.tooltipBorder}`,
+            background: t.tooltipBg,
+          }}
+        />
 
         {/* Invisible bar just to offset start */}
         <Bar dataKey="start" stackId="a" fill="rgba(0,0,0,0)" />
