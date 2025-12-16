@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import Layout from './components/Layout'
 import RouteTransition from './components/RouteTransition'
+import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
 import Digital from './pages/Digital'
 import Environment from './pages/Environment'
@@ -17,24 +18,59 @@ export default function App() {
   const location = useLocation()
 
   return (
-    <Layout>
-      <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<RouteTransition><Dashboard /></RouteTransition>} />
-          <Route path="/physical" element={<RouteTransition><Physical /></RouteTransition>} />
-          <Route path="/digital" element={<RouteTransition><Digital /></RouteTransition>} />
-          <Route path="/productivity" element={<RouteTransition><Productivity /></RouteTransition>} />
-          <Route path="/environment" element={<RouteTransition><Environment /></RouteTransition>} />
-          <Route path="/mood" element={<RouteTransition><Mood /></RouteTransition>} />
-          <Route path="/profile" element={<RouteTransition><Profile /></RouteTransition>} />
-          <Route path="/settings" element={<RouteTransition><Settings /></RouteTransition>} />
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/dashboard" element={
+          <Layout>
+            <RouteTransition><Dashboard /></RouteTransition>
+          </Layout>
+        } />
+        <Route path="/physical" element={
+          <Layout>
+            <RouteTransition><Physical /></RouteTransition>
+          </Layout>
+        } />
+        <Route path="/digital" element={
+          <Layout>
+            <RouteTransition><Digital /></RouteTransition>
+          </Layout>
+        } />
+        <Route path="/productivity" element={
+          <Layout>
+            <RouteTransition><Productivity /></RouteTransition>
+          </Layout>
+        } />
+        <Route path="/environment" element={
+          <Layout>
+            <RouteTransition><Environment /></RouteTransition>
+          </Layout>
+        } />
+        <Route path="/mood" element={
+          <Layout>
+            <RouteTransition><Mood /></RouteTransition>
+          </Layout>
+        } />
+        <Route path="/profile" element={
+          <Layout>
+            <RouteTransition><Profile /></RouteTransition>
+          </Layout>
+        } />
+        <Route path="/settings" element={
+          <Layout>
+            <RouteTransition><Settings /></RouteTransition>
+          </Layout>
+        } />
 
-          {/* Helpful aliases */}
-          <Route path="/home" element={<Navigate to="/" replace />} />
+        {/* Helpful aliases */}
+        <Route path="/home" element={<Navigate to="/" replace />} />
 
-          <Route path="*" element={<RouteTransition><NotFound /></RouteTransition>} />
-        </Routes>
-      </AnimatePresence>
-    </Layout>
+        <Route path="*" element={
+          <Layout>
+            <RouteTransition><NotFound /></RouteTransition>
+          </Layout>
+        } />
+      </Routes>
+    </AnimatePresence>
   )
 }

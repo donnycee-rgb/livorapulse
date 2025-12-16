@@ -11,6 +11,7 @@ export default function Card({ className = '', children }: Props) {
         'rounded-2xl bg-white dark:bg-slate-950 shadow-card ' +
         'border border-black/10 dark:border-white/10 ' +
         'animate-fadeIn ' +
+        'transition-shadow duration-200 ease-out ' +
         className
       }
     >

@@ -26,9 +26,14 @@ module.exports = {
           from: { opacity: '0', transform: 'translateY(6px)' },
           to: { opacity: '1', transform: 'translateY(0px)' },
         },
+        softPulse: {
+          '0%, 100%': { transform: 'scale(1)', opacity: '1' },
+          '50%': { transform: 'scale(1.03)', opacity: '0.92' },
+        },
       },
       animation: {
         fadeIn: 'fadeIn 400ms ease-out',
+        softPulse: 'softPulse 3.6s ease-in-out infinite',
       },
     },
   },

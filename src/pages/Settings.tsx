@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import Card from '../components/Card'
+import PageHero from '../components/PageHero'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
 import Toggle from '../components/ui/Toggle'
@@ -18,12 +19,7 @@ export default function Settings() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div>
-        <div className="text-lg font-bold text-lp-secondary dark:text-white">Settings</div>
-        <div className="text-sm text-black/60 dark:text-white/60">
-          Preferences, notifications, and local data controls.
-        </div>
-      </div>
+      <PageHero title="Settings" subtitle="Preferences, notifications, and local data controls." />
 
       <Card className="p-4 md:p-6 space-y-5">
         <Toggle

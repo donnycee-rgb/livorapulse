@@ -1,6 +1,7 @@
 import toast from 'react-hot-toast'
 
 import Card from '../components/Card'
+import PageHero from '../components/PageHero'
 import ChartCard from '../components/charts/ChartCard'
 import MoodTimelineChart from '../components/charts/MoodTimelineChart'
 import StressLineChart from '../components/charts/StressLineChart'
@@ -17,10 +18,7 @@ export default function Mood() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div>
-        <div className="text-lg font-bold text-lp-secondary dark:text-white">Mood & Mindset</div>
-        <div className="text-sm text-black/60 dark:text-white/60">Track mood and stress trends.</div>
-      </div>
+      <PageHero title="Mood & Mindset" subtitle="Track mood and stress trends." />
 
       <Card className="p-4 md:p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -40,9 +38,10 @@ export default function Mood() {
                       toast.success('Mood updated')
                     }}
                     className={
-                      'h-11 w-11 rounded-xl border text-xl flex items-center justify-center transition ' +
+                      'h-11 w-11 rounded-xl border text-xl flex items-center justify-center ' +
+                      'transition-transform transition-colors duration-200 ease-out hover:-translate-y-px ' +
                       (active
-                        ? 'bg-lp-accent/15 border-lp-accent/30'
+                        ? 'bg-lp-accent/15 border-lp-accent/30 shadow-[0_10px_25px_rgba(0,188,212,0.12)]'
                         : 'bg-white dark:bg-slate-900 border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10')
                     }
                     aria-label={`Set mood to ${e}`}

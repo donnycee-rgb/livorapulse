@@ -34,10 +34,11 @@ export default function MoodTimelineChart({ data }: Props) {
         <XAxis dataKey="day" tick={{ fill: t.axis, fontSize: 12 }} />
         <YAxis hide domain={[0, 5]} />
         <Tooltip
-          formatter={(_, __, p) => {
-            const payload = (p as any)?.payload
+          // Keep runtime behavior the same; this is typed loosely to satisfy Recharts' generics.
+          formatter={((_: any, __: any, p: any) => {
+            const payload = p?.payload
             return [payload?.emoji ?? '', 'Mood']
-          }}
+          }) as any}
           contentStyle={{
             borderRadius: 12,
             border: `1px solid ${t.tooltipBorder}`,

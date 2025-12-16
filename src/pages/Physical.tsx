@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import Card from '../components/Card'
+import PageHero from '../components/PageHero'
 import ChartCard from '../components/charts/ChartCard'
 import CaloriesLineChart from '../components/charts/CaloriesLineChart'
 import DistanceLineChart from '../components/charts/DistanceLineChart'
@@ -38,36 +39,33 @@ export default function Physical() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-lg font-bold text-lp-secondary dark:text-white">Physical Activity</div>
-          <div className="text-sm text-black/60 dark:text-white/60">
-            Steps, distance, calories, and sleep.
-          </div>
-        </div>
-
-        <Button variant="secondary" onClick={() => setOpen(true)}>
-          Add activity
-        </Button>
-      </div>
+      <PageHero
+        title="Physical Activity"
+        subtitle="Steps, distance, calories, and sleep."
+        right={
+          <Button variant="secondary" onClick={() => setOpen(true)}>
+            Add activity
+          </Button>
+        }
+      />
 
       <Card className="p-4 md:p-6">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-3">
-            <div className="text-xs text-black/55 dark:text-white/55">Today’s steps</div>
-            <div className="mt-1 text-lg font-bold text-black/85 dark:text-white/90">{formatNumber(todaySteps)}</div>
+          <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-3 transition-transform duration-200 ease-out hover:-translate-y-px hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)]">
+            <div className="text-xs font-semibold text-black/45 dark:text-white/55">Today’s steps</div>
+            <div className="mt-1 text-xl font-extrabold text-black/85 dark:text-white/90 tracking-tight">{formatNumber(todaySteps)}</div>
           </div>
-          <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-3">
-            <div className="text-xs text-black/55 dark:text-white/55">Distance</div>
-            <div className="mt-1 text-lg font-bold text-black/85 dark:text-white/90">{formatDistance(todayDistance, units)}</div>
+          <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-3 transition-transform duration-200 ease-out hover:-translate-y-px hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)]">
+            <div className="text-xs font-semibold text-black/45 dark:text-white/55">Distance</div>
+            <div className="mt-1 text-xl font-extrabold text-black/85 dark:text-white/90 tracking-tight">{formatDistance(todayDistance, units)}</div>
           </div>
-          <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-3">
-            <div className="text-xs text-black/55 dark:text-white/55">Calories</div>
-            <div className="mt-1 text-lg font-bold text-black/85 dark:text-white/90">{todayCalories} kcal</div>
+          <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-3 transition-transform duration-200 ease-out hover:-translate-y-px hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)]">
+            <div className="text-xs font-semibold text-black/45 dark:text-white/55">Calories</div>
+            <div className="mt-1 text-xl font-extrabold text-black/85 dark:text-white/90 tracking-tight">{todayCalories} kcal</div>
           </div>
-          <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-3">
-            <div className="text-xs text-black/55 dark:text-white/55">Sleep (hours)</div>
-            <div className="mt-1 flex items-center gap-3">
+          <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-3">
+            <div className="text-xs font-semibold text-black/45 dark:text-white/55">Sleep (hours)</div>
+            <div className="mt-2 flex items-center gap-3">
               <input
                 type="range"
                 min={4}
@@ -78,7 +76,7 @@ export default function Physical() {
                 className="w-full"
                 aria-label="Sleep hours"
               />
-              <div className="h-9 w-14 rounded-xl border border-black/10 dark:border-white/10 flex items-center justify-center font-bold">
+              <div className="h-9 w-14 rounded-xl border border-black/10 dark:border-white/10 flex items-center justify-center font-extrabold text-black/85 dark:text-white/90">
                 {todaySleep.toFixed(1)}
               </div>
             </div>
@@ -91,14 +89,17 @@ export default function Physical() {
             {recent.map((a) => (
               <div
                 key={a.id}
-                className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-slate-900 p-3"
+                className={
+                  'rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-slate-900 p-3 ' +
+                  'transition-transform duration-200 ease-out hover:-translate-y-px hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)]'
+                }
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold text-black/85 dark:text-white/90">
                       {a.note?.trim() ? a.note : 'Activity'}
                     </div>
-                    <div className="text-xs text-black/55 dark:text-white/55 mt-0.5">
+                    <div className="text-[11px] text-black/45 dark:text-white/55 mt-0.5">
                       {new Date(a.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                     </div>
                   </div>

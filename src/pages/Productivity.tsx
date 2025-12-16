@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import Card from '../components/Card'
+import PageHero from '../components/PageHero'
 import ChartCard from '../components/charts/ChartCard'
 import FocusMinutesBarChart from '../components/charts/FocusMinutesBarChart'
 import FocusSessionHistoryChart from '../components/charts/FocusSessionHistoryChart'
@@ -51,25 +52,22 @@ export default function Productivity() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-lg font-bold text-lp-secondary dark:text-white">Productivity</div>
-          <div className="text-sm text-black/60 dark:text-white/60">
-            Focus timer, study sessions, and weekly trends.
-          </div>
-        </div>
-
-        <Button
-          variant="ghost"
-          onClick={() => {
-            addStudySession()
-            toast.success('Study session added')
-          }}
-        >
-          <Plus size={18} />
-          Add study session
-        </Button>
-      </div>
+      <PageHero
+        title="Productivity"
+        subtitle="Focus timer, study sessions, and weekly trends."
+        right={
+          <Button
+            variant="ghost"
+            onClick={() => {
+              addStudySession()
+              toast.success('Study session added')
+            }}
+          >
+            <Plus size={18} />
+            Add study session
+          </Button>
+        }
+      />
 
       <Card className="p-4 md:p-6">
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
@@ -81,19 +79,19 @@ export default function Productivity() {
                   {focusMode ? 'Focus Mode is on — distraction resistance is boosted.' : 'Start a session to log focused time.'}
                 </div>
               </div>
-              <div className="text-2xl font-bold text-lp-secondary dark:text-white">
+              <div className="text-3xl font-extrabold text-lp-secondary dark:text-white tracking-tight">
                 {fmt(productivity.focusTimer.remainingSec)}
               </div>
             </div>
 
             <div className="mt-3">
-              <div className="h-2 w-full rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+              <div className="h-2.5 w-full rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
                 <div
                   className="h-full bg-lp-accent"
                   style={{ width: `${progress}%`, transition: 'width 250ms ease' }}
                 />
               </div>
-              <div className="mt-2 text-xs text-black/55 dark:text-white/55">Progress: {progress}%</div>
+              <div className="mt-2 text-xs text-black/45 dark:text-white/55">Progress: {progress}%</div>
             </div>
 
             <div className="mt-4 grid md:grid-cols-2 gap-3">
@@ -164,9 +162,9 @@ export default function Productivity() {
           </div>
 
           <div className="w-full lg:w-[420px]">
-            <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-4">
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Session history</div>
-              <div className="text-xs text-black/55 dark:text-white/55 mt-0.5">Most recent focus sessions</div>
+            <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-4 transition-shadow duration-200 ease-out hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)]">
+              <div className="text-sm font-semibold text-black/80 dark:text-white/85 tracking-tight">Session history</div>
+              <div className="text-xs text-black/45 dark:text-white/55 mt-0.5">Most recent focus sessions</div>
 
               <div className="mt-3 overflow-auto">
                 <table className="w-full text-sm">

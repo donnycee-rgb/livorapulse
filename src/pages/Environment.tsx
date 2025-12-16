@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import Card from '../components/Card'
+import PageHero from '../components/PageHero'
 import ChartCard from '../components/charts/ChartCard'
 import CarbonLineChart from '../components/charts/CarbonLineChart'
 import RecyclePlasticBarChart from '../components/charts/RecyclePlasticBarChart'
@@ -27,17 +28,16 @@ export default function Environment() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-lg font-bold text-lp-secondary dark:text-white">Environment</div>
-          <div className="text-sm text-black/60 dark:text-white/60">Eco actions, transport, and carbon impact.</div>
-        </div>
-
-        <Button variant="secondary" onClick={() => setOpen(true)}>
-          <Plus size={18} />
-          Add eco action
-        </Button>
-      </div>
+      <PageHero
+        title="Environment"
+        subtitle="Eco actions, transport, and carbon impact."
+        right={
+          <Button variant="secondary" onClick={() => setOpen(true)}>
+            <Plus size={18} />
+            Add eco action
+          </Button>
+        }
+      />
 
       <Card className="p-4 md:p-6 space-y-5">
         <div>
@@ -66,11 +66,17 @@ export default function Environment() {
 
           <div className="mt-2 grid md:grid-cols-2 gap-2">
             {recent.map((a) => (
-              <div key={a.id} className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-slate-900 p-3">
+              <div
+                key={a.id}
+                className={
+                  'rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-slate-900 p-3 ' +
+                  'transition-transform duration-200 ease-out hover:-translate-y-px hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)]'
+                }
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold text-black/85 dark:text-white/90">{a.type}</div>
-                    <div className="text-xs text-black/55 dark:text-white/55 mt-0.5">
+                    <div className="text-[11px] text-black/45 dark:text-white/55 mt-0.5">
                       {new Date(a.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                     </div>
                   </div>

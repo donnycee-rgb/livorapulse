@@ -45,7 +45,7 @@ export default function AppHeader() {
           type="button"
           className="flex items-center gap-3"
           onClick={() => navigate('/')}
-          aria-label="Go to dashboard"
+          aria-label="Go to landing page"
         >
           <div className="h-9 w-9 rounded-xl bg-lp-primary/15 flex items-center justify-center border border-lp-primary/30">
             <div className="h-4 w-4 rounded-full bg-lp-primary" />

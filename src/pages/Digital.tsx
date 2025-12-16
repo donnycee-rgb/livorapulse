@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import Card from '../components/Card'
+import PageHero from '../components/PageHero'
 import ChartCard from '../components/charts/ChartCard'
 import AppUsagePieChart from '../components/charts/AppUsagePieChart'
 import ScreenTimeLineChart from '../components/charts/ScreenTimeLineChart'
@@ -31,28 +32,27 @@ export default function Digital() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-lg font-bold text-lp-secondary dark:text-white">Digital Usage</div>
-          <div className="text-sm text-black/60 dark:text-white/60">Screen time, categories, and focus controls.</div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={() => setOpen(true)}>
-            Add screen session
-          </Button>
-        </div>
-      </div>
+      <PageHero
+        title="Digital Usage"
+        subtitle="Screen time, categories, and focus controls."
+        right={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setOpen(true)}>
+              Add screen session
+            </Button>
+          </div>
+        }
+      />
 
       <Card className="p-4 md:p-6 space-y-5">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <div className="text-sm font-semibold text-black/80 dark:text-white/85">Today</div>
-            <div className="mt-1 text-2xl font-bold text-black/85 dark:text-white/90">
-              {formatMinutesToHM(todayScreen)}
-            </div>
-            <div className="text-xs text-black/55 dark:text-white/55 mt-1">Total screen time</div>
+        <div>
+          <div className="text-sm font-semibold text-black/80 dark:text-white/85">Today</div>
+          <div className="mt-1 text-3xl font-extrabold text-black/85 dark:text-white/90 tracking-tight">
+            {formatMinutesToHM(todayScreen)}
           </div>
+          <div className="text-xs text-black/45 dark:text-white/55 mt-1">Total screen time</div>
+        </div>
 
           <div className="w-full md:max-w-sm">
             <Toggle
@@ -71,15 +71,21 @@ export default function Digital() {
           <div className="text-sm font-semibold text-black/80 dark:text-white/85">Recent sessions</div>
           <div className="mt-2 grid md:grid-cols-2 gap-2">
             {recentSessions.map((s) => (
-              <div key={s.id} className="rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-slate-900 p-3">
+              <div
+                key={s.id}
+                className={
+                  'rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-slate-900 p-3 ' +
+                  'transition-transform duration-200 ease-out hover:-translate-y-px hover:shadow-[0_18px_40px_rgba(15,23,42,0.10)]'
+                }
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold text-black/85 dark:text-white/90">{s.category}</div>
-                    <div className="text-xs text-black/55 dark:text-white/55 mt-0.5">
+                    <div className="text-[11px] text-black/45 dark:text-white/55 mt-0.5">
                       {new Date(s.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                     </div>
                   </div>
-                  <div className="text-sm font-bold text-black/80 dark:text-white/85">{s.minutes}m</div>
+                  <div className="text-base font-extrabold text-black/80 dark:text-white/85">{s.minutes}m</div>
                 </div>
               </div>
             ))}
