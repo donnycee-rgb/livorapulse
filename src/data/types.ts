@@ -43,9 +43,16 @@ export type TransportMode = 'Walking' | 'Cycling' | 'Driving'
 
 export type AppState = {
   user: {
+    id?: string
     name: string
     email: string
     avatarInitials: string
+  }
+
+  dashboard: {
+    score: number
+    insight: string
+    loading: boolean
   }
   preferences: {
     theme: ThemeMode
