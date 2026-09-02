@@ -1,0 +1,157 @@
+{
+  "user": {
+    "name": "",
+    "email": "",
+    "avatarInitials": ""
+  },
+  "preferences": {
+    "theme": "light",
+    "units": "metric",
+    "notificationsEnabled": true
+  },
+  "notifications": [],
+  "physical": {
+    "weeklySteps": [
+      { "day": "Mon", "steps": 0 },
+      { "day": "Tue", "steps": 0 },
+      { "day": "Wed", "steps": 0 },
+      { "day": "Thu", "steps": 0 },
+      { "day": "Fri", "steps": 0 },
+      { "day": "Sat", "steps": 0 },
+      { "day": "Sun", "steps": 0 }
+    ],
+    "weeklyDistanceKm": [
+      { "day": "Mon", "km": 0 },
+      { "day": "Tue", "km": 0 },
+      { "day": "Wed", "km": 0 },
+      { "day": "Thu", "km": 0 },
+      { "day": "Fri", "km": 0 },
+      { "day": "Sat", "km": 0 },
+      { "day": "Sun", "km": 0 }
+    ],
+    "weeklyCaloriesKcal": [
+      { "day": "Mon", "kcal": 0 },
+      { "day": "Tue", "kcal": 0 },
+      { "day": "Wed", "kcal": 0 },
+      { "day": "Thu", "kcal": 0 },
+      { "day": "Fri", "kcal": 0 },
+      { "day": "Sat", "kcal": 0 },
+      { "day": "Sun", "kcal": 0 }
+    ],
+    "sleepHours": [
+      { "day": "Mon", "hours": 0 },
+      { "day": "Tue", "hours": 0 },
+      { "day": "Wed", "hours": 0 },
+      { "day": "Thu", "hours": 0 },
+      { "day": "Fri", "hours": 0 },
+      { "day": "Sat", "hours": 0 },
+      { "day": "Sun", "hours": 0 }
+    ],
+    "activityLog": []
+  },
+  "digital": {
+    "weeklyScreenTimeMin": [
+      { "day": "Mon", "minutes": 0 },
+      { "day": "Tue", "minutes": 0 },
+      { "day": "Wed", "minutes": 0 },
+      { "day": "Thu", "minutes": 0 },
+      { "day": "Fri", "minutes": 0 },
+      { "day": "Sat", "minutes": 0 },
+      { "day": "Sun", "minutes": 0 }
+    ],
+    "appUsageCategoriesMin": [
+      { "category": "Social", "minutes": 0 },
+      { "category": "Productive", "minutes": 0 },
+      { "category": "Entertainment", "minutes": 0 }
+    ],
+    "focusMode": false,
+    "screenSessions": []
+  },
+  "productivity": {
+    "focusMinutesByDay": [
+      { "day": "Mon", "minutes": 0 },
+      { "day": "Tue", "minutes": 0 },
+      { "day": "Wed", "minutes": 0 },
+      { "day": "Thu", "minutes": 0 },
+      { "day": "Fri", "minutes": 0 },
+      { "day": "Sat", "minutes": 0 },
+      { "day": "Sun", "minutes": 0 }
+    ],
+    "studySessionsByDay": [
+      { "day": "Mon", "sessions": 0 },
+      { "day": "Tue", "sessions": 0 },
+      { "day": "Wed", "sessions": 0 },
+      { "day": "Thu", "sessions": 0 },
+      { "day": "Fri", "sessions": 0 },
+      { "day": "Sat", "sessions": 0 },
+      { "day": "Sun", "sessions": 0 }
+    ],
+    "focusTimer": {
+      "status": "idle",
+      "durationSec": 1500,
+      "remainingSec": 1500,
+      "startedAt": null
+    },
+    "focusSessions": []
+  },
+  "environment": {
+    "ecoActions": [],
+    "recycledItemsByDay": [
+      { "day": "Mon", "items": 0 },
+      { "day": "Tue", "items": 0 },
+      { "day": "Wed", "items": 0 },
+      { "day": "Thu", "items": 0 },
+      { "day": "Fri", "items": 0 },
+      { "day": "Sat", "items": 0 },
+      { "day": "Sun", "items": 0 }
+    ],
+    "plasticUsageByDay": [
+      { "day": "Mon", "items": 0 },
+      { "day": "Tue", "items": 0 },
+      { "day": "Wed", "items": 0 },
+      { "day": "Thu", "items": 0 },
+      { "day": "Fri", "items": 0 },
+      { "day": "Sat", "items": 0 },
+      { "day": "Sun", "items": 0 }
+    ],
+    "transportMode": "Walking",
+    "transportModeSplit": [
+      { "mode": "Walking", "trips": 0 },
+      { "mode": "Cycling", "trips": 0 },
+      { "mode": "Driving", "trips": 0 }
+    ],
+    "carbonKgByDay": [
+      { "day": "Mon", "kg": 0 },
+      { "day": "Tue", "kg": 0 },
+      { "day": "Wed", "kg": 0 },
+      { "day": "Thu", "kg": 0 },
+      { "day": "Fri", "kg": 0 },
+      { "day": "Sat", "kg": 0 },
+      { "day": "Sun", "kg": 0 }
+    ]
+  },
+  "mood": {
+    "moodByDay": [
+      { "day": "Mon", "emoji": "😐" },
+      { "day": "Tue", "emoji": "😐" },
+      { "day": "Wed", "emoji": "😐" },
+      { "day": "Thu", "emoji": "😐" },
+      { "day": "Fri", "emoji": "😐" },
+      { "day": "Sat", "emoji": "😐" },
+      { "day": "Sun", "emoji": "😐" }
+    ],
+    "stressByDay": [
+      { "day": "Mon", "score": 0 },
+      { "day": "Tue", "score": 0 },
+      { "day": "Wed", "score": 0 },
+      { "day": "Thu", "score": 0 },
+      { "day": "Fri", "score": 0 },
+      { "day": "Sat", "score": 0 },
+      { "day": "Sun", "score": 0 }
+    ],
+    "today": {
+      "emoji": "😐",
+      "stressScore": 3
+    }
+  }
+}
