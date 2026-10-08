@@ -39,6 +39,9 @@ type AuthState = {
   onboardingComplete: boolean
   status: 'idle' | 'loading'
   lastAssessmentAt: number | null
+  /** True once the profile has been loaded from the server this session (not persisted) —
+   *  until then onboardingComplete may be a stale copy from the last visit */
+  profileLoaded: boolean
 
   setToken: (token: string | null) => void
   setLastAssessmentAt: (ts: number) => void
@@ -70,6 +73,7 @@ export const useAuthStore = create<AuthState>()(
       onboardingComplete: false,
       status: 'idle',
       lastAssessmentAt: null,
+      profileLoaded: false,
 
       setToken: (token) => {
         if (token) localStorage.setItem(TOKEN_KEY, token)
@@ -88,6 +92,7 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           isAuthenticated: false,
           onboardingComplete: false,
+          profileLoaded: false,
           status: 'idle',
         })
         window.location.href = '/login'
@@ -129,7 +134,7 @@ export const useAuthStore = create<AuthState>()(
             user: AuthUser
           }>('/api/auth/register', { name, email, password }, false)
           get().setToken(res.accessToken)
-          set({ user: res.user, status: 'idle', isAuthenticated: true, onboardingComplete: false })
+          set({ user: res.user, status: 'idle', isAuthenticated: true, onboardingComplete: false, profileLoaded: true })
           // Load full profile immediately after register
           get().loadMe().catch(() => null)
         } catch (e) {
@@ -176,7 +181,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const res = await apiGet<{ success: boolean; data: AuthUser }>('/api/auth/me')
           const onboardingComplete = res.data.profile?.onboardingComplete ?? false
-          set({ user: res.data, status: 'idle', isAuthenticated: true, onboardingComplete })
+          set({ user: res.data, status: 'idle', isAuthenticated: true, onboardingComplete, profileLoaded: true })
         } catch {
           get().logout()
           set({ status: 'idle' })

@@ -7,7 +7,6 @@ import AppToaster from './components/ui/Toaster'
 import { useThemeSync } from './hooks/useThemeSync'
 import { useAuthStore } from './store/useAuthStore'
 import { useAppStore } from './store/useAppStore'
-import { apiPost } from './api/client'
 import './styles/globals.css'
 
 function Root() {
@@ -15,7 +14,6 @@ function Root() {
 
   const loadMe = useAuthStore((s) => s.loadMe)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const setOnboardingComplete = useAuthStore((s) => s.setOnboardingComplete)
   const hydrateFromApi = useAppStore((s) => s.hydrateFromApi)
   const syncDashboardScore = useAppStore((s) => s.syncDashboardScore)
   const handleGoogleCallback = useAuthStore((s) => s.handleGoogleCallback)
@@ -25,40 +23,6 @@ function Root() {
   useEffect(() => {
     handleGoogleCallback()
   }, [])
-
-  // After Google OAuth, save any pending onboarding data
-  useEffect(() => {
-    if (!isAuthenticated) return
-    const pending = sessionStorage.getItem('lp_pending_onboarding')
-    if (!pending) return
-    try {
-      const data = JSON.parse(pending)
-      sessionStorage.removeItem('lp_pending_onboarding')
-      apiPost('/api/user/onboarding', {
-        dateOfBirth: new Date(data.dateOfBirth).toISOString(),
-        gender: data.gender,
-        heightCm: data.heightCm ? Number(data.heightCm) : undefined,
-        weightKg: data.weightKg ? Number(data.weightKg) : undefined,
-        hasDisability: data.hasDisability,
-        disabilityNote: data.disabilityNote || undefined,
-        primaryGoal: data.primaryGoal,
-        currentSleepHours: data.currentSleepHours,
-        currentActivityLevel: data.currentActivityLevel,
-        currentScreenHours: data.currentScreenHours,
-        currentMood: data.currentMood,
-        currentStress: data.currentStress,
-        ecoConsciousness: data.ecoConsciousness,
-      }).then(() => {
-        setOnboardingComplete(true)
-        // Pick up gender and the new goals right away
-        loadMe().catch(() => null)
-        hydrateFromApi().catch(() => null)
-        syncDashboardScore().catch(() => null)
-      }).catch(() => null)
-    } catch {
-      sessionStorage.removeItem('lp_pending_onboarding')
-    }
-  }, [isAuthenticated])
 
   // Wait for auth store hydration
   useEffect(() => {

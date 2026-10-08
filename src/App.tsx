@@ -9,6 +9,7 @@ import Seo from './components/Seo'
 import AuthPage from './pages/AuthPage'
 import LandingPage from './pages/LandingPage'
 import NotFound from './pages/NotFound'
+import WelcomeSetup from './pages/WelcomeSetup'
 
 // Signed-in pages are split into their own chunks so the public landing
 // page doesn't download charts and maps up front (faster Core Web Vitals)
@@ -35,6 +36,11 @@ export default function App() {
         <Route path="/login" element={<AuthPage />} />
         <Route path="/register" element={<Navigate to="/login" replace />} />
         <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
+
+        {/* Setup right after sign-up (signed in, setup not finished yet) */}
+        <Route path="/welcome" element={
+          <ProtectedRoute requireSetup={false}><WelcomeSetup /></ProtectedRoute>
+        } />
 
         {/* Protected in-app routes */}
         <Route path="/dashboard" element={
