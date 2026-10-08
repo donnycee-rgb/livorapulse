@@ -9,7 +9,7 @@ import { motion } from 'framer-motion'
 import { Camera } from 'lucide-react'
 
 import { useAppStore } from '../store/useAppStore'
-import { selectLifePulseScore } from '../store/selectors'
+import { selectDimensionScores, selectLifePulseScore, selectStreak } from '../store/selectors'
 import { getDayKey } from '../utils/date'
 
 // ---------------------------------------------------------------------------
@@ -118,8 +118,8 @@ export default function Profile() {
     reader.readAsDataURL(file)
   }
 
-  // Streak from localStorage (set by backend)
-  const streak = parseInt(localStorage.getItem('lp_streak') || '0', 10)
+  const streak = useAppStore(selectStreak)
+  const dimensionScores = useAppStore(selectDimensionScores)
 
   // Derived stats
   const totalActivities = physical.activityLog.length
@@ -210,15 +210,15 @@ export default function Profile() {
       <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Profile</h1>
 
       {/* Two-column layout */}
-      <div className="grid lg:grid-cols-[1fr_320px] gap-5">
+      <div className="grid lg:grid-cols-[1fr_320px] gap-5 max-sm:grid-cols-1">
 
         {/* Left — profile details + achievements */}
         <div className="space-y-5">
 
           {/* Profile card */}
-          <div className="rounded-3xl p-6" style={{ background: `linear-gradient(135deg, #4CAF5008 0%, #4CAF5004 100%)`, border: `1px solid #4CAF5018` }}>
-            <div className="flex items-start justify-between gap-4 mb-6">
-              <div className="flex items-center gap-4">
+          <div className="rounded-3xl p-6 max-sm:p-4" style={{ background: `linear-gradient(135deg, #4CAF5008 0%, #4CAF5004 100%)`, border: `1px solid #4CAF5018` }}>
+            <div className="flex items-start justify-between gap-4 mb-6 max-sm:gap-2 max-sm:mb-5">
+              <div className="flex items-center gap-4 max-sm:gap-3 max-sm:min-w-0">
                 {/* Avatar with photo upload */}
                 <div className="relative flex-shrink-0">
                   <div className="w-16 h-16 rounded-2xl overflow-hidden bg-lp-primary flex items-center justify-center text-white text-xl font-black shadow-lg shadow-lp-primary/25">
@@ -243,10 +243,10 @@ export default function Profile() {
                     className="hidden"
                   />
                 </div>
-                <div>
-                  <div className="text-lg font-bold text-black/85 dark:text-white/90">{user.name}</div>
-                  <div className="text-sm text-black/40 dark:text-white/35 mt-0.5">{user.email}</div>
-                  <div className="flex items-center gap-2 mt-2">
+                <div className="max-sm:min-w-0">
+                  <div className="text-lg max-sm:text-base font-bold text-black/85 dark:text-white/90">{user.name}</div>
+                  <div className="text-sm max-sm:text-xs text-black/40 dark:text-white/35 mt-0.5 max-sm:break-all">{user.email}</div>
+                  <div className="flex items-center gap-2 mt-2 max-sm:flex-wrap max-sm:gap-1.5">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-lp-primary/10 border border-lp-primary/20">
                       <Flame size={12} className="text-lp-primary" />
                       <span className="text-xs font-bold text-lp-primary">{streak} day streak</span>
@@ -261,7 +261,7 @@ export default function Profile() {
               <button
                 type="button"
                 onClick={() => editing ? handleSave() : setEditing(true)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                className={`flex items-center gap-2 px-3 py-2 max-sm:px-2.5 max-sm:flex-shrink-0 rounded-xl text-xs font-semibold transition-all duration-200 ${
                   editing
                     ? 'bg-lp-primary text-white hover:bg-green-500'
                     : 'bg-black/[0.05] dark:bg-white/[0.06] text-black/55 dark:text-white/50 hover:bg-black/[0.09] dark:hover:bg-white/[0.10]'
@@ -433,9 +433,9 @@ export default function Profile() {
 
             <div className="mt-4 pt-4 border-t border-black/[0.05] dark:border-white/[0.05] space-y-2">
               {[
-                { label: 'Physical', value: Math.min(Math.round((physical.weeklySteps.find(x => x.day === getDayKey())?.steps ?? 0) / 8000 * 100), 100), color: '#4CAF50' },
-                { label: 'Productivity', value: Math.min(Math.round((productivity.focusMinutesByDay.find(x => x.day === getDayKey())?.minutes ?? 0) / 120 * 100), 100), color: '#6366F1' },
-                { label: 'Eco', value: Math.min(environment.ecoActions.filter(a => new Date(a.timestamp).toDateString() === new Date().toDateString()).length * 25, 100), color: '#34A853' },
+                { label: 'Physical', value: dimensionScores.physical, color: '#4CAF50' },
+                { label: 'Productivity', value: dimensionScores.productivity, color: '#6366F1' },
+                { label: 'Eco', value: dimensionScores.eco, color: '#34A853' },
               ].map((d) => (
                 <div key={d.label}>
                   <div className="flex justify-between text-[10px] mb-1">

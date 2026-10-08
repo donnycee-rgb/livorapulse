@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { MapPin, Play, Pause, Square, X, Save, Trash2, Navigation } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAppStore } from '../store/useAppStore'
+import { useAuthStore } from '../store/useAuthStore'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,13 +31,28 @@ function haversine(a: Coord, b: Coord): number {
 }
 
 // ---------------------------------------------------------------------------
-// Calorie estimate: MET × weight × hours
+// Calories: MET × body weight × hours, worked out per GPS segment so that
+// running, brisk walking and standing still are each counted properly.
+// MET values from the Compendium of Physical Activities.
 // ---------------------------------------------------------------------------
-function estimateCalories(distanceKm: number, durationSec: number, weightKg = 70): number {
-  const speed = durationSec > 0 ? distanceKm / (durationSec / 3600) : 0
-  const met = speed < 4 ? 2.8 : speed < 6 ? 3.5 : 5.0
-  return Math.round(met * weightKg * (durationSec / 3600))
+function metForSpeed(kmh: number): number {
+  if (kmh < 2.5) return 2.0   // strolling
+  if (kmh < 4) return 2.8     // slow walk
+  if (kmh < 5) return 3.5     // moderate walk
+  if (kmh < 5.6) return 4.3   // brisk walk
+  if (kmh < 6.5) return 5.0   // very brisk walk
+  if (kmh < 8) return 7.0     // jogging
+  if (kmh < 9.7) return 8.3   // running ~6:45 min/km
+  if (kmh < 11.3) return 9.8  // running ~5:50 min/km
+  return 11.0                 // running faster
 }
+
+// GPS filtering
+const MAX_ACCURACY_M = 30    // ignore fixes less accurate than this
+const MIN_MOVE_M = 5         // ignore movement smaller than this (GPS jitter)
+const MAX_SPEED_KMH = 25     // faster than this is a GPS jump or a vehicle
+const MIN_STEP_GAP_MS = 280  // ~3.5 steps/s — faster "steps" are phone shakes
+const DEFAULT_WEIGHT_KG = 70
 
 // ---------------------------------------------------------------------------
 // Format helpers
@@ -189,12 +205,17 @@ interface WalkTrackerProps {
 
 export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
   const addActivity = useAppStore((s) => s.addActivity)
+  const weightKg = useAuthStore((s) => s.user?.profile?.weightKg) || DEFAULT_WEIGHT_KG
+  const heightCm = useAuthStore((s) => s.user?.profile?.heightCm) || null
+  // Average walking stride ≈ 41.5% of height; 0.75 m when height is unknown
+  const strideM = heightCm ? heightCm * 0.00415 : 0.75
 
   const [trackingState, setTrackingState] = useState<TrackingState>('idle')
   const [trail, setTrail] = useState<Coord[]>([])
   const [currentPos, setCurrentPos] = useState<Coord | null>(null)
   const [distanceKm, setDistanceKm] = useState(0)
   const [steps, setSteps] = useState(0)
+  const [calories, setCalories] = useState(0)
   const [durationSec, setDurationSec] = useState(0)
   const [permissionError, setPermissionError] = useState<string | null>(null)
 
@@ -202,10 +223,13 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastCoordRef = useRef<Coord | null>(null)
   const stepBufferRef = useRef<number[]>([])
+  const lastStepAtRef = useRef(0)
+  const lastFixAtRef = useRef<number | null>(null)
+  const weightRef = useRef(weightKg)
+  weightRef.current = weightKg
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null)
   const isActiveRef = useRef(false)
 
-  const calories = estimateCalories(distanceKm, durationSec)
 
   // ---------------------------------------------------------------------------
   // Step counting via DeviceMotion
@@ -220,7 +244,9 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
     if (stepBufferRef.current.length >= 5) {
       const avg = stepBufferRef.current.reduce((a, b) => a + b, 0) / stepBufferRef.current.length
       const max = Math.max(...stepBufferRef.current)
-      if (max - avg > 3.5) {
+      const nowMs = e.timeStamp || performance.now()
+      if (max - avg > 3.5 && nowMs - lastStepAtRef.current >= MIN_STEP_GAP_MS) {
+        lastStepAtRef.current = nowMs
         setSteps(s => s + 1)
       }
       stepBufferRef.current = []
@@ -257,6 +283,7 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
         const coord: Coord = { lat: pos.coords.latitude, lng: pos.coords.longitude }
         setCurrentPos(coord)
         lastCoordRef.current = coord
+        lastFixAtRef.current = pos.timestamp || Date.now()
         setTrail([coord])
         isActiveRef.current = true
         setTrackingState('active')
@@ -268,14 +295,31 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
             const newCoord: Coord = { lat: p.coords.latitude, lng: p.coords.longitude }
             setCurrentPos(newCoord)
 
-            if (lastCoordRef.current) {
-              const d = haversine(lastCoordRef.current, newCoord)
-              if (d > 0.003) {
-                setDistanceKm(prev => prev + d)
-                setTrail(prev => [...prev, newCoord])
-                lastCoordRef.current = newCoord
-              }
+            // Inaccurate fixes (indoors, under cover) would add phantom distance
+            if (p.coords.accuracy > MAX_ACCURACY_M) return
+
+            const fixAt = p.timestamp || Date.now()
+            if (!lastCoordRef.current || lastFixAtRef.current === null) {
+              lastCoordRef.current = newCoord
+              lastFixAtRef.current = fixAt
+              return
             }
+
+            const dKm = haversine(lastCoordRef.current, newCoord)
+            // Movement must beat both the jitter floor and half the reported accuracy
+            if (dKm * 1000 < Math.max(MIN_MOVE_M, p.coords.accuracy / 2)) return
+
+            const hours = (fixAt - lastFixAtRef.current) / 3600000
+            const kmh = hours > 0 ? dKm / hours : Infinity
+            lastCoordRef.current = newCoord
+            lastFixAtRef.current = fixAt
+
+            // A jump or a vehicle ride — move the marker but don't count it
+            if (kmh > MAX_SPEED_KMH) return
+
+            setDistanceKm(prev => prev + dKm)
+            setTrail(prev => [...prev, newCoord])
+            setCalories(prev => prev + metForSpeed(kmh) * weightRef.current * hours)
           },
           (err) => {
             console.warn('GPS error:', err.message)
@@ -316,6 +360,8 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
   }, [])
 
   const resumeTracking = useCallback(() => {
+    // Start a fresh segment — distance moved while paused shouldn't count
+    lastFixAtRef.current = null
     isActiveRef.current = true
     timerRef.current = setInterval(() => setDurationSec(s => s + 1), 1000)
     setTrackingState('active')
@@ -341,11 +387,15 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
       toast.error('Walk too short to save')
       return
     }
+    // Phones without a usable motion sensor count few or no steps — fall back
+    // to an estimate from the GPS distance and the user's stride
+    const stepsFromDistance = Math.round((distanceKm * 1000) / strideM)
+    const finalSteps = steps < stepsFromDistance * 0.5 ? stepsFromDistance : steps
     try {
       await addActivity({
-        steps,
+        steps: finalSteps,
         distanceKm: Math.round(distanceKm * 100) / 100,
-        caloriesKcal: calories,
+        caloriesKcal: Math.round(calories),
         durationSec,
         trail,
         note: `Walk · ${fmtDuration(durationSec)}`,
@@ -355,7 +405,7 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save walk. Try again.')
     }
-  }, [addActivity, steps, distanceKm, calories, durationSec, trail, onClose])
+  }, [addActivity, steps, distanceKm, calories, durationSec, trail, onClose, strideM])
 
   // ---------------------------------------------------------------------------
   // Discard / reset
@@ -366,6 +416,9 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
     setCurrentPos(null)
     setDistanceKm(0)
     setSteps(0)
+    setCalories(0)
+    lastStepAtRef.current = 0
+    lastFixAtRef.current = null
     setDurationSec(0)
     setPermissionError(null)
     setTrackingState('idle')
@@ -454,7 +507,7 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
               <MetricCard label="Distance" value={fmtDistance(distanceKm)} />
               <MetricCard label="Steps" value={steps.toLocaleString()} />
               <MetricCard label="Time" value={fmtDuration(durationSec)} />
-              <MetricCard label="Calories" value={`${calories}`} sub="kcal" />
+              <MetricCard label="Calories" value={`${Math.round(calories)}`} sub="kcal" />
             </div>
           )}
 

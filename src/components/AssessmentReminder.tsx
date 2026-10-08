@@ -1,26 +1,27 @@
-import { useNavigate } from 'react-router-dom'
 import { ClipboardList, ChevronRight, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { useAuthStore } from '../store/useAuthStore'
+import CheckInModal from './CheckInModal'
 
 export default function AssessmentReminder() {
-  const navigate = useNavigate()
   const lastAssessmentAt = useAuthStore((s) => s.lastAssessmentAt)
-  const setLastAssessmentAt = useAuthStore((s) => s.setLastAssessmentAt)
   const [dismissed, setDismissed] = useState(false)
+  const [checkInOpen, setCheckInOpen] = useState(false)
 
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000
   const now = Date.now()
   const isDue = !lastAssessmentAt || (now - lastAssessmentAt) >= SEVEN_DAYS
 
-  if (!isDue || dismissed) return null
+  if (!isDue || dismissed) return <CheckInModal open={checkInOpen} onClose={() => setCheckInOpen(false)} />
 
   const daysAgo = lastAssessmentAt
     ? Math.floor((now - lastAssessmentAt) / (24 * 60 * 60 * 1000))
     : null
 
   return (
+    <>
+    <CheckInModal open={checkInOpen} onClose={() => setCheckInOpen(false)} />
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -37,8 +38,8 @@ export default function AssessmentReminder() {
           </div>
           <div className="text-xs text-black/45 dark:text-white/40 mt-0.5">
             {lastAssessmentAt
-              ? `Last done ${daysAgo} day${daysAgo === 1 ? '' : 's'} ago — takes under 2 minutes`
-              : 'Answer 5 quick questions to personalise your dashboard score'}
+              ? `Last done ${daysAgo} day${daysAgo === 1 ? '' : 's'} ago — 6 quick questions to keep your goals right`
+              : '6 quick questions to keep your goals right for you'}
           </div>
         </div>
       </div>
@@ -46,10 +47,7 @@ export default function AssessmentReminder() {
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
           type="button"
-          onClick={() => {
-            setLastAssessmentAt(Date.now())
-            navigate('/login?retake=true')
-          }}
+          onClick={() => setCheckInOpen(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-lp-primary text-white hover:bg-green-500 transition-all"
         >
           Start
@@ -65,5 +63,6 @@ export default function AssessmentReminder() {
         </button>
       </div>
     </motion.div>
+    </>
   )
 }

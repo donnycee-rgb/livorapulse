@@ -33,6 +33,7 @@ export function getTitleForPath(pathname: string) {
   if (pathname === '/') return 'LivoraPulse'
   if (pathname.startsWith('/dashboard')) return 'Dashboard'
   if (pathname.startsWith('/physical')) return 'Physical Activity'
+  if (pathname.startsWith('/nutrition')) return 'Nutrition'
   if (pathname.startsWith('/digital')) return 'Digital Usage'
   if (pathname.startsWith('/productivity')) return 'Productivity'
   if (pathname.startsWith('/environment')) return 'Environment'

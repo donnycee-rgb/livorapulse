@@ -20,13 +20,14 @@ export default function Layout({ children }: PropsWithChildren) {
       <div className="flex-1 flex min-h-0 w-full overflow-hidden">
 
         {/* SideNav column — fixed width, never shrinks below its own width */}
-        <div className="flex-shrink-0 pl-4 py-5 min-h-0">
+        {/* Hidden on phones — the side nav is md+ only, so its padding just wasted 16px */}
+        <div className="flex-shrink-0 pl-4 py-5 min-h-0 max-sm:hidden">
           <SideNav />
         </div>
 
         {/* Main content — takes all remaining space, never shrinks to 0 */}
         <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
-          <div className="max-w-[1200px] px-5 py-5 md:py-6 pb-24 md:pb-6">
+          <div className="max-w-[1200px] px-5 py-5 md:py-6 pb-24 md:pb-6 max-sm:px-4 max-sm:pt-4 max-sm:pb-28">
             {hydrated ? (
               children
             ) : (

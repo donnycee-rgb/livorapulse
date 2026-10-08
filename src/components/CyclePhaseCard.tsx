@@ -10,6 +10,10 @@ interface CycleData {
   daysUntilNextPeriod: number
   nextPeriodDate: string
   cycleLength: number
+  smartCycleLength?: number
+  periodDueToday?: boolean
+  isLate?: boolean
+  daysLate?: number
 }
 
 const PHASE_CONFIG = {
@@ -41,6 +45,14 @@ export default function CyclePhaseCard() {
   const phase = PHASE_CONFIG[data.phase as keyof typeof PHASE_CONFIG]
   if (!phase) return null
 
+  // The phase is calculated from the averaged cycle length, so the bar uses it too
+  const cycleLength = data.smartCycleLength ?? data.cycleLength
+  const message = data.isLate
+    ? 'Your period is later than expected. Cycles vary — log it when it starts.'
+    : data.periodDueToday
+      ? 'Your period is expected today.'
+      : phase.message
+
   return (
     <div className="relative rounded-2xl border overflow-hidden"
       style={{ backgroundColor: phase.color + '08', borderColor: phase.color + '25' }}>
@@ -69,11 +81,23 @@ export default function CyclePhaseCard() {
               <span className="text-sm font-bold" style={{ color: phase.color }}>{phase.label}</span>
               <span className="text-xs text-black/35 dark:text-white/30">· Day {data.dayOfCycle}</span>
             </div>
-            <p className="text-xs text-black/50 dark:text-white/45 max-w-[200px] leading-relaxed">{phase.message}</p>
+            <p className="text-xs text-black/50 dark:text-white/45 max-w-[200px] leading-relaxed">{message}</p>
           </div>
           <div className="text-right flex-shrink-0">
-            <div className="text-2xl font-black" style={{ color: phase.color }}>{data.daysUntilNextPeriod}</div>
-            <div className="text-[10px] text-black/35 dark:text-white/30 leading-tight">days to<br />next period</div>
+            {data.isLate ? (
+              <>
+                <div className="text-2xl font-black" style={{ color: phase.color }}>{data.daysLate}</div>
+                <div className="text-[10px] text-black/35 dark:text-white/30 leading-tight">day{data.daysLate === 1 ? '' : 's'}<br />late</div>
+              </>
+            ) : data.periodDueToday ? (
+              <div className="text-sm font-bold" style={{ color: phase.color }}>Due<br />today</div>
+            ) : (
+              <>
+                {/* daysUntilNextPeriod counts full days after today, so the period starts on day +1 */}
+                <div className="text-2xl font-black" style={{ color: phase.color }}>{data.daysUntilNextPeriod + 1}</div>
+                <div className="text-[10px] text-black/35 dark:text-white/30 leading-tight">days to<br />next period</div>
+              </>
+            )}
           </div>
         </div>
 
@@ -81,12 +105,12 @@ export default function CyclePhaseCard() {
         <div className="mt-3 h-1.5 rounded-full bg-black/[0.07] dark:bg-white/[0.07] overflow-hidden">
           <motion.div className="h-full rounded-full" style={{ backgroundColor: phase.color }}
             initial={{ width: 0 }}
-            animate={{ width: `${(data.dayOfCycle / data.cycleLength) * 100}%` }}
+            animate={{ width: `${Math.min(100, (data.dayOfCycle / cycleLength) * 100)}%` }}
             transition={{ duration: 0.8, ease: 'easeOut' }} />
         </div>
         <div className="flex justify-between text-[9px] text-black/25 dark:text-white/20 mt-1">
           <span>Day {data.dayOfCycle}</span>
-          <span>Day {data.cycleLength}</span>
+          <span>Day {cycleLength}</span>
         </div>
       </div>
 

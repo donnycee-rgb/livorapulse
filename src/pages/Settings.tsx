@@ -11,7 +11,8 @@ import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
 
 import { useAppStore } from '../store/useAppStore'
-import { selectProgressiveGoals } from '../store/selectors'
+import { selectProgressiveGoals, selectStreak } from '../store/selectors'
+import CheckInModal from '../components/CheckInModal'
 import { useAuthStore } from '../store/useAuthStore'
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
@@ -43,10 +44,10 @@ function SettingsRow({ icon, label, description, right, danger = false }: {
 }) {
   return (
     <div className={clsx(
-      'flex items-start sm:items-center justify-between gap-3 py-3 sm:py-4',
+      'flex items-start sm:items-center justify-between gap-3 py-3 sm:py-4 max-sm:flex-wrap max-sm:gap-y-2.5',
       'border-b border-black/[0.05] dark:border-white/[0.05] last:border-0',
     )}>
-      <div className="flex items-start gap-3 min-w-0 flex-1">
+      <div className="flex items-start gap-3 min-w-0 flex-1 max-sm:min-w-[60%]">
         <div className={clsx(
           'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0',
           danger ? 'bg-lp-alert/15' : 'bg-black/[0.05] dark:bg-white/[0.06]',
@@ -66,7 +67,7 @@ function SettingsRow({ icon, label, description, right, danger = false }: {
         </div>
       </div>
       {/* Right content — wraps below on very small screens if needed */}
-      <div className="flex-shrink-0 mt-0.5 sm:mt-0">{right}</div>
+      <div className="flex-shrink-0 mt-0.5 sm:mt-0 max-sm:ml-auto">{right}</div>
     </div>
   )
 }
@@ -148,13 +149,13 @@ export default function Settings() {
   const resetAll = useAppStore((s) => s.resetAll)
 
   const lastAssessmentAt = useAuthStore((s) => s.lastAssessmentAt)
-  const setLastAssessmentAt = useAuthStore((s) => s.setLastAssessmentAt)
+  const [checkInOpen, setCheckInOpen] = useState(false)
 
   const [resetOpen, setResetOpen] = useState(false)
   const goals = useAppStore((s) => s.goals)
   const setGoals = useAppStore((s) => s.setGoals)
-  const progressiveGoals = selectProgressiveGoals(useAppStore.getState())
-  const streak = parseInt(localStorage.getItem('lp_streak') || '0', 10)
+  const progressiveGoals = useAppStore(selectProgressiveGoals)
+  const streak = useAppStore(selectStreak)
 
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000
   const now = Date.now()
@@ -186,7 +187,7 @@ export default function Settings() {
                   type="button"
                   onClick={() => { setTheme(t); toast.success(`Theme: ${t}`) }}
                   className={clsx(
-                    'px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-150 capitalize',
+                    'px-3 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs sm:text-xs font-semibold transition-all duration-150 capitalize',
                     theme === t
                       ? 'bg-white dark:bg-slate-700 text-black/80 dark:text-white/80 shadow-sm'
                       : 'text-black/45 dark:text-white/40 hover:text-black/65 dark:hover:text-white/60',
@@ -214,7 +215,7 @@ export default function Settings() {
                   type="button"
                   onClick={() => { setUnits(u); toast.success(`Units: ${u}`) }}
                   className={clsx(
-                    'px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-150',
+                    'px-3 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs sm:text-xs font-semibold transition-all duration-150',
                     units === u
                       ? 'bg-white dark:bg-slate-700 text-black/80 dark:text-white/80 shadow-sm'
                       : 'text-black/45 dark:text-white/40 hover:text-black/65 dark:hover:text-white/60',
@@ -260,11 +261,13 @@ export default function Settings() {
         />
       </Section>
 
+      <CheckInModal open={checkInOpen} onClose={() => setCheckInOpen(false)} />
+
       {/* Life Balance Check */}
       <Section title="Life Balance Check">
         <SettingsRow
           icon={<ClipboardList size={15} />}
-          label="Retake assessment"
+          label="Weekly check-in"
           description={canRetake
             ? `Last: ${lastAssessmentLabel} — eligible`
             : `Available in ${daysUntilRetake}d — last ${lastAssessmentLabel}`
@@ -273,14 +276,10 @@ export default function Settings() {
             canRetake ? (
               <button
                 type="button"
-                onClick={() => {
-                  setLastAssessmentAt(Date.now())
-                  navigate('/login?retake=true')
-                  toast.success('Redirecting…')
-                }}
+                onClick={() => setCheckInOpen(true)}
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-lp-primary text-white hover:bg-green-500 transition-all whitespace-nowrap"
               >
-                Retake
+                Start
                 <ChevronRight size={12} />
               </button>
             ) : (
@@ -351,9 +350,9 @@ export default function Settings() {
           <GoalSlider
             label="Daily Calories"
             description="Target calorie intake per day (optional)"
-            value={(goals as any).goalCaloriesPerDay ?? 2000}
+            value={goals.goalCaloriesPerDay ?? 2000}
             min={1200} max={4000} step={50} unit=" kcal"
-            onChange={(v) => setGoals({ goalCaloriesPerDay: v } as any)}
+            onChange={(v) => setGoals({ goalCaloriesPerDay: v })}
           />
           {streak >= 7 && (
             <div className="mt-3 p-3 rounded-xl bg-lp-primary/[0.06] border border-lp-primary/20">

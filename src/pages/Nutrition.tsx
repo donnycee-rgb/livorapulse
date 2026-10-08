@@ -8,7 +8,8 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
-import { useAppStore } from '../store/useAppStore'
+import { scheduleScoreSync, useAppStore } from '../store/useAppStore'
+import { selectProgressiveGoals } from '../store/selectors'
 import { apiGet, apiPost, apiDel } from '../api/client'
 
 // ---------------------------------------------------------------------------
@@ -86,7 +87,7 @@ function WaterTracker({ glasses, goal, onAdd }: {
           <span className="text-sm font-semibold text-black/70 dark:text-white/70">Water</span>
         </div>
         <button type="button" onClick={onAdd}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-500 text-xs font-semibold hover:bg-blue-500/20 transition-all">
+          className="flex items-center gap-1 px-2.5 py-1 max-sm:px-3.5 max-sm:py-2 rounded-lg bg-blue-500/10 text-blue-500 text-xs font-semibold hover:bg-blue-500/20 transition-all">
           <Plus size={11} /> +1 glass
         </button>
       </div>
@@ -455,8 +456,7 @@ function AddFoodModal({ open, onClose, onSave }: {
 // Nutrition page root
 // ---------------------------------------------------------------------------
 export default function Nutrition() {
-  const goals = useAppStore((s) => s.goals)
-  const calorieGoal = (goals as any).goalCaloriesPerDay ?? 2000
+  const calorieGoal = useAppStore((s) => selectProgressiveGoals(s).goalCaloriesPerDay)
   const waterGoal = 8
 
   const [entries, setEntries] = useState<FoodEntry[]>([])
@@ -482,6 +482,7 @@ export default function Nutrition() {
 
   const handleSaveFood = async (entry: Omit<FoodEntry, 'id' | 'timestamp'>) => {
     await apiPost('/api/nutrition', entry)
+    scheduleScoreSync()
     toast.success('Food logged!')
     await fetchData()
   }
@@ -489,6 +490,7 @@ export default function Nutrition() {
   const handleDelete = async (id: string) => {
     try {
       await apiDel(`/api/nutrition/${id}`)
+      scheduleScoreSync()
       toast.success('Entry removed')
       await fetchData()
     } catch { toast.error('Failed to delete') }
@@ -497,6 +499,7 @@ export default function Nutrition() {
   const handleAddWater = async () => {
     try {
       await apiPost('/api/nutrition/water', { glasses: 1 })
+      scheduleScoreSync() // water counts toward the streak
       setGlasses(g => g + 1)
       toast.success('Water logged!')
     } catch { toast.error('Failed to log water') }
@@ -514,7 +517,7 @@ export default function Nutrition() {
     <div className="space-y-5">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
           <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Nutrition</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5">
@@ -524,12 +527,12 @@ export default function Nutrition() {
           </p>
         </div>
         <button type="button" onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-2xl hover:shadow-lg hover:shadow-lp-primary/25 hover:scale-[1.02] transition-all duration-200 flex-shrink-0" style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}>
+          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-2xl hover:shadow-lg hover:shadow-lp-primary/25 hover:scale-[1.02] transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3" style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}>
           <Plus size={15} /> Log Food
         </button>
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_280px] gap-5">
+      <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
         <div className="space-y-5 min-w-0">
 
           {/* Calorie progress */}

@@ -10,7 +10,7 @@ import {
 import { useChartTheme } from '../../theme/useChartTheme'
 
 type Props = {
-  data: Array<{ day: string; score: number }>
+  data: Array<{ day: string; score: number | null }> // null = no check-in (shown as a gap)
 }
 
 export default function StressLineChart({ data }: Props) {

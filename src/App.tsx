@@ -1,26 +1,33 @@
+import { lazy, Suspense } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import RouteTransition from './components/RouteTransition'
+import Seo from './components/Seo'
 import AuthPage from './pages/AuthPage'
 import LandingPage from './pages/LandingPage'
-import Dashboard from './pages/Dashboard'
-import Digital from './pages/Digital'
-import Environment from './pages/Environment'
-import Mood from './pages/Mood'
-import Nutrition from './pages/Nutrition'
-import Physical from './pages/Physical'
-import Productivity from './pages/Productivity'
-import Profile from './pages/Profile'
-import Settings from './pages/Settings'
 import NotFound from './pages/NotFound'
+
+// Signed-in pages are split into their own chunks so the public landing
+// page doesn't download charts and maps up front (faster Core Web Vitals)
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Digital = lazy(() => import('./pages/Digital'))
+const Environment = lazy(() => import('./pages/Environment'))
+const Mood = lazy(() => import('./pages/Mood'))
+const Nutrition = lazy(() => import('./pages/Nutrition'))
+const Physical = lazy(() => import('./pages/Physical'))
+const Productivity = lazy(() => import('./pages/Productivity'))
+const Profile = lazy(() => import('./pages/Profile'))
+const Settings = lazy(() => import('./pages/Settings'))
 
 export default function App() {
   const location = useLocation()
 
   return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+    <Seo />
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         {/* Public routes */}
@@ -64,5 +71,6 @@ export default function App() {
         } />
       </Routes>
     </AnimatePresence>
+    </Suspense>
   )
 }

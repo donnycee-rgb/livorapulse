@@ -1,0 +1,17 @@
+# LivoraPulse — https://livorapulse.netlify.app
+User-agent: *
+Allow: /
+Allow: /login
+
+# Signed-in app pages (private user data)
+Disallow: /dashboard
+Disallow: /physical
+Disallow: /nutrition
+Disallow: /digital
+Disallow: /productivity
+Disallow: /environment
+Disallow: /mood
+Disallow: /profile
+Disallow: /settings
+
+Sitemap: https://livorapulse.netlify.app/sitemap.xml
