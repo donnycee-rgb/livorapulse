@@ -890,7 +890,8 @@ export const useAppStore = create<AppStore>()(
                 weeklyDistanceKm: buildWeeklyDistance(entries),
                 weeklyCaloriesKcal: buildWeeklyCalories(entries),
                 sleepHours: buildWeeklySleep(entries),
-                activityLog: entries.slice(0, 20).map((e) => ({
+                // Sleep-only entries belong in the sleep chart, not the activity list
+                activityLog: entries.filter((e) => e.steps > 0 || e.distanceKm > 0).slice(0, 20).map((e) => ({
                   id: e.id,
                   timestamp: new Date(e.timestamp).getTime(),
                   steps: e.steps,

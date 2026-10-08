@@ -227,7 +227,7 @@ function SleepLogger({ value, onChange }: { value: number; onChange: (v: number)
             type="button"
             onClick={() => onChange(h)}
             className={clsx(
-              'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150',
+              'px-2.5 py-1 max-sm:px-3 max-sm:py-2 rounded-lg text-xs font-semibold transition-all duration-150',
               value === h
                 ? 'text-white shadow-sm'
                 : 'bg-black/[0.04] dark:bg-white/[0.05] text-black/50 dark:text-white/45 hover:bg-black/[0.08] dark:hover:bg-white/[0.09]'
@@ -277,16 +277,16 @@ export default function Physical() {
     <div className="space-y-5">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
           <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Physical Activity</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0 max-sm:w-full">
           <button
             type="button"
             onClick={() => setWalkOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all duration-200" style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}
+            className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all duration-200 max-sm:flex-1 max-sm:justify-center max-sm:py-3" style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}
           >
             <Navigation size={15} />
             Start Walk
@@ -294,7 +294,7 @@ export default function Physical() {
           <button
             type="button"
             onClick={() => setOtherOpen(true)}
-            className="flex items-center gap-2 px-3 py-2.5 bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 text-sm font-semibold rounded-xl hover:bg-black/[0.09] dark:hover:bg-white/[0.10] transition-all duration-200"
+            className="flex items-center gap-2 px-3 py-2.5 bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 text-sm font-semibold rounded-xl hover:bg-black/[0.09] dark:hover:bg-white/[0.10] transition-all duration-200 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
           >
             <Plus size={15} />
             Other
@@ -303,7 +303,7 @@ export default function Physical() {
       </div>
 
       {/* Two-column layout */}
-      <div className="grid lg:grid-cols-[1fr_280px] gap-5">
+      <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
 
         {/* Left — main content */}
         <div className="space-y-5 min-w-0">

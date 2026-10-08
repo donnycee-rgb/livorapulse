@@ -539,11 +539,11 @@ function Hero() {
   const slides = [...SLIDES, SLIDES[0]]
 
   return (
-    <section className="relative pt-24 sm:pt-28 pb-12 sm:pb-16 overflow-hidden" aria-roledescription="carousel" aria-label="LivoraPulse highlights">
+    <section className="relative pt-24 sm:pt-28 pb-12 sm:pb-16 max-sm:pt-20 max-sm:pb-6 overflow-hidden" aria-roledescription="carousel" aria-label="LivoraPulse highlights">
       <div className="absolute -top-40 -right-40 w-[560px] h-[560px] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, var(--lp-glow) 0%, transparent 70%)' }} />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-8 grid lg:grid-cols-[1fr_1.05fr] gap-10 lg:gap-12 items-center">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-8 grid lg:grid-cols-[1fr_1.05fr] gap-10 lg:gap-12 max-sm:gap-5 items-center">
         {/* Text track */}
         <div className="min-w-0">
           <SlideTrack index={index} animate={animate} onTransitionEnd={onTransitionEnd}>
@@ -551,22 +551,22 @@ function Hero() {
               const Heading = i === 0 ? 'h1' : 'p'
               return (
                 <div key={i} className="w-full flex-shrink-0 pr-2" aria-hidden={i !== index}>
-                  <span className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full mb-6"
+                  <span className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full mb-6 max-sm:mb-4"
                     style={{ background: C.paper, color: C.muted, border: `1px solid ${C.line}` }}>
                     <span className="w-1.5 h-1.5 rounded-full" style={{ background: C.green }} />
                     {s.eyebrow}
                   </span>
-                  <Heading className="font-serif font-normal leading-[1.05] tracking-tight mb-5"
+                  <Heading className="font-serif font-normal leading-[1.05] tracking-tight mb-5 max-sm:mb-3"
                     style={{ color: C.ink, fontSize: 'clamp(2.5rem, 5.6vw, 4.6rem)' }}>
                     {s.before}<Accent>{s.accent}</Accent>{s.after}
                   </Heading>
-                  <p className="text-base sm:text-lg leading-relaxed max-w-md" style={{ color: C.muted }}>{s.sub}</p>
+                  <p className="text-base sm:text-lg leading-relaxed max-w-md max-sm:text-[15px]" style={{ color: C.muted }}>{s.sub}</p>
                 </div>
               )
             })}
           </SlideTrack>
 
-          <div className="flex flex-wrap items-center gap-3 mt-8">
+          <div className="flex flex-wrap items-center gap-3 mt-8 max-sm:mt-5 max-sm:gap-1">
             <Link to="/login"
               className="inline-flex items-center gap-2 pl-5 pr-2 py-2 rounded-full text-sm font-medium transition-transform hover:scale-[1.02]"
               style={btn}>
@@ -575,13 +575,13 @@ function Hero() {
                 <ArrowRight size={14} />
               </span>
             </Link>
-            <a href="#how-it-works" className="inline-flex items-center gap-2 px-4 py-3 text-sm font-medium" style={{ color: C.ink }}>
+            <a href="#how-it-works" className="inline-flex items-center gap-2 px-4 py-3 text-sm font-medium max-sm:px-3 max-sm:underline max-sm:underline-offset-4 max-sm:decoration-1" style={{ color: C.ink }}>
               See how it works
             </a>
           </div>
 
           {/* Passive progress indicator — not interactive */}
-          <div className="flex gap-1.5 mt-8" aria-hidden="true">
+          <div className="flex gap-1.5 mt-8 max-sm:mt-4" aria-hidden="true">
             {SLIDES.map((_, i) => (
               <span key={i} className="h-1 rounded-full overflow-hidden" style={{ width: i === active ? 40 : 16, background: C.line, transition: 'width 400ms' }}>
                 {i === active && (
@@ -598,14 +598,14 @@ function Hero() {
           <SlideTrack index={index} animate={animate}>
             {slides.map((s, i) => (
               <div key={i} className="w-full flex-shrink-0 px-1" aria-hidden={i !== index}>
-                <div className="relative h-[450px] sm:h-[520px]">
-                  <div className="absolute inset-y-0 right-0 left-[18%] sm:left-[22%] rounded-[2rem] overflow-hidden" style={{ background: C.mint }}>
+                <div className="relative h-[450px] sm:h-[520px] max-sm:h-[350px]">
+                  <div className="absolute inset-y-0 right-0 left-[18%] sm:left-[22%] max-sm:left-[28%] max-sm:inset-y-4 rounded-[2rem] max-sm:rounded-[1.5rem] overflow-hidden" style={{ background: C.mint }}>
                     <img src={s.image} alt={s.imageAlt} className="w-full h-full object-cover"
                       {...(i === 0 ? { fetchPriority: 'high' as const } : { loading: 'lazy' as const })} decoding="async" />
                     <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, rgba(21,33,27,0.18), transparent 45%)' }} />
                   </div>
-                  <Phone className="absolute left-0 top-1/2 -translate-y-1/2 w-[200px] sm:w-[232px]">{s.screen}</Phone>
-                  <div className="absolute right-3 sm:right-5 bottom-4 sm:bottom-6 flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl"
+                  <Phone className="absolute left-0 top-1/2 -translate-y-1/2 w-[200px] sm:w-[232px] max-sm:left-1 max-sm:scale-[0.8] max-sm:origin-left">{s.screen}</Phone>
+                  <div className="absolute right-3 sm:right-5 bottom-4 sm:bottom-6 max-sm:bottom-8 max-sm:right-2 max-sm:pr-3 max-sm:gap-2 flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl"
                     style={{ background: C.chip, boxShadow: '0 10px 30px rgba(21,33,27,0.15)' }} aria-hidden="true">
                     <span className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: C.mint, color: C.green }}>
                       <s.chip.Icon size={14} />
@@ -636,7 +636,20 @@ const highlights = [
 function Highlights() {
   return (
     <section className="px-4 sm:px-8">
-      <motion.div {...fadeUp} className="max-w-7xl mx-auto rounded-[1.75rem] grid sm:grid-cols-2 lg:grid-cols-4"
+      {/* Phones: compact 2×2 tiles */}
+      <motion.div {...fadeUp} className="sm:hidden grid grid-cols-2 gap-2.5">
+        {highlights.map(({ Icon, title, desc }) => (
+          <div key={title} className="rounded-2xl p-4" style={{ background: C.paper, border: `1px solid ${C.line}` }}>
+            <span className="w-8 h-8 rounded-full flex items-center justify-center mb-3" style={{ background: C.mint, color: C.green }}>
+              <Icon size={15} />
+            </span>
+            <h3 className="text-[13.5px] font-semibold leading-snug mb-1" style={{ color: C.ink }}>{title}</h3>
+            <p className="text-xs leading-relaxed" style={{ color: C.muted }}>{desc}</p>
+          </div>
+        ))}
+      </motion.div>
+
+      <motion.div {...fadeUp} className="max-sm:hidden max-w-7xl mx-auto rounded-[1.75rem] grid sm:grid-cols-2 lg:grid-cols-4"
         style={{ background: C.paper, border: `1px solid ${C.line}` }}>
         {highlights.map(({ Icon, title, desc }, i) => (
           <div key={title} className="p-6 sm:p-7"
@@ -691,27 +704,31 @@ const dimensions: { Icon: LucideIcon; title: string; desc: string; stat: string;
 
 function Dimensions() {
   return (
-    <section id="features" className="px-4 sm:px-8 pt-16 sm:pt-24 scroll-mt-20">
-      <div className="max-w-7xl mx-auto rounded-[2rem] p-6 sm:p-10 lg:p-12 grid lg:grid-cols-[0.8fr_1.2fr] gap-10"
+    <section id="features" className="px-4 sm:px-8 pt-16 sm:pt-24 max-sm:pt-12 scroll-mt-20">
+      <div className="max-w-7xl mx-auto rounded-[2rem] p-6 sm:p-10 lg:p-12 max-sm:px-0 max-sm:py-7 grid lg:grid-cols-[0.8fr_1.2fr] gap-10 max-sm:gap-6 max-sm:overflow-hidden"
         style={{ background: C.mint }}>
-        <motion.div {...fadeUp} className="lg:pt-4">
+        <motion.div {...fadeUp} className="lg:pt-4 max-sm:px-5">
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: C.sage }}>Six dimensions</span>
           <h2 className="font-serif font-normal leading-[1.08] mt-3 mb-5" style={{ color: C.ink, fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
             Care for every <Accent>part</Accent> of your day
           </h2>
-          <p className="text-base leading-relaxed mb-8 max-w-sm" style={{ color: C.muted }}>
+          <p className="text-base leading-relaxed mb-8 max-w-sm max-sm:text-[15px] max-sm:mb-5" style={{ color: C.muted }}>
             Each dimension has its own targets. Together they make up your LifePulse Score — so you can see what's working and what needs a little attention.
           </p>
-          <Link to="/login" className="inline-flex items-center gap-2 pl-5 pr-2 py-2 rounded-full text-sm font-medium" style={btn}>
+          <Link to="/login" className="max-sm:hidden inline-flex items-center gap-2 pl-5 pr-2 py-2 rounded-full text-sm font-medium" style={btn}>
             Start tracking
             <span className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.14)' }}><ArrowRight size={14} /></span>
           </Link>
         </motion.div>
 
-        <div id="dimensions" className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 scroll-mt-24">
+        <div className="sm:hidden -mb-2 px-5 flex items-center justify-between text-xs" style={{ color: C.muted }}>
+          <span>Swipe to see all six</span>
+          <ArrowRight size={14} aria-hidden="true" />
+        </div>
+        <div id="dimensions" className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 scroll-mt-24 max-sm:flex max-sm:gap-3 max-sm:overflow-x-auto max-sm:snap-x max-sm:snap-mandatory max-sm:px-5 max-sm:scroll-px-5 max-sm:pb-1 no-scrollbar">
           {dimensions.map(({ Icon, title, desc, stat, color, preview }, i) => (
             <motion.div key={title} {...fadeUp} transition={{ ...fadeUp.transition, delay: (i % 3) * 0.06 }}
-              className="rounded-3xl p-5 flex flex-col" style={{ background: C.paper }}>
+              className="rounded-3xl p-5 flex flex-col max-sm:w-[76%] max-sm:flex-shrink-0 max-sm:snap-start" style={{ background: C.paper }}>
               <div className="rounded-2xl p-3 mb-4" style={{ background: C.cream }}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${color}1F`, color }}>
@@ -725,6 +742,12 @@ function Dimensions() {
               <p className="text-sm leading-relaxed" style={{ color: C.muted }}>{desc}</p>
             </motion.div>
           ))}
+        </div>
+        <div className="sm:hidden px-5">
+          <Link to="/login" className="inline-flex items-center gap-2 pl-5 pr-2 py-2 rounded-full text-sm font-medium" style={btn}>
+            Start tracking
+            <span className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.14)' }}><ArrowRight size={14} /></span>
+          </Link>
         </div>
       </div>
     </section>
@@ -740,23 +763,27 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <section id="how-it-works" className="px-4 sm:px-8 pt-16 sm:pt-24 scroll-mt-20">
-      <div className="max-w-7xl mx-auto grid lg:grid-cols-[1.25fr_0.75fr] gap-12 items-center">
+    <section id="how-it-works" className="px-4 sm:px-8 pt-16 sm:pt-24 max-sm:pt-12 scroll-mt-20">
+      <div className="max-w-7xl mx-auto grid lg:grid-cols-[1.25fr_0.75fr] gap-12 max-sm:gap-8 items-center">
         <motion.div {...fadeUp}>
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: C.sage }}>How it works</span>
-          <h2 className="font-serif font-normal leading-[1.08] mt-3 mb-12" style={{ color: C.ink, fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
+          <h2 className="font-serif font-normal leading-[1.08] mt-3 mb-12 max-sm:mb-7" style={{ color: C.ink, fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
             Better habits in three <Accent>simple</Accent> steps
           </h2>
-          <ol className="grid sm:grid-cols-3 gap-8 sm:gap-6 relative">
+          <ol className="grid sm:grid-cols-3 gap-8 sm:gap-6 max-sm:gap-5 relative">
             <span className="hidden sm:block absolute top-5 left-5 right-[16%] h-px" style={{ background: C.line }} aria-hidden="true" />
+            {/* Phones: vertical line joining the step numbers */}
+            <span className="sm:hidden absolute left-5 top-6 bottom-6 w-px" style={{ background: C.line }} aria-hidden="true" />
             {steps.map((s, i) => (
-              <li key={s.title} className="relative">
-                <span className="relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold mb-5"
+              <li key={s.title} className="relative max-sm:flex max-sm:gap-4 max-sm:items-start">
+                <span className="relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold mb-5 max-sm:mb-0 max-sm:flex-shrink-0"
                   style={{ background: i === 0 ? C.btn : C.paper, color: i === 0 ? C.btnText : C.ink, border: `1px solid ${i === 0 ? C.btn : C.line}` }}>
                   {i + 1}
                 </span>
-                <h3 className="font-semibold text-[15px] mb-1.5" style={{ color: C.ink }}>{s.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: C.muted }}>{s.desc}</p>
+                <div className="max-sm:pt-2">
+                  <h3 className="font-semibold text-[15px] mb-1.5" style={{ color: C.ink }}>{s.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: C.muted }}>{s.desc}</p>
+                </div>
               </li>
             ))}
           </ol>
@@ -765,7 +792,7 @@ function HowItWorks() {
         <motion.div {...fadeUp} className="flex justify-center lg:justify-end">
           <div className="relative">
             <div className="absolute -inset-8 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, var(--lp-glow), transparent 70%)' }} />
-            <Phone className="relative w-[240px] sm:w-[260px]"><OnboardingScreen /></Phone>
+            <Phone className="relative w-[240px] sm:w-[260px] max-sm:w-[200px]"><OnboardingScreen /></Phone>
           </div>
         </motion.div>
       </div>
@@ -792,10 +819,10 @@ const FOOD_TABLE = [
 
 function BuiltForAfrica() {
   return (
-    <section id="built-for-africa" className="px-4 sm:px-8 pt-16 sm:pt-24 scroll-mt-20">
+    <section id="built-for-africa" className="px-4 sm:px-8 pt-16 sm:pt-24 max-sm:pt-12 scroll-mt-20">
       <div className="max-w-7xl mx-auto rounded-[2rem] overflow-hidden grid lg:grid-cols-2" style={{ background: C.block }}>
-        <motion.div {...fadeUp} className="p-6 sm:p-10 lg:p-12 flex items-center">
-          <div className="w-full rounded-3xl p-5 sm:p-6" style={{ background: C.cream }}>
+        <motion.div {...fadeUp} className="p-6 sm:p-10 lg:p-12 max-sm:order-2 max-sm:p-4 max-sm:pt-0 flex items-center">
+          <div className="w-full rounded-3xl p-5 sm:p-6 max-sm:p-4" style={{ background: C.cream }}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-[11px]" style={{ color: C.faint }}>From the LivoraPulse food database</div>
@@ -805,8 +832,8 @@ function BuiltForAfrica() {
             </div>
             <ul className="divide-y" style={{ borderColor: C.line }}>
               {FOOD_TABLE.map(f => (
-                <li key={f.name} className="flex items-center gap-3 py-3" style={{ borderColor: C.line }}>
-                  <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: C.paper, color: C.green }}>
+                <li key={f.name} className="flex items-center gap-3 py-3 max-sm:py-2.5" style={{ borderColor: C.line }}>
+                  <span className="w-9 h-9 max-sm:w-8 max-sm:h-8 rounded-xl flex items-center justify-center max-sm:flex-shrink-0" style={{ background: C.paper, color: C.green }}>
                     <UtensilsCrossed size={14} />
                   </span>
                   <span className="flex-1 min-w-0">
@@ -820,18 +847,18 @@ function BuiltForAfrica() {
           </div>
         </motion.div>
 
-        <motion.div {...fadeUp} className="p-6 sm:p-10 lg:p-12 lg:pl-4 flex flex-col justify-center">
+        <motion.div {...fadeUp} className="p-6 sm:p-10 lg:p-12 lg:pl-4 max-sm:order-1 max-sm:p-5 max-sm:pt-7 flex flex-col justify-center">
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'rgba(255,255,255,0.55)' }}>Built for Africa</span>
           <h2 className="font-serif font-normal leading-[1.08] mt-3 mb-5 text-white" style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
             More than a calorie counter. <em className="font-serif italic" style={{ color: C.blockAccent }}>Made for Kenya.</em>
           </h2>
-          <p className="text-base leading-relaxed mb-8 max-w-md" style={{ color: 'rgba(255,255,255,0.68)' }}>
+          <p className="text-base leading-relaxed mb-8 max-w-md max-sm:text-[15px] max-sm:mb-5" style={{ color: 'rgba(255,255,255,0.68)' }}>
             Most wellness apps don't know what ugali is. LivoraPulse was built around the food, routines and realities of life in Kenya and East Africa.
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 max-sm:gap-2.5">
             {africaTiles.map(({ Icon, title, desc }) => (
-              <div key={title} className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <Icon size={18} className="mb-3" style={{ color: C.blockAccent }} />
+              <div key={title} className="rounded-2xl p-4 max-sm:p-3.5" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <Icon size={18} className="mb-3 max-sm:mb-2" style={{ color: C.blockAccent }} />
                 <h3 className="text-sm font-semibold text-white mb-1">{title}</h3>
                 <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>{desc}</p>
               </div>
@@ -853,12 +880,12 @@ const streakTiers = [
 
 function Score() {
   return (
-    <section id="score" className="px-4 sm:px-8 pt-16 sm:pt-24 scroll-mt-20">
-      <div className="max-w-7xl mx-auto grid lg:grid-cols-[0.8fr_1.2fr] gap-12 items-center">
+    <section id="score" className="px-4 sm:px-8 pt-16 sm:pt-24 max-sm:pt-12 scroll-mt-20">
+      <div className="max-w-7xl mx-auto grid lg:grid-cols-[0.8fr_1.2fr] gap-12 max-sm:gap-8 items-center">
         <motion.div {...fadeUp} className="flex justify-center order-2 lg:order-1">
           <div className="relative">
             <div className="absolute -inset-8 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, var(--lp-glow), transparent 70%)' }} />
-            <Phone className="relative w-[240px] sm:w-[260px]"><DashboardScreen /></Phone>
+            <Phone className="relative w-[240px] sm:w-[260px] max-sm:w-[200px]"><DashboardScreen /></Phone>
           </div>
         </motion.div>
 
@@ -867,12 +894,12 @@ function Score() {
           <h2 className="font-serif font-normal leading-[1.08] mt-3 mb-5" style={{ color: C.ink, fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
             One score that <Accent>grows with you</Accent>
           </h2>
-          <p className="text-base leading-relaxed mb-8 max-w-lg" style={{ color: C.muted }}>
+          <p className="text-base leading-relaxed mb-8 max-w-lg max-sm:text-[15px] max-sm:mb-5" style={{ color: C.muted }}>
             Every day your six dimensions roll up into one score out of 100. Keep a streak going and your targets rise gradually — so you're always moving forward, never starting over.
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-sm:gap-2.5 max-w-xl">
             {streakTiers.map((t, i) => (
-              <div key={t.days} className="rounded-2xl p-4" style={{ background: i === 1 ? C.block : C.paper, border: `1px solid ${i === 1 ? C.block : C.line}` }}>
+              <div key={t.days} className="rounded-2xl p-4 max-sm:p-3.5" style={{ background: i === 1 ? C.block : C.paper, border: `1px solid ${i === 1 ? C.block : C.line}` }}>
                 <div className="text-xs mb-1" style={{ color: i === 1 ? 'rgba(255,255,255,0.65)' : C.faint }}>{t.days} streak</div>
                 <div className="font-serif text-2xl" style={{ color: i === 1 ? '#fff' : C.ink }}>{t.mult}</div>
               </div>
@@ -888,11 +915,11 @@ function Score() {
 // ─── closing call to action ──────────────────────────────────────────────────
 function ClosingCta() {
   return (
-    <section className="px-4 sm:px-8 pt-16 sm:pt-24">
-      <motion.div {...fadeUp} className="relative max-w-7xl mx-auto rounded-[2rem] overflow-hidden px-6 sm:px-12 py-14 sm:py-16"
+    <section className="px-4 sm:px-8 pt-16 sm:pt-24 max-sm:pt-12">
+      <motion.div {...fadeUp} className="relative max-w-7xl mx-auto rounded-[2rem] overflow-hidden px-6 sm:px-12 py-14 sm:py-16 max-sm:py-10"
         style={{ background: `linear-gradient(120deg, ${C.mint} 0%, ${C.mint2} 100%)` }}>
         <Leaf className="absolute -right-6 -bottom-8 w-56 h-56 opacity-[0.1]" style={{ color: C.btn }} aria-hidden="true" />
-        <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8">
+        <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8 max-sm:gap-6">
           <div>
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: C.sage }}>Your health, your way</span>
             <h2 className="font-serif font-normal leading-[1.08] mt-3" style={{ color: C.ink, fontSize: 'clamp(2rem, 4.4vw, 3.6rem)' }}>
@@ -916,10 +943,10 @@ function ClosingCta() {
 // ─── footer ──────────────────────────────────────────────────────────────────
 function Footer() {
   return (
-    <footer className="px-4 sm:px-8 pt-16 pb-8">
+    <footer className="px-4 sm:px-8 pt-16 max-sm:pt-12 pb-8">
       <div className="max-w-7xl mx-auto">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] gap-10 pb-10" style={{ borderBottom: `1px solid ${C.line}` }}>
-          <div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] gap-10 max-sm:grid-cols-2 max-sm:gap-x-4 max-sm:gap-y-8 pb-10" style={{ borderBottom: `1px solid ${C.line}` }}>
+          <div className="max-sm:col-span-2">
             <Logo />
             <p className="text-sm leading-relaxed mt-4 max-w-xs" style={{ color: C.muted }}>
               Tracking every dimension of your wellness — built for Kenya and East Africa.
@@ -927,17 +954,17 @@ function Footer() {
           </div>
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-[0.12em] mb-4" style={{ color: C.ink }}>Product</h3>
-            <ul className="space-y-2.5 text-sm">
+            <ul className="space-y-2.5 max-sm:space-y-0 text-sm">
               {navLinks.map(l => (
-                <li key={l.href}><a href={l.href} className="hover:underline" style={{ color: C.muted }}>{l.label}</a></li>
+                <li key={l.href}><a href={l.href} className="hover:underline max-sm:inline-block max-sm:py-2" style={{ color: C.muted }}>{l.label}</a></li>
               ))}
             </ul>
           </div>
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-[0.12em] mb-4" style={{ color: C.ink }}>Account</h3>
-            <ul className="space-y-2.5 text-sm">
-              <li><Link to="/login" className="hover:underline" style={{ color: C.muted }}>Log in</Link></li>
-              <li><Link to="/login" className="hover:underline" style={{ color: C.muted }}>Create a free account</Link></li>
+            <ul className="space-y-2.5 max-sm:space-y-0 text-sm">
+              <li><Link to="/login" className="hover:underline max-sm:inline-block max-sm:py-2" style={{ color: C.muted }}>Log in</Link></li>
+              <li><Link to="/login" className="hover:underline max-sm:inline-block max-sm:py-2" style={{ color: C.muted }}>Create a free account</Link></li>
             </ul>
           </div>
         </div>

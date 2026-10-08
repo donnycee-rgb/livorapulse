@@ -52,17 +52,19 @@ const TRANSPORT_OPTIONS: Array<{
 // ---------------------------------------------------------------------------
 // Stat card
 // ---------------------------------------------------------------------------
-function StatCard({ label, value, context, icon, color }: {
+function StatCard({ label, value, context, icon, color, wide = false }: {
   label: string; value: string; context: string
   icon: React.ReactNode; color: string
+  /** Spans both columns in the 2-column phone layout */
+  wide?: boolean
 }) {
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #34A8530A 0%, #34A85305 100%)`, border: `1px solid #34A85320` }}>
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
+    <div className={`rounded-3xl p-4 max-sm:p-3.5 ${wide ? 'max-sm:col-span-2' : ''}`} style={{ background: `linear-gradient(135deg, #34A8530A 0%, #34A85305 100%)`, border: `1px solid #34A85320` }}>
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 max-sm:mb-2"
         style={{ backgroundColor: color + '18' }}>
         <div style={{ color }}>{icon}</div>
       </div>
-      <div className="text-[10px] font-bold text-black/35 dark:text-white/30 uppercase tracking-wider">{label}</div>
+      <div className="text-[10px] max-sm:text-[10.5px] font-bold text-black/35 dark:text-white/30 uppercase tracking-wider">{label}</div>
       <div className="mt-1 text-xl font-black text-black/85 dark:text-white/90 leading-none">{value}</div>
       <div className="mt-1 text-xs text-black/45 dark:text-white/40 leading-relaxed">{context}</div>
     </div>
@@ -247,6 +249,9 @@ export default function Environment() {
     [env.ecoActions]
   )
   const todayCarbonSaved = todayActions.reduce((s, a) => s + a.impactKgCO2, 0)
+  // Same rule as the score: only actions that save CO₂ count toward the goal
+  const todaySavingActions = todayActions.filter((a) => a.impactKgCO2 > 0).length
+  const ecoGoal = useAppStore((s) => selectProgressiveGoals(s).goalEcoActionsPerDay)
   const todayRecycled = env.recycledItemsByDay.find(x => x.day === day)?.items ?? 0
   const recent = useMemo(() => env.ecoActions.slice(0, 6), [env.ecoActions])
 
@@ -275,7 +280,7 @@ export default function Environment() {
     <div className="space-y-5">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
           <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Environment</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
@@ -283,7 +288,7 @@ export default function Environment() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex-shrink-0" style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}
+          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3" style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}
         >
           <Plus size={15} />
           Log eco action
@@ -291,13 +296,13 @@ export default function Environment() {
       </div>
 
       {/* Two-column layout */}
-      <div className="grid lg:grid-cols-[1fr_280px] gap-5">
+      <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
 
         {/* Left — main content */}
         <div className="space-y-5 min-w-0">
 
-          {/* Today's stats */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* Today's stats — 2 + 1 on phones */}
+          <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-2 max-sm:gap-2.5">
             <StatCard
               label="Carbon saved"
               value={`${todayCarbonSaved.toFixed(1)} kg`}
@@ -307,12 +312,13 @@ export default function Environment() {
             />
             <StatCard
               label="Eco actions"
-              value={`${todayActions.length} / 4`}
-              context={todayActions.length >= 4 ? 'Daily goal reached' : `${4 - todayActions.length} more to reach daily goal`}
+              value={`${todaySavingActions} / ${ecoGoal}`}
+              context={todaySavingActions >= ecoGoal ? 'Daily goal reached' : `${ecoGoal - todaySavingActions} more to reach daily goal`}
               icon={<Leaf size={17} />}
               color="#34A853"
             />
             <StatCard
+              wide
               label="Transport"
               value={env.transportMode}
               context={
@@ -329,7 +335,7 @@ export default function Environment() {
           <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #34A8530A 0%, #34A85305 100%)`, border: `1px solid #34A85320` }}>
             <div className="text-sm font-semibold text-black/80 dark:text-white/85 mb-1">Today's transport mode</div>
             <div className="text-xs text-black/40 dark:text-white/35 mb-4">How did you get around today?</div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3 max-sm:gap-2">
               {TRANSPORT_OPTIONS.map(({ mode, Icon, color, co2Label, context }) => {
                 const active = env.transportMode === mode
                 return (
@@ -338,7 +344,7 @@ export default function Environment() {
                     type="button"
                     onClick={() => { setTransportMode(mode); toast.success(`Transport set to ${mode}`) }}
                     className={clsx(
-                      'flex flex-col items-start gap-2 p-4 rounded-xl border transition-all duration-200 text-left',
+                      'flex flex-col items-start gap-2 p-4 max-sm:p-3 max-sm:gap-1.5 rounded-xl border transition-all duration-200 text-left',
                       active
                         ? 'border-transparent'
                         : 'border-black/[0.06] dark:border-white/[0.06] hover:border-black/[0.12] dark:hover:border-white/[0.12]',
@@ -352,7 +358,7 @@ export default function Environment() {
                     <div>
                       <div className="text-sm font-bold text-black/80 dark:text-white/80">{mode}</div>
                       <div className="text-[10px] font-semibold mt-0.5" style={{ color }}>{co2Label}</div>
-                      <div className="text-[10px] text-black/35 dark:text-white/30 mt-0.5 leading-relaxed">{context}</div>
+                      <div className="max-sm:hidden text-[10px] text-black/35 dark:text-white/30 mt-0.5 leading-relaxed">{context}</div>
                     </div>
                   </button>
                 )
@@ -379,7 +385,7 @@ export default function Environment() {
                     <Leaf size={12} className="text-lp-primary" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold text-black/65 dark:text-white/60 group-hover:text-black/80 dark:group-hover:text-white/80 truncate">{a.label}</div>
+                    <div className="text-xs font-semibold text-black/65 dark:text-white/60 group-hover:text-black/80 dark:group-hover:text-white/80 truncate max-sm:whitespace-normal max-sm:leading-snug">{a.label}</div>
                     <div className="text-[10px] text-lp-primary/70">-{a.impactKgCO2} kg CO₂</div>
                   </div>
                 </button>
@@ -413,7 +419,7 @@ export default function Environment() {
                       <Leaf size={14} className="text-lp-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-black/75 dark:text-white/75 truncate">{a.type}</div>
+                      <div className="text-sm font-medium text-black/75 dark:text-white/75 truncate max-sm:whitespace-normal max-sm:leading-snug">{a.type}</div>
                       <div className="text-xs text-black/35 dark:text-white/30 mt-0.5">
                         {new Date(a.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                       </div>

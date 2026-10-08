@@ -206,7 +206,7 @@ export default function CycleTracker() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_280px] gap-5">
+      <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
         <div className="space-y-4 min-w-0">
           {/* Current phase */}
           {cycleData && phase ? (

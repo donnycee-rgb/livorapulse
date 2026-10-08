@@ -94,17 +94,17 @@ function StatCard({ label, value, context, icon, color, goalValue, goalMax, inve
 // ---------------------------------------------------------------------------
 function AppOnlyCard() {
   return (
-    <div className="bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] border-dashed rounded-2xl p-5 flex items-center gap-4">
+    <div className="bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] border-dashed rounded-2xl p-5 max-sm:p-4 flex items-center gap-4 max-sm:flex-wrap max-sm:items-start max-sm:gap-x-3 max-sm:gap-y-2">
       <div className="w-10 h-10 rounded-xl bg-black/[0.06] dark:bg-white/[0.06] flex items-center justify-center flex-shrink-0">
         <Lock size={18} className="text-black/30 dark:text-white/30" />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 max-sm:basis-[calc(100%-3.25rem)]">
         <div className="text-sm font-semibold text-black/55 dark:text-white/50">Auto screen time tracking</div>
         <div className="text-xs text-black/35 dark:text-white/30 mt-0.5 leading-relaxed">
           Automatic per-app tracking is available on the LivoraPulse Android app — it reads screen time directly from your device.
         </div>
       </div>
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 max-sm:ml-[3.25rem]">
         <div className="px-3 py-1.5 rounded-lg bg-black/[0.06] dark:bg-white/[0.06] text-xs font-semibold text-black/40 dark:text-white/35">
           Android app
         </div>
@@ -382,7 +382,7 @@ export default function Digital() {
     <div className="space-y-5">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
           <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Digital Usage</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
@@ -390,7 +390,7 @@ export default function Digital() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-lp-accent text-white text-sm font-semibold rounded-xl hover:bg-cyan-500 hover:shadow-lg hover:shadow-lp-accent/25 transition-all duration-200 flex-shrink-0"
+          className="flex items-center gap-2 px-4 py-2.5 bg-lp-accent text-white text-sm font-semibold rounded-xl hover:bg-cyan-500 hover:shadow-lg hover:shadow-lp-accent/25 transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
         >
           <Plus size={15} />
           Log session
@@ -401,7 +401,7 @@ export default function Digital() {
       <AppOnlyCard />
 
       {/* Two-column layout */}
-      <div className="grid lg:grid-cols-[1fr_280px] gap-5">
+      <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
 
         {/* Left — main content */}
         <div className="space-y-5 min-w-0">

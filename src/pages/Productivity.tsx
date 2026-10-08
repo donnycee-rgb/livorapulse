@@ -244,9 +244,9 @@ export default function Productivity() {
   const headline = useMemo(() => {
     if (todayFocus === 0) return 'No focus sessions logged yet — start a session to build your productivity score.'
     if (todayFocus >= focusGoal) return `${todayFocus} minutes of focused work today — excellent productivity.`
-    if (todayFocus >= 60) return `${todayFocus} minutes of focus today. One more session would push you above the daily goal.`
-    return `${todayFocus} minutes logged. ${120 - todayFocus} more minutes to hit your 2-hour daily goal.`
-  }, [todayFocus])
+    if (todayFocus >= focusGoal * 0.5) return `${todayFocus} minutes of focus today. One more session would push you above your ${focusGoal}-minute goal.`
+    return `${todayFocus} minutes logged. ${focusGoal - todayFocus} more minutes to hit your ${focusGoal}-minute daily goal.`
+  }, [todayFocus, focusGoal])
 
   const { status } = productivity.focusTimer
 
@@ -254,7 +254,7 @@ export default function Productivity() {
     <div className="space-y-5">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
           <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Productivity</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
@@ -262,7 +262,7 @@ export default function Productivity() {
         <button
           type="button"
           onClick={() => { addStudySession(); toast.success('Study session added') }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 text-sm font-semibold rounded-xl hover:bg-black/[0.09] dark:hover:bg-white/[0.10] transition-all duration-200 flex-shrink-0"
+          className="flex items-center gap-2 px-4 py-2.5 bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 text-sm font-semibold rounded-xl hover:bg-black/[0.09] dark:hover:bg-white/[0.10] transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
         >
           <Plus size={15} />
           Add study session
@@ -270,7 +270,7 @@ export default function Productivity() {
       </div>
 
       {/* Two-column layout */}
-      <div className="grid lg:grid-cols-[1fr_280px] gap-5">
+      <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
 
         {/* Left — main content */}
         <div className="space-y-5 min-w-0">

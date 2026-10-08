@@ -87,7 +87,7 @@ function ScoreRing({ score }: { score: number }) {
   const gradId = `scoreGrad-${score}`
 
   return (
-    <div className="relative w-36 h-36 flex-shrink-0">
+    <div className="relative w-36 h-36 max-sm:w-[104px] max-sm:h-[104px] flex-shrink-0">
       {/* Outer glow */}
       <div className="absolute inset-2 rounded-full blur-xl opacity-30"
         style={{ background: color }} />
@@ -110,7 +110,7 @@ function ScoreRing({ score }: { score: number }) {
           style={{ transition: 'stroke-dashoffset 0.03s linear' }} />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-        <span className="text-3xl font-black leading-none" style={{ color }}>{displayed}</span>
+        <span className="text-3xl max-sm:text-[26px] font-black leading-none" style={{ color }}>{displayed}</span>
         <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5"
           style={{ color, opacity: 0.6 }}>score</span>
       </div>
@@ -229,7 +229,7 @@ function DimensionCard({ label, value, sub, icon, color, trend, to, sparkValues 
           <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full"
             style={{ background: `${trendColor}15` }}>
             <TrendIcon size={9} style={{ color: trendColor }} />
-            <span className="text-[9px] font-bold" style={{ color: trendColor }}>{trendLabel}</span>
+            <span className="text-[9px] max-sm:text-[10px] font-bold" style={{ color: trendColor }}>{trendLabel}</span>
           </div>
         </div>
 
@@ -237,7 +237,7 @@ function DimensionCard({ label, value, sub, icon, color, trend, to, sparkValues 
         <div className="text-[10px] font-semibold uppercase tracking-widest mb-0.5"
           style={{ color: `${color}99` }}>{label}</div>
         <div className="text-xl font-black text-black/85 dark:text-white/90 leading-none">{value}</div>
-        {sub && <div className="text-[10px] text-black/35 dark:text-white/30 mt-0.5">{sub}</div>}
+        {sub && <div className="text-[10px] max-sm:text-[11px] text-black/35 dark:text-white/30 mt-0.5">{sub}</div>}
 
         {/* Sparkline */}
         {sparkValues && sparkValues.some(v => v > 0) && (
@@ -419,10 +419,10 @@ export default function Dashboard() {
       {/* ══ ROW 1 — Greeting hero + streak ══ */}
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45 }}
-        className="grid lg:grid-cols-[1fr_300px] gap-4">
+        className="grid lg:grid-cols-[1fr_300px] gap-4 max-sm:grid-cols-1">
 
         {/* ── Greeting + score ── */}
-        <div className="relative rounded-3xl overflow-hidden p-6"
+        <div className="relative rounded-3xl overflow-hidden p-6 max-sm:p-4"
           style={{
             background: 'linear-gradient(135deg, rgba(76,175,80,0.12) 0%, rgba(0,188,212,0.06) 60%, transparent 100%)',
             border: '1px solid rgba(76,175,80,0.18)',
@@ -434,7 +434,7 @@ export default function Dashboard() {
             <WellnessSVG />
           </div>
 
-          <div className="relative z-10 flex items-start gap-6">
+          <div className="relative z-10 flex items-start gap-6 max-sm:gap-3.5 max-sm:items-center">
             <ScoreRing score={score} />
             <div className="flex-1 min-w-0">
               {/* Greeting */}
@@ -454,31 +454,36 @@ export default function Dashboard() {
               </div>
 
               {/* Score label */}
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-3xl font-black leading-none" style={{ color: scoreColor }}>{scoreLabel}</span>
-                <span className="text-xs font-semibold text-black/35 dark:text-white/30 uppercase tracking-wider">LifePulse Score</span>
+              <div className="flex items-baseline gap-2 mb-2 max-sm:flex-col max-sm:gap-0.5 max-sm:mb-1">
+                <span className="text-3xl max-sm:text-2xl font-black leading-none" style={{ color: scoreColor }}>{scoreLabel}</span>
+                <span className="text-xs max-sm:text-[10px] font-semibold text-black/35 dark:text-white/30 uppercase tracking-wider">LifePulse Score</span>
               </div>
 
               {/* Insight */}
-              <p className="text-sm text-black/60 dark:text-white/55 leading-relaxed max-w-sm mb-3">
+              {/* Phones: the tip goes full-width below the ring instead */}
+              <p className="max-sm:hidden text-sm text-black/60 dark:text-white/55 leading-relaxed max-w-sm mb-3">
                 {insight}
               </p>
 
-              <div className="text-[10px] text-black/25 dark:text-white/20">
+              <div className="text-[10px] max-sm:text-[11px] text-black/25 dark:text-white/20">
                 Updated {new Date(lastUpdatedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
               </div>
             </div>
           </div>
 
-          {/* Dimension bars */}
-          <div className="relative z-10 mt-5 pt-4 border-t border-black/[0.06] dark:border-white/[0.06]">
-            <div className="grid grid-cols-6 gap-3">
+          <p className="sm:hidden relative z-10 mt-3 text-[13.5px] text-black/60 dark:text-white/60 leading-relaxed">
+            {insight}
+          </p>
+
+          {/* Dimension bars — 3×2 on phones so the labels have room */}
+          <div className="relative z-10 mt-5 pt-4 max-sm:mt-4 border-t border-black/[0.06] dark:border-white/[0.06]">
+            <div className="grid grid-cols-6 gap-3 max-sm:grid-cols-3 max-sm:gap-x-4 max-sm:gap-y-3.5">
               {dimensions.map((d) => (
                 <div key={d.label} className="space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-[9px] font-bold uppercase tracking-wider"
+                    <span className="text-[9px] max-sm:text-[10.5px] font-bold uppercase tracking-wider max-sm:tracking-wide"
                       style={{ color: `${d.color}99` }}>{d.label}</span>
-                    <span className="text-[9px] font-black" style={{ color: d.color }}>{d.value}</span>
+                    <span className="text-[9px] max-sm:text-[11px] font-black" style={{ color: d.color }}>{d.value}</span>
                   </div>
                   <div className="h-1.5 rounded-full overflow-hidden"
                     style={{ background: `${d.color}18` }}>
@@ -495,7 +500,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Streak card ── */}
-        <div className="relative rounded-3xl overflow-hidden p-6 flex flex-col justify-between"
+        <div className="relative rounded-3xl overflow-hidden p-6 max-sm:p-5 flex flex-col justify-between"
           style={{
             background: 'linear-gradient(145deg, rgba(255,165,0,0.1) 0%, rgba(255,107,107,0.06) 100%)',
             border: '1px solid rgba(255,165,0,0.2)',
@@ -518,8 +523,8 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="flex items-baseline gap-2 mb-5">
-              <span className="text-6xl font-black leading-none text-black/85 dark:text-white/90">{streak}</span>
+            <div className="flex items-baseline gap-2 mb-5 max-sm:mb-4">
+              <span className="text-6xl max-sm:text-5xl font-black leading-none text-black/85 dark:text-white/90">{streak}</span>
               <span className="text-base font-bold text-black/35 dark:text-white/30">days</span>
             </div>
 
@@ -567,7 +572,7 @@ export default function Dashboard() {
       {/* ══ ROW 3 — Chart + quick actions ══ */}
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.2 }}
-        className="grid lg:grid-cols-[1fr_280px] gap-4">
+        className="grid lg:grid-cols-[1fr_280px] gap-4 max-sm:grid-cols-1">
 
         {/* Activity chart */}
         <div className="rounded-3xl p-5"
@@ -627,7 +632,7 @@ export default function Dashboard() {
                 { label: 'Log a meal', done: todayCalories > 0, to: '/nutrition' },
               ].map((item) => (
                 <button key={item.label} type="button" onClick={() => navigate(item.to)}
-                  className="w-full flex items-center gap-2.5 group py-0.5">
+                  className="w-full flex items-center gap-2.5 group py-0.5 max-sm:py-2 max-sm:gap-3">
                   <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200
                     ${item.done ? 'border-lp-primary bg-lp-primary' : 'border-black/20 dark:border-white/20 group-hover:border-lp-primary/60'}`}>
                     {item.done && (

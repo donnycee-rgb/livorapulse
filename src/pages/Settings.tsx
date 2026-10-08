@@ -44,10 +44,10 @@ function SettingsRow({ icon, label, description, right, danger = false }: {
 }) {
   return (
     <div className={clsx(
-      'flex items-start sm:items-center justify-between gap-3 py-3 sm:py-4',
+      'flex items-start sm:items-center justify-between gap-3 py-3 sm:py-4 max-sm:flex-wrap max-sm:gap-y-2.5',
       'border-b border-black/[0.05] dark:border-white/[0.05] last:border-0',
     )}>
-      <div className="flex items-start gap-3 min-w-0 flex-1">
+      <div className="flex items-start gap-3 min-w-0 flex-1 max-sm:min-w-[60%]">
         <div className={clsx(
           'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0',
           danger ? 'bg-lp-alert/15' : 'bg-black/[0.05] dark:bg-white/[0.06]',
@@ -67,7 +67,7 @@ function SettingsRow({ icon, label, description, right, danger = false }: {
         </div>
       </div>
       {/* Right content — wraps below on very small screens if needed */}
-      <div className="flex-shrink-0 mt-0.5 sm:mt-0">{right}</div>
+      <div className="flex-shrink-0 mt-0.5 sm:mt-0 max-sm:ml-auto">{right}</div>
     </div>
   )
 }
@@ -187,7 +187,7 @@ export default function Settings() {
                   type="button"
                   onClick={() => { setTheme(t); toast.success(`Theme: ${t}`) }}
                   className={clsx(
-                    'px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-150 capitalize',
+                    'px-3 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs sm:text-xs font-semibold transition-all duration-150 capitalize',
                     theme === t
                       ? 'bg-white dark:bg-slate-700 text-black/80 dark:text-white/80 shadow-sm'
                       : 'text-black/45 dark:text-white/40 hover:text-black/65 dark:hover:text-white/60',
@@ -215,7 +215,7 @@ export default function Settings() {
                   type="button"
                   onClick={() => { setUnits(u); toast.success(`Units: ${u}`) }}
                   className={clsx(
-                    'px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-150',
+                    'px-3 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs sm:text-xs font-semibold transition-all duration-150',
                     units === u
                       ? 'bg-white dark:bg-slate-700 text-black/80 dark:text-white/80 shadow-sm'
                       : 'text-black/45 dark:text-white/40 hover:text-black/65 dark:hover:text-white/60',

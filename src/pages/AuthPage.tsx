@@ -108,7 +108,7 @@ function FormInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
-          className="flex-1 px-3 py-2.5 bg-transparent text-white text-sm focus:outline-none placeholder:text-white/20"
+          className="flex-1 max-sm:min-w-0 px-3 py-2.5 max-sm:py-3 bg-transparent text-white text-sm max-sm:text-base focus:outline-none placeholder:text-white/20"
         />
         {rightElement && <span className="pr-4 flex-shrink-0">{rightElement}</span>}
       </div>
@@ -870,8 +870,20 @@ function FormPanel({
   onForgotPassword, onBackFromForgot, entryDelay, onRegisterStepChange,
 }: FormPanelProps) {
   return (
-    <div className="w-full md:w-1/2 h-full flex items-center justify-center px-6 py-8 relative z-10 overflow-y-auto">
-      <div className="w-full max-w-sm bg-[#0d1e3d] border border-white/[0.07] rounded-2xl shadow-2xl px-8 py-8">
+    <div className="w-full md:w-1/2 h-full flex items-center justify-center px-6 py-8 max-sm:px-4 max-sm:py-6 max-sm:flex-col max-sm:justify-start max-sm:pt-[max(2rem,env(safe-area-inset-top))] relative z-10 overflow-y-auto">
+      {/* Phones: the brand panel is hidden, so show the logo above the card */}
+      <div className="sm:hidden w-full max-w-sm flex items-center gap-2.5 mb-5 mt-2">
+        <span className="w-9 h-9 rounded-xl flex items-center justify-center bg-lp-primary/15 border border-lp-primary/25">
+          <svg width="18" height="18" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+            <polyline points="3,18 8,18 11,11 14,25 17,8 20,22 23,15 27,18 33,18" stroke="#4CAF50" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <div className="leading-tight">
+          <div className="text-white font-bold text-[15px]">LivoraPulse</div>
+          <div className="text-white/40 text-[11px]">Wellness tracking built for Kenya</div>
+        </div>
+      </div>
+      <div className="w-full max-w-sm bg-[#0d1e3d] border border-white/[0.07] rounded-2xl shadow-2xl px-8 py-8 max-sm:px-5 max-sm:py-6">
         {mode !== 'register' && (
           <motion.h2
             key={mode + '-title'}

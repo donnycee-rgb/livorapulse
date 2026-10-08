@@ -306,7 +306,7 @@ function MoodTab() {
       </div>
 
       {/* Two-column layout */}
-      <div className="grid lg:grid-cols-[1fr_280px] gap-5">
+      <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
 
         {/* Left — main content */}
         <div className="space-y-5 min-w-0">
@@ -364,7 +364,7 @@ function MoodTab() {
                     style={active ? { backgroundColor: level.bg, borderColor: level.color + '30' } : undefined}
                   >
                     {/* Hover tooltip */}
-                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-2.5 py-1.5 rounded-xl text-[10px] font-semibold text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 -translate-y-1 group-hover:translate-y-0"
+                    <div className="max-sm:hidden absolute -top-12 left-1/2 -translate-x-1/2 px-2.5 py-1.5 rounded-xl text-[10px] font-semibold text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 -translate-y-1 group-hover:translate-y-0"
                       style={{ background: level.color, boxShadow: `0 4px 12px ${level.color}50` }}>
                       {level.description}
                       {/* Arrow */}
