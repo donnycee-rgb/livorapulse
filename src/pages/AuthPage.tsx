@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Eye, EyeOff, Lock, Mail, User, Activity, MonitorSmartphone, BarChart3, Smile, Leaf, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, User, Activity, MonitorSmartphone, BarChart3, Smile, Leaf } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 import { useAuthStore } from '../store/useAuthStore'
-import { useAppStore } from '../store/useAppStore'
-import { apiPost } from '../api/client'
 import HealthIllustration from '../components/HealthIllustration'
 import LoginIllustration from '../components/FitnessIllustration'
 
@@ -16,22 +14,6 @@ import LoginIllustration from '../components/FitnessIllustration'
 // ---------------------------------------------------------------------------
 type Mode = 'login' | 'register' | 'forgot'
 type FormSide = 'right' | 'left'
-
-interface OnboardingData {
-  dateOfBirth: string
-  gender: string
-  heightCm: string
-  weightKg: string
-  hasDisability: boolean
-  disabilityNote: string
-  primaryGoal: string
-  currentSleepHours: number
-  currentActivityLevel: string
-  currentScreenHours: number
-  currentMood: string
-  currentStress: string
-  ecoConsciousness: string
-}
 
 // ---------------------------------------------------------------------------
 // Password strength
@@ -172,456 +154,79 @@ function OAuthDivider({ delay, onGoogle }: { delay: number; onGoogle: () => void
 }
 
 // ---------------------------------------------------------------------------
-// Onboarding option button
+// Sign up — just the account. Goals are set up on /welcome right after.
 // ---------------------------------------------------------------------------
-function OptionButton({
-  selected, onClick, children, description,
-}: {
-  selected: boolean
-  onClick: () => void
-  children: React.ReactNode
-  description?: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={clsx(
-        'w-full text-left px-3 py-2.5 rounded-xl border transition-all duration-150',
-        selected
-          ? 'bg-lp-primary/15 border-lp-primary/50 text-white'
-          : 'bg-white/[0.04] border-white/[0.08] text-white/60 hover:border-white/20 hover:text-white/80',
-      )}
-    >
-      <div className="flex items-center gap-2.5">
-        <div className={clsx(
-          'w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 transition-all',
-          selected ? 'border-lp-primary bg-lp-primary' : 'border-white/30',
-        )} />
-        <div>
-          <div className="text-sm font-semibold leading-tight">{children}</div>
-          {description && (
-            <div className={clsx('text-[11px] mt-0.5 leading-tight', selected ? 'text-white/55' : 'text-white/30')}>
-              {description}
-            </div>
-          )}
-        </div>
-      </div>
-    </button>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Progress bar
-// ---------------------------------------------------------------------------
-function ProgressBar({ current, total }: { current: number; total: number }) {
-  const pct = Math.round((current / total) * 100)
-  return (
-    <div className="space-y-1.5 mb-4">
-      <div className="flex justify-between text-[10px] text-white/30">
-        <span>Step {current} of {total}</span>
-        <span>{pct}%</span>
-      </div>
-      <div className="h-1 rounded-full bg-white/10 overflow-hidden">
-        <motion.div
-          className="h-full rounded-full bg-lp-primary"
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-        />
-      </div>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Weekly check-in questions
-// ---------------------------------------------------------------------------
-export const ASSESSMENT_QUESTIONS = [
-  { id: 'physical', dimension: 'Physical', color: '#4CAF50', question: 'Hours of exercise per week?', options: ['0–1 hrs', '2–3 hrs', '4–6 hrs', '7+ hrs'] },
-  { id: 'digital', dimension: 'Digital', color: '#00BCD4', question: 'Hours on screens per day?', options: ['0–2 hrs', '3–5 hrs', '6–8 hrs', '9+ hrs'] },
-  { id: 'productivity', dimension: 'Productivity', color: '#6366F1', question: 'How productive do you feel most days?', options: ['Low', 'Moderate', 'High', 'Very High'] },
-  { id: 'mood', dimension: 'Mood', color: '#FFA500', question: 'How has your mood been this week?', options: ['Stressed', 'Neutral', 'Good', 'Excellent'] },
-  { id: 'eco', dimension: 'Eco', color: '#34A853', question: 'How eco-conscious are your habits?', options: ['Rarely', 'Sometimes', 'Often', 'Always'] },
-]
-
-// ---------------------------------------------------------------------------
-// Onboarding step validation
-// ---------------------------------------------------------------------------
-function validateOnboardingStep(step: number, data: OnboardingData): string | null {
-  if (step === 0 && (!data.dateOfBirth || !data.gender)) return 'Please fill in your date of birth and gender.'
-  if (step === 2 && data.hasDisability === undefined) return 'Please select an option.'
-  if (step === 3 && !data.primaryGoal) return 'Please select your primary goal.'
-  if (step === 4 && !data.currentSleepHours) return 'Please select your sleep hours.'
-  if (step === 5 && !data.currentActivityLevel) return 'Please select your activity level.'
-  if (step === 6 && !data.currentScreenHours) return 'Please select your screen time.'
-  if (step === 7 && !data.currentMood) return 'Please select your current mood.'
-  if (step === 8 && !data.currentStress) return 'Please select your stress level.'
-  if (step === 9 && !data.ecoConsciousness) return 'Please select an option.'
-  return null
-}
-
-// ---------------------------------------------------------------------------
-// Onboarding steps content (questions)
-// ---------------------------------------------------------------------------
-const ONBOARDING_TITLES = [
-  "Let's get to know you",
-  "Your physical profile",
-  "Any limitations?",
-  "What's your main goal?",
-  "Your sleep habits",
-  "How active are you?",
-  "Screen time habits",
-  "How's your mood?",
-  "Your stress level",
-  "Eco consciousness",
-  "Create your account",
-]
-
-const ONBOARDING_TOTAL = 11
-
-function OnboardingStepContent({
-  step, data, setData,
-}: {
-  step: number
-  data: OnboardingData
-  setData: (p: Partial<OnboardingData>) => void
-}) {
-  if (step === 0) return (
-    <div className="space-y-4">
-      <FormInput label="Date of Birth" type="date" placeholder="" value={data.dateOfBirth} onChange={(v) => setData({ dateOfBirth: v })} />
-      <div>
-        <p className="text-white/50 text-[11px] font-semibold uppercase tracking-widest mb-2">Gender</p>
-        <div className="space-y-1.5">
-          {[
-            { value: 'male', label: 'Male' },
-            { value: 'female', label: 'Female' },
-            { value: 'non-binary', label: 'Non-binary' },
-            { value: 'prefer-not-to-say', label: 'Prefer not to say' },
-          ].map((o) => (
-            <OptionButton key={o.value} selected={data.gender === o.value} onClick={() => setData({ gender: o.value })}>{o.label}</OptionButton>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-
-  if (step === 1) return (
-    <div className="space-y-4">
-      <FormInput label="Height (cm)" type="number" placeholder="e.g. 175" value={data.heightCm} onChange={(v) => setData({ heightCm: v })} />
-      <FormInput label="Weight (kg)" type="number" placeholder="e.g. 70" value={data.weightKg} onChange={(v) => setData({ weightKg: v })} />
-      <p className="text-white/25 text-xs">Optional — helps with accurate calorie calculations.</p>
-    </div>
-  )
-
-  if (step === 2) return (
-    <div className="space-y-2">
-      {[
-        { value: false, label: 'No limitations', description: 'I can do most physical activities' },
-        { value: true, label: 'I have some limitations', description: 'Physical disability or chronic condition' },
-      ].map((o) => (
-        <OptionButton key={String(o.value)} selected={data.hasDisability === o.value} onClick={() => setData({ hasDisability: o.value })} description={o.description}>{o.label}</OptionButton>
-      ))}
-      {data.hasDisability && (
-        <div className="pt-1">
-          <FormInput label="Tell us more (optional)" placeholder="e.g. chronic back pain, uses wheelchair..." value={data.disabilityNote} onChange={(v) => setData({ disabilityNote: v })} />
-        </div>
-      )}
-    </div>
-  )
-
-  if (step === 3) return (
-    <div className="space-y-1.5">
-      {[
-        { value: 'lose-weight', label: 'Lose weight', description: 'Burn more calories, move more daily' },
-        { value: 'gain-muscle', label: 'Build strength', description: 'Increase activity and track progress' },
-        { value: 'better-sleep', label: 'Sleep better', description: 'Improve sleep quality and duration' },
-        { value: 'reduce-stress', label: 'Reduce stress', description: 'Lower stress, improve mood daily' },
-        { value: 'build-habits', label: 'Build healthy habits', description: 'Consistency across all dimensions' },
-        { value: 'improve-fitness', label: 'Improve fitness', description: 'Higher activity and endurance' },
-        { value: 'eco-lifestyle', label: 'Eco-friendly lifestyle', description: 'Reduce environmental impact' },
-      ].map((g) => (
-        <OptionButton key={g.value} selected={data.primaryGoal === g.value} onClick={() => setData({ primaryGoal: g.value })} description={g.description}>{g.label}</OptionButton>
-      ))}
-    </div>
-  )
-
-  if (step === 4) return (
-    <div className="space-y-1.5">
-      {[
-        { hours: 4, label: 'Less than 5 hours', description: 'Very little sleep most nights' },
-        { hours: 5.5, label: '5–6 hours', description: 'Below the recommended amount' },
-        { hours: 6.5, label: '6–7 hours', description: 'Slightly under ideal' },
-        { hours: 7.5, label: '7–8 hours', description: 'Around the recommended amount' },
-        { hours: 9, label: '8+ hours', description: 'Getting plenty of rest' },
-      ].map((o) => (
-        <OptionButton key={o.hours} selected={data.currentSleepHours === o.hours} onClick={() => setData({ currentSleepHours: o.hours })} description={o.description}>{o.label}</OptionButton>
-      ))}
-    </div>
-  )
-
-  if (step === 5) return (
-    <div className="space-y-1.5">
-      {[
-        { value: 'sedentary', label: 'Sedentary', description: 'Desk job, little to no exercise' },
-        { value: 'light', label: 'Lightly active', description: 'Light exercise 1–3 days/week' },
-        { value: 'moderate', label: 'Moderately active', description: 'Exercise 3–5 days/week' },
-        { value: 'active', label: 'Active', description: 'Hard exercise 6–7 days/week' },
-        { value: 'very-active', label: 'Very active', description: 'Physical job or twice-a-day training' },
-      ].map((l) => (
-        <OptionButton key={l.value} selected={data.currentActivityLevel === l.value} onClick={() => setData({ currentActivityLevel: l.value })} description={l.description}>{l.label}</OptionButton>
-      ))}
-    </div>
-  )
-
-  if (step === 6) return (
-    <div className="space-y-1.5">
-      {[
-        { hours: 1, label: 'Under 2 hours', description: 'Very little screen time daily' },
-        { hours: 3, label: '2–4 hours', description: 'Moderate usage' },
-        { hours: 5, label: '4–6 hours', description: 'Above average usage' },
-        { hours: 7, label: '6–8 hours', description: 'High screen usage' },
-        { hours: 9, label: '8+ hours', description: 'Very high — mostly on screens' },
-      ].map((o) => (
-        <OptionButton key={o.hours} selected={data.currentScreenHours === o.hours} onClick={() => setData({ currentScreenHours: o.hours })} description={o.description}>{o.label}</OptionButton>
-      ))}
-    </div>
-  )
-
-  if (step === 7) return (
-    <div className="space-y-1.5">
-      {[
-        { value: 'thriving', label: 'Thriving', description: 'I feel great most days — energetic and positive' },
-        { value: 'balanced', label: 'Balanced', description: 'Generally okay, some good and some bad days' },
-        { value: 'struggling', label: 'Struggling', description: 'More low days than good, finding things hard' },
-        { value: 'overwhelmed', label: 'Overwhelmed', description: 'Feeling stressed or anxious most of the time' },
-        { value: 'exhausted', label: 'Exhausted', description: 'Mentally and physically drained constantly' },
-      ].map((m) => (
-        <OptionButton key={m.value} selected={data.currentMood === m.value} onClick={() => setData({ currentMood: m.value })} description={m.description}>{m.label}</OptionButton>
-      ))}
-    </div>
-  )
-
-  if (step === 8) return (
-    <div className="space-y-1.5">
-      {[
-        { value: 'very-calm', label: 'Very calm', description: 'Rarely feel stressed, handle pressure well' },
-        { value: 'mild', label: 'Mild stress', description: 'Occasional stress but manageable' },
-        { value: 'moderate', label: 'Moderate', description: 'Stress is noticeable and affects my day' },
-        { value: 'high', label: 'High stress', description: 'Often stressed, hard to switch off' },
-        { value: 'burned-out', label: 'Burned out', description: 'Constant stress, feeling at my limit' },
-      ].map((l) => (
-        <OptionButton key={l.value} selected={data.currentStress === l.value} onClick={() => setData({ currentStress: l.value })} description={l.description}>{l.label}</OptionButton>
-      ))}
-    </div>
-  )
-
-  if (step === 9) return (
-    <div className="space-y-1.5">
-      {[
-        { value: 'rarely', label: 'Rarely', description: "I don't think much about my environmental impact" },
-        { value: 'sometimes', label: 'Sometimes', description: 'I make eco-friendly choices occasionally' },
-        { value: 'often', label: 'Often', description: 'I actively try to reduce my footprint' },
-        { value: 'always', label: 'Always', description: 'Eco-consciousness is central to my lifestyle' },
-      ].map((l) => (
-        <OptionButton key={l.value} selected={data.ecoConsciousness === l.value} onClick={() => setData({ ecoConsciousness: l.value })} description={l.description}>{l.label}</OptionButton>
-      ))}
-    </div>
-  )
-
-  return null
-}
-
-// ---------------------------------------------------------------------------
-// Register / Onboarding flow
-// ---------------------------------------------------------------------------
-interface RegisterFlowProps {
-  onSwitchToLogin: () => void
-  entryDelay: number
-}
-
-function RegisterFlow({ onSwitchToLogin, entryDelay }: RegisterFlowProps) {
-  const navigate = useNavigate()
+function SignUpForm({ onSwitchToLogin, entryDelay }: { onSwitchToLogin: () => void; entryDelay: number }) {
   const register = useAuthStore((s) => s.register)
   const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle)
-  const setLastAssessmentAt = useAuthStore((s) => s.setLastAssessmentAt)
-  const setOnboardingComplete = useAuthStore((s) => s.setOnboardingComplete)
 
-  const [onboardingStep, setOnboardingStep] = useState(0)
-  const [onboardingData, setOnboardingDataState] = useState<OnboardingData>({
-    dateOfBirth: '', gender: '', heightCm: '', weightKg: '',
-    hasDisability: false, disabilityNote: '', primaryGoal: '',
-    currentSleepHours: 0, currentActivityLevel: '', currentScreenHours: 0,
-    currentMood: '', currentStress: '', ecoConsciousness: '',
-  })
-
-  // Account creation fields
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
   const [showPw, setShowPw] = useState(false)
-  const [showCf, setShowCf] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
+  const d = entryDelay
 
-  const isAccountStep = onboardingStep === ONBOARDING_TOTAL - 1
-
-  const setOnboardingData = useCallback((patch: Partial<OnboardingData>) => {
-    setOnboardingDataState(prev => ({ ...prev, ...patch }))
-  }, [])
-
-  const handleNext = () => {
-    const error = validateOnboardingStep(onboardingStep, onboardingData)
-    if (error) { toast.error(error); return }
-    setOnboardingStep(s => s + 1)
-  }
-
-  const handleBack = () => {
-    if (onboardingStep === 0) { onSwitchToLogin(); return }
-    setOnboardingStep(s => s - 1)
-  }
-
-  const saveOnboarding = async () => {
-    try {
-      await apiPost('/api/user/onboarding', {
-        dateOfBirth: new Date(onboardingData.dateOfBirth).toISOString(),
-        gender: onboardingData.gender,
-        heightCm: onboardingData.heightCm ? Number(onboardingData.heightCm) : undefined,
-        weightKg: onboardingData.weightKg ? Number(onboardingData.weightKg) : undefined,
-        hasDisability: onboardingData.hasDisability,
-        disabilityNote: onboardingData.disabilityNote || undefined,
-        primaryGoal: onboardingData.primaryGoal,
-        currentSleepHours: onboardingData.currentSleepHours,
-        currentActivityLevel: onboardingData.currentActivityLevel,
-        currentScreenHours: onboardingData.currentScreenHours,
-        currentMood: onboardingData.currentMood,
-        currentStress: onboardingData.currentStress,
-        ecoConsciousness: onboardingData.ecoConsciousness,
-      })
-      setOnboardingComplete(true)
-      // Reload the profile so gender-specific features (cycle tracker) and the
-      // new goals show straight away, without a page reload
-      await useAuthStore.getState().loadMe().catch(() => null)
-      void useAppStore.getState().hydrateFromApi()
-      void useAppStore.getState().syncDashboardScore()
-    } catch { /* non-fatal */ }
-  }
-
-  const handleCreateAccount = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const errs: Record<string, string> = {}
     if (!name || name.trim().length < 2) errs.name = 'At least 2 characters'
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = 'Valid email required'
     if (!password || password.length < 8) errs.password = 'Minimum 8 characters'
-    if (password !== confirm) errs.confirm = 'Passwords do not match'
     if (Object.keys(errs).length) { setErrors(errs); return }
     setErrors({})
     setLoading(true)
     try {
+      // Once signed in, the app sends new users to /welcome to set their goals
       await register({ name: name.trim(), email, password })
-      await saveOnboarding()
-      setLastAssessmentAt(Date.now())
-      toast.success('Welcome to LivoraPulse!')
-      navigate('/dashboard')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Registration failed')
-    } finally { setLoading(false) }
+      setLoading(false)
+    }
   }
-
-  const handleGoogle = () => {
-    sessionStorage.setItem('lp_pending_onboarding', JSON.stringify(onboardingData))
-    loginWithGoogle()
-  }
-
-  const d = entryDelay
 
   return (
     <div className="space-y-4 w-full">
-      <ProgressBar current={onboardingStep + 1} total={ONBOARDING_TOTAL} />
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, delay: d }}>
+        <h2 className="text-white font-bold text-xl text-center">Create your account</h2>
+        <p className="text-white/40 text-sm text-center mt-1">Free · takes about a minute</p>
+      </motion.div>
 
-      <motion.h2
-        key={onboardingStep + '-title'}
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
-        className="text-white font-bold text-lg"
-      >
-        {ONBOARDING_TITLES[onboardingStep]}
-      </motion.h2>
-
-      {/* Step content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={onboardingStep}
-          initial={{ opacity: 0, x: 18 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -18 }}
-          transition={{ duration: 0.22 }}
-        >
-          {!isAccountStep ? (
-            <OnboardingStepContent step={onboardingStep} data={onboardingData} setData={setOnboardingData} />
-          ) : (
-            // Account creation step
-            <form onSubmit={handleCreateAccount} className="space-y-3" noValidate>
-              <FormInput icon={<User size={15} />} label="Full Name" placeholder="Your full name" value={name} onChange={setName} error={errors.name} autoComplete="name" delay={d} />
-              <FormInput icon={<Mail size={15} />} label="Email" type="email" placeholder="you@example.com" value={email} onChange={setEmail} error={errors.email} autoComplete="email" delay={d + 0.06} />
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, delay: d + 0.12 }} className="space-y-1.5">
-                <p className="text-white/50 text-[11px] font-semibold uppercase tracking-widest">Password</p>
-                <div className={clsx('relative flex items-center rounded-xl border transition-all duration-200 bg-white/[0.06]', 'focus-within:ring-1 focus-within:ring-lp-primary/50 focus-within:border-lp-primary/40', errors.password ? 'border-lp-alert/50' : 'border-white/[0.08] hover:border-white/20')}>
-                  <span className="pl-4 text-white/25 flex-shrink-0"><Lock size={15} /></span>
-                  <input type={showPw ? 'text' : 'password'} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" className="flex-1 px-3 py-2.5 bg-transparent text-white text-sm focus:outline-none placeholder:text-white/20" />
-                  <button type="button" onClick={() => setShowPw(p => !p)} className="pr-4 text-white/25 hover:text-white/60 transition-colors">{showPw ? <EyeOff size={15} /> : <Eye size={15} />}</button>
-                </div>
-                {errors.password && <p className="text-[11px] text-lp-alert/80 pl-1">{errors.password}</p>}
-                <PasswordStrengthBar password={password} />
-              </motion.div>
-              <FormInput icon={<Lock size={15} />} label="Confirm Password" type={showCf ? 'text' : 'password'} placeholder="••••••••" value={confirm} onChange={setConfirm} error={errors.confirm} autoComplete="new-password" delay={d + 0.18}
-                rightElement={<button type="button" onClick={() => setShowCf(p => !p)} className="text-white/25 hover:text-white/60 transition-colors">{showCf ? <EyeOff size={15} /> : <Eye size={15} />}</button>} />
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, delay: d + 0.24 }}>
-                <button type="submit" disabled={loading} className="w-full bg-lp-primary text-white font-semibold rounded-xl py-2.5 hover:bg-green-500 hover:shadow-xl hover:shadow-lp-primary/25 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 text-sm">
-                  {loading ? <Spinner /> : 'Create Account & Go to Dashboard →'}
-                </button>
-              </motion.div>
-              <OAuthDivider delay={d + 0.30} onGoogle={handleGoogle} />
-            </form>
-          )}
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Navigation buttons */}
-      {!isAccountStep && (
-        <div className="flex items-center gap-3 pt-1">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-white/40 hover:text-white/70 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-all"
-          >
-            <ChevronLeft size={15} />
-            Back
-          </button>
-          <button
-            type="button"
-            onClick={handleNext}
-            className="flex-1 flex items-center justify-center gap-2 bg-lp-primary text-white font-semibold rounded-xl py-2.5 hover:bg-green-500 hover:shadow-xl hover:shadow-lp-primary/25 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 text-sm"
-          >
-            Continue
-            <ChevronRight size={15} />
-          </button>
-        </div>
-      )}
-
-      {isAccountStep && (
-        <button type="button" onClick={handleBack} className="w-full text-center text-white/25 hover:text-white/50 text-xs transition-colors pt-1">
-          ← Back to previous step
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, delay: d + 0.04 }}>
+        <button type="button" onClick={() => loginWithGoogle()}
+          className="w-full flex items-center justify-center gap-3 rounded-xl py-3 bg-white text-[#1f2937] font-semibold text-sm hover:bg-white/90 transition-all duration-200">
+          <GoogleIcon />
+          Continue with Google
         </button>
-      )}
+      </motion.div>
 
-      {onboardingStep === 0 && (
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.28, delay: d + 0.3 }} className="text-center text-sm text-white/35">
-          Already have an account?{' '}
-          <button type="button" onClick={onSwitchToLogin} className="font-semibold text-lp-primary hover:text-green-400 transition-colors">Sign in</button>
-        </motion.p>
-      )}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px bg-white/[0.08]" />
+        <span className="text-[11px] text-white/30 whitespace-nowrap">or use your email</span>
+        <div className="flex-1 h-px bg-white/[0.08]" />
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-3" noValidate>
+        <FormInput icon={<User size={15} />} label="Name" placeholder="Your name" value={name} onChange={setName} error={errors.name} autoComplete="name" delay={d + 0.08} />
+        <FormInput icon={<Mail size={15} />} label="Email" type="email" placeholder="you@example.com" value={email} onChange={setEmail} error={errors.email} autoComplete="email" delay={d + 0.12} />
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, delay: d + 0.16 }}>
+          <FormInput icon={<Lock size={15} />} label="Password" type={showPw ? 'text' : 'password'} placeholder="At least 8 characters" value={password} onChange={setPassword} error={errors.password} autoComplete="new-password"
+            rightElement={<button type="button" onClick={() => setShowPw((p) => !p)} aria-label={showPw ? 'Hide password' : 'Show password'} className="text-white/30 hover:text-white/60 transition-colors">{showPw ? <EyeOff size={15} /> : <Eye size={15} />}</button>} />
+          <PasswordStrengthBar password={password} />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, delay: d + 0.2 }}>
+          <button type="submit" disabled={loading}
+            className="w-full bg-lp-primary text-white font-semibold rounded-xl py-3 hover:bg-green-500 hover:shadow-xl hover:shadow-lp-primary/25 active:scale-[0.99] transition-all duration-200 disabled:opacity-50 text-sm">
+            {loading ? <Spinner /> : 'Create account'}
+          </button>
+        </motion.div>
+      </form>
+
+      <p className="text-center text-sm text-white/35">
+        Already have an account?{' '}
+        <button type="button" onClick={onSwitchToLogin} className="font-semibold text-lp-primary hover:text-green-400 transition-colors">Sign in</button>
+      </p>
     </div>
   )
 }
@@ -751,21 +356,6 @@ const FEATURES = [
   { icon: <Leaf size={14} />, text: 'Build eco-conscious daily habits' },
 ]
 
-// Right side content per onboarding step
-const ONBOARDING_STEP_CONTENT = [
-  { emoji: '👋', title: "Let's get to know you", message: "Before anything else, we want to understand who you are. This helps us build a wellness experience that's truly yours." },
-  { emoji: '📏', title: "Your physical profile", message: "Height and weight help us calculate accurate calorie estimates and personalise your fitness goals. This data stays private." },
-  { emoji: '🤝', title: "Any limitations?", message: "We want your goals to be realistic and respectful of your body. We'll adjust your targets accordingly — no pressure, no judgment." },
-  { emoji: '🎯', title: "What's your main goal?", message: "Your primary goal shapes everything — which metrics matter most, how your score is calculated, and what the app highlights for you." },
-  { emoji: '😴', title: "Your sleep habits", message: "Sleep is one of the most powerful levers for health. We'll use your current pattern to set a realistic, better target." },
-  { emoji: '🏃', title: "How active are you?", message: "Be honest — there's no wrong answer. We want to meet you where you are, not where you think you should be." },
-  { emoji: '📱', title: "Screen time habits", message: "The average person spends 7+ hours on screens daily. We'll help you understand your pattern and set a gentle reduction goal." },
-  { emoji: '💚', title: "How's your mood?", message: "Your emotional baseline matters. LivoraPulse tracks mood over time so you can spot patterns between sleep, activity and feelings." },
-  { emoji: '🧘', title: "Your stress level", message: "Stress affects everything — sleep, focus, physical health. Knowing your baseline helps us give you relevant insights." },
-  { emoji: '🌱', title: "Eco consciousness", message: "LivoraPulse tracks your environmental impact too. Your eco goal grows with your habits over time." },
-  { emoji: '✨', title: "Almost there!", message: "Your profile is ready. Create your account to save everything and access your personalised dashboard. You can also sign in with Google." },
-]
-
 function PromoPanel() {
   return (
     <div className="w-1/2 h-full hidden md:flex flex-col justify-between px-8 py-10 relative z-10 overflow-hidden">
@@ -812,8 +402,14 @@ function PromoPanel() {
   )
 }
 
-function RegisterPromoPanel({ step }: { step: number }) {
-  const c = ONBOARDING_STEP_CONTENT[step] ?? ONBOARDING_STEP_CONTENT[0]
+const SIGNUP_STEPS = [
+  { n: 1, title: 'Create your account', desc: 'Google or email — 30 seconds' },
+  { n: 2, title: 'Pick your main goal', desc: 'One tap' },
+  { n: 3, title: 'Tell us a little about you', desc: 'All optional' },
+  { n: 4, title: 'Get your daily targets', desc: 'Personalised for you' },
+]
+
+function RegisterPromoPanel() {
   return (
     <div className="w-1/2 h-full hidden md:flex flex-col justify-between px-8 py-10 relative z-10 overflow-hidden">
       <div className="absolute inset-0 -z-10 flex items-end justify-center opacity-10 pointer-events-none">
@@ -823,23 +419,24 @@ function RegisterPromoPanel({ step }: { step: number }) {
         <span className="text-base font-bold text-white tracking-tight">LivoraPulse</span>
         <span className="w-1.5 h-1.5 rounded-full bg-lp-primary animate-softPulse" aria-hidden />
       </div>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={step}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.3 }}
-          className="space-y-5"
-        >
-          <div className="text-5xl">{c.emoji}</div>
-          <div className="space-y-3">
-            <h1 className="text-4xl font-black text-white leading-tight">{c.title}</h1>
-            <div className="w-10 h-[3px] bg-lp-primary rounded-full" />
-            <p className="text-white/45 text-sm leading-relaxed max-w-xs">{c.message}</p>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <h1 className="text-4xl font-black text-white leading-tight">Your wellness,<br /><span className="text-lp-primary">made for you.</span></h1>
+          <div className="w-10 h-[3px] bg-lp-primary rounded-full" />
+          <p className="text-white/45 text-sm leading-relaxed max-w-xs">Four quick steps and you'll have daily targets built around your life.</p>
+        </div>
+        <ol className="space-y-3">
+          {SIGNUP_STEPS.map((s) => (
+            <li key={s.n} className="flex items-center gap-3">
+              <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-white/[0.07] border border-white/10 text-white/70">{s.n}</span>
+              <span>
+                <span className="block text-sm font-semibold text-white/80">{s.title}</span>
+                <span className="block text-xs text-white/35">{s.desc}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
       <div className="text-xs text-white/20">Your data is private and secure. Never shared.</div>
     </div>
   )
@@ -856,18 +453,16 @@ const CARD_TITLES: Record<Mode, string> = {
 
 interface FormPanelProps {
   mode: Mode
-  registerStep: number
   onSwitchToRegister: () => void
   onSwitchToLogin: () => void
   onForgotPassword: () => void
   onBackFromForgot: () => void
   entryDelay: number
-  onRegisterStepChange: (step: number) => void
 }
 
 function FormPanel({
-  mode, registerStep, onSwitchToRegister, onSwitchToLogin,
-  onForgotPassword, onBackFromForgot, entryDelay, onRegisterStepChange,
+  mode, onSwitchToRegister, onSwitchToLogin,
+  onForgotPassword, onBackFromForgot, entryDelay,
 }: FormPanelProps) {
   return (
     <div className="w-full md:w-1/2 h-full flex items-center justify-center px-6 py-8 max-sm:px-4 max-sm:py-6 max-sm:flex-col max-sm:justify-start max-sm:pt-[max(2rem,env(safe-area-inset-top))] relative z-10 overflow-y-auto">
@@ -905,7 +500,7 @@ function FormPanel({
         )}
 
         {mode === 'register' && (
-          <RegisterFlow
+          <SignUpForm
             onSwitchToLogin={onSwitchToLogin}
             entryDelay={entryDelay + 0.04}
           />
@@ -929,7 +524,6 @@ function FormPanel({
 export default function AuthPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [mode, setMode] = useState<Mode>('login')
-  const [registerStep, setRegisterStep] = useState(0)
   const [formSide, setFormSide] = useState<FormSide>('right')
   const [sweeping, setSweeping] = useState(false)
   const [entryDelay, setEntryDelay] = useState(0)
@@ -942,7 +536,6 @@ export default function AuthPage() {
     setSweeping(true)
     const t1 = setTimeout(() => {
       setMode(nextMode)
-      setRegisterStep(0)
       setFormSide(nextMode === 'login' ? 'right' : 'left')
       setEntryDelay(0.32)
     }, 300)
@@ -953,22 +546,21 @@ export default function AuthPage() {
   const handleForgotPassword = useCallback(() => { setMode('forgot'); setEntryDelay(0) }, [])
   const handleBackFromForgot = useCallback(() => { setMode('login'); setEntryDelay(0) }, [])
 
+  // Signed in: the dashboard route sends anyone who hasn't finished setup to /welcome
   if (isAuthenticated) return <Navigate to="/dashboard" replace />
 
   const leftPanel = mode === 'register'
-    ? <RegisterPromoPanel step={registerStep} />
+    ? <RegisterPromoPanel />
     : <PromoPanel />
 
   const formPanel = (
     <FormPanel
       mode={mode}
-      registerStep={registerStep}
       onSwitchToRegister={() => triggerSweep('register')}
       onSwitchToLogin={() => triggerSweep('login')}
       onForgotPassword={handleForgotPassword}
       onBackFromForgot={handleBackFromForgot}
       entryDelay={entryDelay}
-      onRegisterStepChange={setRegisterStep}
     />
   )
 
