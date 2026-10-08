@@ -14,7 +14,7 @@ import Modal from '../components/ui/Modal'
 import WalkTracker from '../components/WalkTracker'
 
 import { useAppStore } from '../store/useAppStore'
-import { selectLifePulseScore } from '../store/selectors'
+import { selectDimensionScores, selectLifePulseScore, selectProgressiveGoals } from '../store/selectors'
 import { getDayKey } from '../utils/date'
 import { formatDistance, formatNumber } from '../utils/format'
 
@@ -84,15 +84,15 @@ function StatCard({ label, value, context, icon, color, goalValue, goalMax, tren
 // Score impact sidebar card
 // ---------------------------------------------------------------------------
 function ScoreImpactCard({ steps, sleep }: { steps: number; sleep: number }) {
-  const physicalScore = Math.round(
-    0.7 * Math.min((steps / 8000) * 100, 100) +
-    0.3 * Math.min((sleep / 8) * 100, 100)
-  )
-  const stepsNeeded = Math.max(0, 8000 - steps)
-  const sleepGap = Math.max(0, 7.5 - sleep)
-  const potentialGain = Math.min(
-    Math.round((stepsNeeded / 8000) * 0.7 * 26 + (sleepGap / 8) * 0.3 * 26),
-    12
+  // Server-calculated physical score and today's goals (after the streak multiplier)
+  const physicalScore = useAppStore((s) => selectDimensionScores(s).physical)
+  const goals = useAppStore(selectProgressiveGoals)
+  const stepsNeeded = Math.max(0, goals.goalStepsPerDay - steps)
+  const sleepGap = Math.max(0, goals.goalSleepHours - sleep)
+  // Points the overall score would gain by reaching both goals (physical weighs 23%)
+  const potentialGain = Math.round(
+    (Math.min(stepsNeeded / goals.goalStepsPerDay, 1) * 70 +
+      Math.min(sleepGap / goals.goalSleepHours, 1) * 30) * 0.23,
   )
 
   return (
@@ -139,6 +139,7 @@ function WeeklySummaryCard({ weeklySteps, sleepHours }: {
   weeklySteps: Array<{ day: string; steps: number }>
   sleepHours: Array<{ day: string; hours: number }>
 }) {
+  const stepGoal = useAppStore((s) => selectProgressiveGoals(s).goalStepsPerDay)
   const totalSteps = weeklySteps.reduce((s, x) => s + x.steps, 0)
   const activeDays = weeklySteps.filter(x => x.steps > 0).length
   const sleepWithData = sleepHours.filter(x => x.hours > 0)
@@ -180,7 +181,7 @@ function WeeklySummaryCard({ weeklySteps, sleepHours }: {
                   className="w-full rounded-sm"
                   style={{
                     height: h,
-                    backgroundColor: x.steps >= 8000 ? '#4CAF50' : x.steps > 0 ? '#4CAF5055' : '#0000000A',
+                    backgroundColor: x.steps >= stepGoal ? '#4CAF50' : x.steps > 0 ? '#4CAF5055' : '#0000000A',
                   }}
                 />
                 <span className="text-[8px] text-black/25 dark:text-white/20">{x.day.slice(0, 1)}</span>
@@ -245,6 +246,7 @@ function SleepLogger({ value, onChange }: { value: number; onChange: (v: number)
 // Physical page root
 // ---------------------------------------------------------------------------
 export default function Physical() {
+  const stepGoal = useAppStore((s) => selectProgressiveGoals(s).goalStepsPerDay)
   const units = useAppStore((s) => s.preferences.units)
   const physical = useAppStore((s) => s.physical)
   const addActivity = useAppStore((s) => s.addActivity)
@@ -265,9 +267,9 @@ export default function Physical() {
 
   const headline = useMemo(() => {
     if (todaySteps >= 10000) return `Outstanding — ${formatNumber(todaySteps)} steps today. Daily goal exceeded.`
-    if (todaySteps >= 8000) return `Great progress — ${formatNumber(todaySteps)} steps. Daily goal reached.`
-    if (todaySteps >= 5000) return `${formatNumber(todaySteps)} steps so far — ${formatNumber(8000 - todaySteps)} more to hit your goal.`
-    if (todaySteps > 0) return `${formatNumber(todaySteps)} steps logged. Keep going — ${formatNumber(8000 - todaySteps)} steps to go.`
+    if (todaySteps >= stepGoal) return `Great progress — ${formatNumber(todaySteps)} steps. Daily goal reached.`
+    if (todaySteps >= 5000) return `${formatNumber(todaySteps)} steps so far — ${formatNumber(stepGoal - todaySteps)} more to hit your goal.`
+    if (todaySteps > 0) return `${formatNumber(todaySteps)} steps logged. Keep going — ${formatNumber(stepGoal - todaySteps)} steps to go.`
     return 'No activity logged yet today — tap Start Walk to begin.'
   }, [todaySteps])
 
@@ -311,12 +313,12 @@ export default function Physical() {
             <StatCard
               label="Steps"
               value={formatNumber(todaySteps)}
-              context={todaySteps >= 8000 ? 'Daily goal reached' : `${formatNumber(Math.max(0, 8000 - todaySteps))} to reach 8,000`}
+              context={todaySteps >= stepGoal ? 'Daily goal reached' : `${formatNumber(Math.max(0, stepGoal - todaySteps))} to reach ${formatNumber(stepGoal)}`}
               icon={<Footprints size={17} />}
               color="#4CAF50"
               goalValue={todaySteps}
               goalMax={8000}
-              trend={todaySteps >= 8000 ? 'up' : todaySteps >= 4000 ? 'flat' : 'down'}
+              trend={todaySteps >= stepGoal ? 'up' : todaySteps >= stepGoal / 2 ? 'flat' : 'down'}
             />
             <StatCard
               label="Distance"
@@ -422,7 +424,7 @@ export default function Physical() {
             onChange={(h) => { updateSleepForToday(h); toast.success(`Sleep logged: ${h}h`) }}
           />
           <WeeklySummaryCard weeklySteps={physical.weeklySteps} sleepHours={physical.sleepHours} />
-          {todaySteps >= 8000 && (
+          {todaySteps >= stepGoal && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

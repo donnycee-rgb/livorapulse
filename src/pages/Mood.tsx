@@ -3,9 +3,9 @@ import {
   Heart, Target, TrendingUp, TrendingDown,
   Minus, Zap, Wind,
 } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
 
 import MoodTimelineChart from '../components/charts/MoodTimelineChart'
@@ -13,6 +13,8 @@ import StressLineChart from '../components/charts/StressLineChart'
 
 import type { MoodEmoji } from '../data/types'
 import { useAppStore } from '../store/useAppStore'
+import { useAuthStore } from '../store/useAuthStore'
+import CycleTracker from '../components/CycleTracker'
 import { getDayKey } from '../utils/date'
 
 // ---------------------------------------------------------------------------
@@ -74,10 +76,11 @@ const MOOD_LEVELS: Array<{
 function ScoreImpactCard({ emoji, stressScore }: {
   emoji: MoodEmoji; stressScore: number
 }) {
+  // Same formula as the server's mood score (ScoreService.moodScore):
+  // 60% how you feel, 40% calm. Stress here is 1–5; the server stores it as 2–10.
   const level = MOOD_LEVELS.find(m => m.emoji === emoji) ?? MOOD_LEVELS[2]
-  const moodScore = MOOD_LEVELS.indexOf(level) === -1 ? 50 :
-    [100, 80, 60, 40, 20][MOOD_LEVELS.indexOf(level)]
-  const stressComponent = Math.max(0, 110 - (stressScore / 5) * 100)
+  const moodScore = [100, 75, 50, 25, 0][MOOD_LEVELS.indexOf(level)] ?? 50
+  const stressComponent = Math.min(100, Math.max(0, ((10 - stressScore * 2) / 9) * 100))
   const mentalScore = Math.round(0.6 * moodScore + 0.4 * stressComponent)
 
   return (
@@ -132,11 +135,13 @@ function ScoreImpactCard({ emoji, stressScore }: {
 // Weekly summary sidebar card
 // ---------------------------------------------------------------------------
 function WeeklySummaryCard({ moodByDay, stressByDay }: {
-  moodByDay: Array<{ day: string; emoji: MoodEmoji }>
-  stressByDay: Array<{ day: string; score: number }>
+  moodByDay: Array<{ day: string; emoji: MoodEmoji | null }>
+  stressByDay: Array<{ day: string; score: number | null }>
 }) {
-  const avgStress = stressByDay.length > 0
-    ? (stressByDay.reduce((s, x) => s + x.score, 0) / stressByDay.length).toFixed(1)
+  // Only days with a check-in count toward the averages
+  const stressValues = stressByDay.map((x) => x.score).filter((v): v is number => v !== null)
+  const avgStress = stressValues.length > 0
+    ? (stressValues.reduce((s, v) => s + v, 0) / stressValues.length).toFixed(1)
     : '—'
 
   const moodCounts = MOOD_LEVELS.map(m => ({
@@ -165,9 +170,10 @@ function WeeklySummaryCard({ moodByDay, stressByDay }: {
           <span className="text-xs text-black/45 dark:text-white/40">Avg stress</span>
           <span className={clsx(
             'text-sm font-bold',
+            avgStress === '—' ? 'text-black/40 dark:text-white/35' :
             Number(avgStress) <= 2 ? 'text-lp-primary' :
             Number(avgStress) <= 3 ? 'text-yellow-500' : 'text-lp-alert'
-          )}>{avgStress} / 5</span>
+          )}>{avgStress === '—' ? '—' : `${avgStress} / 5`}</span>
         </div>
         {dominantMood && (
           <div className="flex items-center justify-between">
@@ -260,7 +266,7 @@ function WellnessTipCard({ stressScore, emoji }: {
 // ---------------------------------------------------------------------------
 // Mood page root
 // ---------------------------------------------------------------------------
-export default function Mood() {
+function MoodTab() {
   const mood = useAppStore((s) => s.mood)
   const setMoodEmoji = useAppStore((s) => s.setMoodEmoji)
   const setStressScore = useAppStore((s) => s.setStressScore)
@@ -453,6 +459,51 @@ export default function Mood() {
           <WellnessTipCard stressScore={stressScore} emoji={mood.today.emoji} />
         </div>
       </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Mood page root — the Cycle Tracker tab is only shown to users whose profile
+// gender is female (set during onboarding)
+// ---------------------------------------------------------------------------
+export default function Mood() {
+  const gender = useAuthStore((s) => s.user?.profile?.gender)
+  const isFemale = gender === 'female'
+  const [activeTab, setActiveTab] = useState<'mood' | 'cycle'>('mood')
+  const tab = isFemale ? activeTab : 'mood'
+
+  return (
+    <div className="space-y-5">
+      {isFemale && (
+        <div role="tablist" aria-label="Mood sections" className="flex gap-1 bg-black/[0.04] dark:bg-white/[0.05] rounded-xl p-1 w-fit">
+          {([
+            { key: 'mood', label: 'Mood & Stress' },
+            { key: 'cycle', label: 'Cycle Tracker' },
+          ] as const).map((t) => (
+            <button key={t.key} type="button" role="tab" aria-selected={tab === t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={clsx(
+                'px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
+                tab === t.key
+                  ? t.key === 'cycle'
+                    ? 'bg-[#FF6B6B] text-white shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-black/80 dark:text-white/80 shadow-sm'
+                  : 'text-black/45 dark:text-white/40 hover:text-black/65 dark:hover:text-white/60',
+              )}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <AnimatePresence mode="wait">
+        <motion.div key={tab}
+          initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}
+          transition={{ duration: 0.2 }}>
+          {tab === 'mood' ? <MoodTab /> : <CycleTracker />}
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 }

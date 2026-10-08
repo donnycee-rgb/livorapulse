@@ -7,7 +7,7 @@ import clsx from 'clsx'
 
 import { useAppStore } from '../store/useAppStore'
 import { useAuthStore } from '../store/useAuthStore'
-import { selectLifePulseScore } from '../store/selectors'
+import { selectLifePulseScore, selectStreak } from '../store/selectors'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -288,7 +288,7 @@ export default function AppHeader() {
   const scoreColor = getScoreColor(score)
   const navigate = useNavigate()
 
-  const streak = parseInt(localStorage.getItem('lp_streak') || '0', 10)
+  const streak = useAppStore(selectStreak)
 
   return (
     <header className="h-16 flex-shrink-0 flex items-center border-b border-black/[0.06] dark:border-white/[0.06] bg-white/95 dark:bg-[#0a0f1a]/95 backdrop-blur-md z-30">

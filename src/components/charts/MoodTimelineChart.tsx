@@ -10,7 +10,7 @@ import {
 import { useChartTheme } from '../../theme/useChartTheme'
 
 type Props = {
-  data: Array<{ day: string; emoji: string }>
+  data: Array<{ day: string; emoji: string | null }>
 }
 
 // Recharts needs a numeric value to draw bars.
@@ -25,7 +25,8 @@ const emojiScore: Record<string, number> = {
 
 export default function MoodTimelineChart({ data }: Props) {
   const t = useChartTheme()
-  const mapped = data.map((d) => ({ ...d, score: emojiScore[d.emoji] ?? 3 }))
+  // Days without a check-in get no bar (not a "neutral" one)
+  const mapped = data.map((d) => ({ ...d, score: d.emoji ? emojiScore[d.emoji] ?? 3 : 0 }))
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -37,7 +38,7 @@ export default function MoodTimelineChart({ data }: Props) {
           // Keep runtime behavior the same; this is typed loosely to satisfy Recharts' generics.
           formatter={((_: any, __: any, p: any) => {
             const payload = p?.payload
-            return [payload?.emoji ?? '', 'Mood']
+            return [payload?.emoji ?? 'Not logged', 'Mood']
           }) as any}
           contentStyle={{
             borderRadius: 12,

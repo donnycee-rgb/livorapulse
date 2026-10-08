@@ -10,6 +10,7 @@ import Input from '../components/ui/Input'
 
 import { useInterval } from '../hooks/useInterval'
 import { useAppStore } from '../store/useAppStore'
+import { selectDimensionScores, selectProgressiveGoals } from '../store/selectors'
 import { getDayKey } from '../utils/date'
 
 // ---------------------------------------------------------------------------
@@ -62,9 +63,12 @@ function CircularTimer({
 // Score impact sidebar card
 // ---------------------------------------------------------------------------
 function ScoreImpactCard({ focusMin }: { focusMin: number }) {
-  const prodScore = Math.min(Math.round((focusMin / 120) * 100), 100)
-  const needed = Math.max(0, 120 - focusMin)
-  const gain = Math.min(Math.round((needed / 120) * 22), 12)
+  // Server-calculated productivity score and today's focus goal
+  const prodScore = useAppStore((s) => selectDimensionScores(s).productivity)
+  const goal = useAppStore((s) => selectProgressiveGoals(s).goalFocusMinutes)
+  const needed = Math.max(0, goal - focusMin)
+  // Points the overall score would gain by reaching the goal (productivity weighs 20%)
+  const gain = Math.round(Math.min(needed / goal, 1) * 100 * 0.2)
 
   return (
     <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #6366F10A 0%, #6366F105 100%)`, border: `1px solid #6366F120` }}>
@@ -111,6 +115,7 @@ function WeeklySummaryCard({ focusByDay, studyByDay }: {
   focusByDay: Array<{ day: string; minutes: number }>
   studyByDay: Array<{ day: string; sessions: number }>
 }) {
+  const focusGoal = useAppStore((s) => selectProgressiveGoals(s).goalFocusMinutes)
   const totalFocus = focusByDay.reduce((s, x) => s + x.minutes, 0)
   const totalSessions = studyByDay.reduce((s, x) => s + x.sessions, 0)
   const activeDays = focusByDay.filter(x => x.minutes > 0).length
@@ -149,7 +154,7 @@ function WeeklySummaryCard({ focusByDay, studyByDay }: {
       <div className="mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
         <div className="flex items-end gap-1 h-10">
           {focusByDay.map((x) => {
-            const h = Math.max(3, Math.round((x.minutes / 120) * 40))
+            const h = Math.max(3, Math.round(Math.min(x.minutes / focusGoal, 1) * 40))
             return (
               <div key={x.day} className="flex-1 flex flex-col items-center gap-0.5">
                 <div
@@ -173,11 +178,12 @@ function WeeklySummaryCard({ focusByDay, studyByDay }: {
 // Tips sidebar card
 // ---------------------------------------------------------------------------
 function ProductivityTipCard({ focusMin }: { focusMin: number }) {
+  const focusGoal = useAppStore((s) => selectProgressiveGoals(s).goalFocusMinutes)
   const tips = [
     { condition: focusMin === 0, text: 'Start with a short 25-minute session. Even one focused block a day adds up significantly over a week.' },
     { condition: focusMin > 0 && focusMin < 60, text: 'Good start. Try to reach 2 hours of focused work today for a meaningful productivity score boost.' },
-    { condition: focusMin >= 60 && focusMin < 120, text: 'Solid progress. One more focused session would push your productivity score above 80.' },
-    { condition: focusMin >= 120, text: 'Excellent focus today. Consider taking a proper break — sustained focus works best with recovery time.' },
+    { condition: focusMin >= focusGoal / 2 && focusMin < focusGoal, text: 'Solid progress. One more focused session would push your productivity score above 80.' },
+    { condition: focusMin >= focusGoal, text: 'Excellent focus today. Consider taking a proper break — sustained focus works best with recovery time.' },
   ]
   const tip = tips.find(t => t.condition) ?? tips[0]
 
@@ -214,6 +220,7 @@ export default function Productivity() {
   const todayFocus = useAppStore(
     (s) => s.productivity.focusMinutesByDay.find((x) => x.day === day)?.minutes ?? 0,
   )
+  const focusGoal = useAppStore((s) => selectProgressiveGoals(s).goalFocusMinutes)
   const todaySessions = useAppStore(
     (s) => s.productivity.studySessionsByDay.find((x) => x.day === day)?.sessions ?? 0,
   )
@@ -236,7 +243,7 @@ export default function Productivity() {
 
   const headline = useMemo(() => {
     if (todayFocus === 0) return 'No focus sessions logged yet — start a session to build your productivity score.'
-    if (todayFocus >= 120) return `${todayFocus} minutes of focused work today — excellent productivity.`
+    if (todayFocus >= focusGoal) return `${todayFocus} minutes of focused work today — excellent productivity.`
     if (todayFocus >= 60) return `${todayFocus} minutes of focus today. One more session would push you above the daily goal.`
     return `${todayFocus} minutes logged. ${120 - todayFocus} more minutes to hit your 2-hour daily goal.`
   }, [todayFocus])
@@ -279,18 +286,18 @@ export default function Productivity() {
                 {todayFocus >= 60 ? `${Math.floor(todayFocus / 60)}h ${todayFocus % 60}m` : `${todayFocus}m`}
               </div>
               <div className="mt-1 text-xs text-black/45 dark:text-white/40">
-                {todayFocus >= 120 ? 'Daily goal reached' : `${120 - todayFocus}m to 2hr goal`}
+                {todayFocus >= focusGoal ? 'Daily goal reached' : `${focusGoal - todayFocus}m to your ${focusGoal}m goal`}
               </div>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="text-black/40 dark:text-white/35">Goal progress</span>
-                  <span className="font-semibold text-[#6366F1]">{Math.min(Math.round((todayFocus / 120) * 100), 100)}%</span>
+                  <span className="font-semibold text-[#6366F1]">{Math.min(Math.round((todayFocus / focusGoal) * 100), 100)}%</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-black/[0.06] dark:bg-white/[0.06] overflow-hidden">
                   <motion.div
                     className="h-full rounded-full bg-[#6366F1]"
                     initial={{ width: 0 }}
-                    animate={{ width: `${Math.min((todayFocus / 120) * 100, 100)}%` }}
+                    animate={{ width: `${Math.min((todayFocus / focusGoal) * 100, 100)}%` }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}
                   />
                 </div>
@@ -505,7 +512,7 @@ export default function Productivity() {
             studyByDay={productivity.studySessionsByDay}
           />
           <ProductivityTipCard focusMin={todayFocus} />
-          {todayFocus >= 120 && (
+          {todayFocus >= focusGoal && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

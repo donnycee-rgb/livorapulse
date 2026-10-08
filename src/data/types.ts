@@ -6,7 +6,10 @@ export type UserGoals = {
   goalEcoActionsPerDay: number
   goalSocialMinutes: number
   goalEntertainmentMinutes: number
+  goalCaloriesPerDay?: number
 }
+
+export type ScoreDimension = 'physical' | 'digital' | 'productivity' | 'mood' | 'eco' | 'nutrition'
 
 export type PrimaryGoal =
   | 'lose-weight'
@@ -95,10 +98,18 @@ export type AppState = {
   onboarding: UserOnboardingProfile
 
 
+  // Today's LifePulse Score, calculated by the server (the single source of truth)
   dashboard: {
     score: number
     insight: string
     loading: boolean
+    components?: Record<ScoreDimension, number>
+    logged?: Record<ScoreDimension, boolean>
+    /** Today's goals after the streak multiplier */
+    goals?: Required<UserGoals>
+    streak?: number
+    multiplier?: number
+    date?: string
   }
   preferences: {
     theme: ThemeMode
@@ -144,8 +155,9 @@ export type AppState = {
     carbonKgByDay: Array<{ day: DayKey; kg: number }>
   }
   mood: {
-    moodByDay: Array<{ day: DayKey; emoji: MoodEmoji }>
-    stressByDay: Array<{ day: DayKey; score: number }>
+    /** null = no check-in that day */
+    moodByDay: Array<{ day: DayKey; emoji: MoodEmoji | null }>
+    stressByDay: Array<{ day: DayKey; score: number | null }>
     today: {
       emoji: MoodEmoji
       stressScore: number

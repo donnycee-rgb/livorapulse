@@ -8,7 +8,8 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
-import { useAppStore } from '../store/useAppStore'
+import { scheduleScoreSync, useAppStore } from '../store/useAppStore'
+import { selectProgressiveGoals } from '../store/selectors'
 import { apiGet, apiPost, apiDel } from '../api/client'
 
 // ---------------------------------------------------------------------------
@@ -455,8 +456,7 @@ function AddFoodModal({ open, onClose, onSave }: {
 // Nutrition page root
 // ---------------------------------------------------------------------------
 export default function Nutrition() {
-  const goals = useAppStore((s) => s.goals)
-  const calorieGoal = (goals as any).goalCaloriesPerDay ?? 2000
+  const calorieGoal = useAppStore((s) => selectProgressiveGoals(s).goalCaloriesPerDay)
   const waterGoal = 8
 
   const [entries, setEntries] = useState<FoodEntry[]>([])
@@ -482,6 +482,7 @@ export default function Nutrition() {
 
   const handleSaveFood = async (entry: Omit<FoodEntry, 'id' | 'timestamp'>) => {
     await apiPost('/api/nutrition', entry)
+    scheduleScoreSync()
     toast.success('Food logged!')
     await fetchData()
   }
@@ -489,6 +490,7 @@ export default function Nutrition() {
   const handleDelete = async (id: string) => {
     try {
       await apiDel(`/api/nutrition/${id}`)
+      scheduleScoreSync()
       toast.success('Entry removed')
       await fetchData()
     } catch { toast.error('Failed to delete') }
@@ -497,6 +499,7 @@ export default function Nutrition() {
   const handleAddWater = async () => {
     try {
       await apiPost('/api/nutrition/water', { glasses: 1 })
+      scheduleScoreSync() // water counts toward the streak
       setGlasses(g => g + 1)
       toast.success('Water logged!')
     } catch { toast.error('Failed to log water') }

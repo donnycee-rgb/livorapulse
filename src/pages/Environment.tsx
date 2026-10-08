@@ -13,6 +13,7 @@ import Modal from '../components/ui/Modal'
 
 import type { TransportMode } from '../data/types'
 import { useAppStore } from '../store/useAppStore'
+import { selectDimensionScores, selectProgressiveGoals } from '../store/selectors'
 import { getDayKey } from '../utils/date'
 
 // ---------------------------------------------------------------------------
@@ -74,10 +75,10 @@ function StatCard({ label, value, context, icon, color }: {
 function ScoreImpactCard({ ecoActions, carbonKg }: {
   ecoActions: number; carbonKg: number
 }) {
-  const recycleScore = Math.min(Math.round((ecoActions / 4) * 100), 100)
-  const carbonScore = Math.max(0, Math.round(110 - (carbonKg / 8) * 100))
-  const ecoScore = Math.round(0.55 * recycleScore + 0.45 * carbonScore)
-  const actionsNeeded = Math.max(0, 4 - ecoActions)
+  // Same eco score the server uses: CO₂-saving actions vs today's goal
+  const ecoScore = useAppStore((s) => selectDimensionScores(s).eco)
+  const goal = useAppStore((s) => selectProgressiveGoals(s).goalEcoActionsPerDay)
+  const actionsNeeded = Math.max(0, goal - ecoActions)
 
   return (
     <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #34A8530A 0%, #34A85305 100%)`, border: `1px solid #34A85320` }}>
@@ -99,14 +100,13 @@ function ScoreImpactCard({ ecoActions, carbonKg }: {
         </p>
       ) : (
         <p className="text-xs text-black/50 dark:text-white/45 leading-relaxed mt-2">
-          Daily eco goal reached. Keep reducing your carbon footprint.
+          Daily eco goal reached — {carbonKg.toFixed(1)} kg CO₂ saved today.
         </p>
       )}
       <div className="mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
         <div className="space-y-2">
           {[
-            { label: 'Eco actions', value: recycleScore, color: '#4CAF50' },
-            { label: 'Carbon footprint', value: carbonScore, color: '#00BCD4' },
+            { label: `Eco actions (${ecoActions} of ${goal})`, value: Math.min(100, Math.round((ecoActions / goal) * 100)), color: '#4CAF50' },
           ].map((d) => (
             <div key={d.label}>
               <div className="flex justify-between text-[10px] mb-1">
@@ -458,7 +458,7 @@ export default function Environment() {
         {/* Right sidebar */}
         <div className="space-y-4">
           <ScoreImpactCard
-            ecoActions={todayActions.length}
+            ecoActions={todayActions.filter((a) => a.impactKgCO2 > 0).length}
             carbonKg={todayCarbonSaved}
           />
           <WeeklySummaryCard

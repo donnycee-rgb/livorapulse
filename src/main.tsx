@@ -50,6 +50,10 @@ function Root() {
         ecoConsciousness: data.ecoConsciousness,
       }).then(() => {
         setOnboardingComplete(true)
+        // Pick up gender and the new goals right away
+        loadMe().catch(() => null)
+        hydrateFromApi().catch(() => null)
+        syncDashboardScore().catch(() => null)
       }).catch(() => null)
     } catch {
       sessionStorage.removeItem('lp_pending_onboarding')

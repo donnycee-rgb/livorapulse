@@ -9,7 +9,7 @@ import { motion } from 'framer-motion'
 import { Camera } from 'lucide-react'
 
 import { useAppStore } from '../store/useAppStore'
-import { selectLifePulseScore } from '../store/selectors'
+import { selectDimensionScores, selectLifePulseScore, selectStreak } from '../store/selectors'
 import { getDayKey } from '../utils/date'
 
 // ---------------------------------------------------------------------------
@@ -118,8 +118,8 @@ export default function Profile() {
     reader.readAsDataURL(file)
   }
 
-  // Streak from localStorage (set by backend)
-  const streak = parseInt(localStorage.getItem('lp_streak') || '0', 10)
+  const streak = useAppStore(selectStreak)
+  const dimensionScores = useAppStore(selectDimensionScores)
 
   // Derived stats
   const totalActivities = physical.activityLog.length
@@ -433,9 +433,9 @@ export default function Profile() {
 
             <div className="mt-4 pt-4 border-t border-black/[0.05] dark:border-white/[0.05] space-y-2">
               {[
-                { label: 'Physical', value: Math.min(Math.round((physical.weeklySteps.find(x => x.day === getDayKey())?.steps ?? 0) / 8000 * 100), 100), color: '#4CAF50' },
-                { label: 'Productivity', value: Math.min(Math.round((productivity.focusMinutesByDay.find(x => x.day === getDayKey())?.minutes ?? 0) / 120 * 100), 100), color: '#6366F1' },
-                { label: 'Eco', value: Math.min(environment.ecoActions.filter(a => new Date(a.timestamp).toDateString() === new Date().toDateString()).length * 25, 100), color: '#34A853' },
+                { label: 'Physical', value: dimensionScores.physical, color: '#4CAF50' },
+                { label: 'Productivity', value: dimensionScores.productivity, color: '#6366F1' },
+                { label: 'Eco', value: dimensionScores.eco, color: '#34A853' },
               ].map((d) => (
                 <div key={d.label}>
                   <div className="flex justify-between text-[10px] mb-1">

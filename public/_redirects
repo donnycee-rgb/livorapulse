@@ -1,1 +1,3 @@
+# HTTPS is enforced by Netlify; HSTS is set in _headers.
+# Single-page app fallback (static files like robots.txt and sitemap.xml are served first)
 /* /index.html 200

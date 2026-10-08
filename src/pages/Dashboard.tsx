@@ -11,7 +11,7 @@ import { motion } from 'framer-motion'
 import ActivityAnalyticsChart from '../components/charts/ActivityAnalyticsChart'
 import { useAppStore } from '../store/useAppStore'
 import { useAuthStore } from '../store/useAuthStore'
-import { selectDailyInsight, selectLifePulseScore } from '../store/selectors'
+import { selectDailyInsight, selectDimensionScores, selectLifePulseScore, selectProgressiveGoals, selectStreak } from '../store/selectors'
 import { formatMinutesToHM, formatNumber } from '../utils/format'
 import { getDayKey } from '../utils/date'
 import { apiGet } from '../api/client'
@@ -147,6 +147,7 @@ function StreakDisplay({ streak }: { streak: number }) {
 function WeekHeatmap() {
   const weeklySteps = useAppStore((s) => s.physical.weeklySteps)
   const weeklyFocus = useAppStore((s) => s.productivity.focusMinutesByDay)
+  const goals = useAppStore(selectProgressiveGoals)
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
   const today = getDayKey()
   const todayIdx = days.indexOf(today)
@@ -156,7 +157,7 @@ function WeekHeatmap() {
       {days.map((day, i) => {
         const steps = weeklySteps.find(x => x.day === day)?.steps ?? 0
         const focus = weeklyFocus.find(x => x.day === day)?.minutes ?? 0
-        const activity = Math.min((steps / 8000 + focus / 120) / 2, 1)
+        const activity = (Math.min(steps / goals.goalStepsPerDay, 1) + Math.min(focus / goals.goalFocusMinutes, 1)) / 2
         const isFuture = i > todayIdx
         const isToday = day === today
         const opacity = isFuture ? 0 : activity
@@ -340,6 +341,8 @@ export default function Dashboard() {
   const lastUpdatedAt = useAppStore((s) => s.meta.lastUpdatedAt)
   const score = useAppStore(selectLifePulseScore)
   const insight = useAppStore(selectDailyInsight)
+  const dimensionScores = useAppStore(selectDimensionScores)
+  const stepGoal = useAppStore((s) => selectProgressiveGoals(s).goalStepsPerDay)
 
   const day = getDayKey()
   const steps = useAppStore((s) => s.physical.weeklySteps.find((x) => x.day === day)?.steps ?? 0)
@@ -349,14 +352,13 @@ export default function Dashboard() {
   const stressScore = useAppStore((s) => s.mood.today.stressScore)
   const [todayCalories, setTodayCalories] = useState(0)
   const [todayWater, setTodayWater] = useState(0)
-  const calorieGoal = (useAppStore.getState().goals as any).goalCaloriesPerDay ?? 2000
+  const calorieGoal = useAppStore((s) => selectProgressiveGoals(s).goalCaloriesPerDay)
 
   useEffect(() => {
     apiGet<{ success: boolean; data: { totals: { calories: number } } }>('/api/nutrition/today')
       .then(r => {
         const cal = Math.round(r.data.totals.calories)
         setTodayCalories(cal)
-        localStorage.setItem('lp_today_calories', String(cal))
       }).catch(() => null)
     apiGet<{ success: boolean; data: { glasses: number } }>('/api/nutrition/water/today')
       .then(r => setTodayWater(r.data.glasses)).catch(() => null)
@@ -372,11 +374,7 @@ export default function Dashboard() {
   const weeklyScreen = useAppStore((s) => s.digital.weeklyScreenTimeMin)
   const weeklyFocus = useAppStore((s) => s.productivity.focusMinutesByDay)
 
-  const [streak, setStreak] = useState(0)
-  useEffect(() => {
-    const stored = localStorage.getItem('lp_streak')
-    if (stored) setStreak(parseInt(stored, 10) || 0)
-  }, [])
+  const streak = useAppStore(selectStreak)
 
   const chartData = useMemo(() => {
     const stepsByDay = new Map(weeklySteps.map((x) => [x.day, x.steps]))
@@ -402,18 +400,21 @@ export default function Dashboard() {
 
   const timeOfDay = new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'
 
-  // 6 dimension bars
+  // 6 dimension bars — the same per-dimension scores the server used for the LifePulse Score
   const dimensions = [
-    { label: 'Physical', value: Math.min(Math.round((steps / 8000) * 100), 100), color: '#4CAF50' },
-    { label: 'Digital',  value: Math.min(Math.round(((240 - Math.min(screenMin, 240)) / 240) * 100), 100), color: '#00BCD4' },
-    { label: 'Focus',    value: Math.min(Math.round((focusMin / 120) * 100), 100), color: '#6366F1' },
-    { label: 'Mood',     value: Math.min(Math.round(((5 - stressScore + 1) / 5) * 100), 100), color: '#FFA500' },
-    { label: 'Eco',      value: Math.min(ecoActions * 25, 100), color: '#34A853' },
-    { label: 'Nutrition',value: Math.min(Math.round((todayCalories / calorieGoal) * 100), 100), color: '#FF6B6B' },
+    { label: 'Physical', value: dimensionScores.physical, color: '#4CAF50' },
+    { label: 'Digital',  value: dimensionScores.digital, color: '#00BCD4' },
+    { label: 'Focus',    value: dimensionScores.productivity, color: '#6366F1' },
+    { label: 'Mood',     value: dimensionScores.mood, color: '#FFA500' },
+    { label: 'Eco',      value: dimensionScores.eco, color: '#34A853' },
+    { label: 'Nutrition',value: dimensionScores.nutrition, color: '#FF6B6B' },
   ]
 
   return (
     <div className="space-y-5">
+
+      {/* Weekly check-in reminder — only shows when one is due */}
+      <AssessmentReminder />
 
       {/* ══ ROW 1 — Greeting hero + streak ══ */}
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
@@ -538,7 +539,7 @@ export default function Dashboard() {
         className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <DimensionCard label="Steps" value={formatNumber(steps)} sub="today"
           icon={<Activity size={17} />} color="#4CAF50"
-          trend={steps >= 8000 ? 'up' : steps > 0 ? 'flat' : 'down'}
+          trend={steps >= stepGoal ? 'up' : steps > 0 ? 'flat' : 'down'}
           to="/physical" sparkValues={stepsSparkline} />
         <DimensionCard label="Sleep" value={sleep > 0 ? `${sleep.toFixed(1)}h` : '—'} sub="last night"
           icon={<Moon size={17} />} color="#6366F1"
@@ -600,6 +601,9 @@ export default function Dashboard() {
 
         {/* Right sidebar */}
         <div className="space-y-3">
+
+          {/* Cycle phase — only for female users with a logged period; hidden until revealed */}
+          <CyclePhaseCard />
 
           {/* Today's checklist */}
           <div className="rounded-3xl p-4"

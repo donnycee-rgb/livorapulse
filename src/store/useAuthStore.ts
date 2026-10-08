@@ -23,9 +23,12 @@ export type AuthUser = {
     goalEcoActionsPerDay?: number
     goalSocialMinutes?: number
     goalEntertainmentMinutes?: number
+    goalCaloriesPerDay?: number
     hasDisability?: boolean
     gender?: string
     dateOfBirth?: string
+    heightCm?: number | null
+    weightKg?: number | null
   } | null
 }
 

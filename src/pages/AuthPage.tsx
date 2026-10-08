@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 import { useAuthStore } from '../store/useAuthStore'
+import { useAppStore } from '../store/useAppStore'
 import { apiPost } from '../api/client'
 import HealthIllustration from '../components/HealthIllustration'
 import LoginIllustration from '../components/FitnessIllustration'
@@ -233,7 +234,7 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 }
 
 // ---------------------------------------------------------------------------
-// Assessment data seeding (kept from original)
+// Weekly check-in questions
 // ---------------------------------------------------------------------------
 export const ASSESSMENT_QUESTIONS = [
   { id: 'physical', dimension: 'Physical', color: '#4CAF50', question: 'Hours of exercise per week?', options: ['0–1 hrs', '2–3 hrs', '4–6 hrs', '7+ hrs'] },
@@ -242,60 +243,6 @@ export const ASSESSMENT_QUESTIONS = [
   { id: 'mood', dimension: 'Mood', color: '#FFA500', question: 'How has your mood been this week?', options: ['Stressed', 'Neutral', 'Good', 'Excellent'] },
   { id: 'eco', dimension: 'Eco', color: '#34A853', question: 'How eco-conscious are your habits?', options: ['Rarely', 'Sometimes', 'Often', 'Always'] },
 ]
-
-const PHYSICAL_MAP = [
-  { steps: 2000, distanceKm: 1.2, caloriesKcal: 80, sleepMinutes: 390 },
-  { steps: 5000, distanceKm: 3.5, caloriesKcal: 180, sleepMinutes: 420 },
-  { steps: 8000, distanceKm: 5.5, caloriesKcal: 280, sleepMinutes: 450 },
-  { steps: 12000, distanceKm: 8.5, caloriesKcal: 420, sleepMinutes: 480 },
-]
-const DIGITAL_MAP = [
-  { screenTimeMinutes: 90, categoryBreakdown: { Social: 30, Productive: 40, Entertainment: 20 } },
-  { screenTimeMinutes: 240, categoryBreakdown: { Social: 90, Productive: 80, Entertainment: 70 } },
-  { screenTimeMinutes: 390, categoryBreakdown: { Social: 150, Productive: 120, Entertainment: 120 } },
-  { screenTimeMinutes: 540, categoryBreakdown: { Social: 200, Productive: 140, Entertainment: 200 } },
-]
-const PRODUCTIVITY_MAP = [
-  { durationSec: 900, label: 'Light focus' },
-  { durationSec: 2700, label: 'Moderate focus' },
-  { durationSec: 5400, label: 'Deep work' },
-  { durationSec: 9000, label: 'Peak focus' },
-]
-const MOOD_MAP = [
-  { emoji: '😣', stressScore: 9 },
-  { emoji: '😐', stressScore: 6 },
-  { emoji: '🙂', stressScore: 4 },
-  { emoji: '😄', stressScore: 2 },
-]
-const ECO_MAP = [
-  { category: 'WASTE', type: 'Basic recycling', impactKgCO2: 0.1 },
-  { category: 'WASTE', type: 'Regular recycling', impactKgCO2: 0.3 },
-  { category: 'TRANSPORT', type: 'Cycling commute', impactKgCO2: 0.6 },
-  { category: 'TRANSPORT', type: 'Zero-emission day', impactKgCO2: 1.2 },
-]
-
-async function seedAssessmentData(answers: Record<string, number>): Promise<void> {
-  const now = new Date().toISOString()
-  const yesterday = new Date(Date.now() - 86400000).toISOString()
-  const p = answers['physical'] ?? 0
-  const di = answers['digital'] ?? 0
-  const pr = answers['productivity'] ?? 0
-  const m = answers['mood'] ?? 0
-  const e = answers['eco'] ?? 0
-  await Promise.allSettled([
-    apiPost('/api/activity/physical', { ...PHYSICAL_MAP[p], timestamp: now }),
-    apiPost('/api/activity/physical', { ...PHYSICAL_MAP[p], timestamp: yesterday }),
-    apiPost('/api/activity/digital', { ...DIGITAL_MAP[di], date: now }),
-    apiPost('/api/activity/digital', { ...DIGITAL_MAP[di], date: yesterday }),
-    apiPost('/api/productivity/session', {
-      kind: 'FOCUS', label: PRODUCTIVITY_MAP[pr].label,
-      startedAt: new Date(Date.now() - PRODUCTIVITY_MAP[pr].durationSec * 1000).toISOString(),
-      endedAt: now, durationSec: PRODUCTIVITY_MAP[pr].durationSec,
-    }),
-    apiPost('/api/mood', { ...MOOD_MAP[m] }),
-    apiPost('/api/eco', { ...ECO_MAP[e] }),
-  ])
-}
 
 // ---------------------------------------------------------------------------
 // Onboarding step validation
@@ -552,6 +499,11 @@ function RegisterFlow({ onSwitchToLogin, entryDelay }: RegisterFlowProps) {
         ecoConsciousness: onboardingData.ecoConsciousness,
       })
       setOnboardingComplete(true)
+      // Reload the profile so gender-specific features (cycle tracker) and the
+      // new goals show straight away, without a page reload
+      await useAuthStore.getState().loadMe().catch(() => null)
+      void useAppStore.getState().hydrateFromApi()
+      void useAppStore.getState().syncDashboardScore()
     } catch { /* non-fatal */ }
   }
 
@@ -568,13 +520,6 @@ function RegisterFlow({ onSwitchToLogin, entryDelay }: RegisterFlowProps) {
     try {
       await register({ name: name.trim(), email, password })
       await saveOnboarding()
-      await seedAssessmentData({
-        physical: ['sedentary', 'light'].includes(onboardingData.currentActivityLevel) ? 0 : onboardingData.currentActivityLevel === 'moderate' ? 1 : 2,
-        digital: onboardingData.currentScreenHours <= 2 ? 0 : onboardingData.currentScreenHours <= 5 ? 1 : 2,
-        productivity: onboardingData.currentActivityLevel === 'sedentary' ? 0 : 1,
-        mood: ['thriving'].includes(onboardingData.currentMood) ? 3 : ['balanced'].includes(onboardingData.currentMood) ? 2 : 1,
-        eco: ['rarely'].includes(onboardingData.ecoConsciousness) ? 0 : ['sometimes'].includes(onboardingData.ecoConsciousness) ? 1 : 2,
-      })
       setLastAssessmentAt(Date.now())
       toast.success('Welcome to LivoraPulse!')
       navigate('/dashboard')
@@ -840,7 +785,7 @@ function PromoPanel() {
       </div>
       <div className="space-y-5">
         <div className="space-y-3">
-          <h2 className="text-4xl font-black text-white leading-tight">Welcome<br /><span className="text-lp-primary">back.</span></h2>
+          <h1 className="text-4xl font-black text-white leading-tight">Welcome<br /><span className="text-lp-primary">back.</span></h1>
           <div className="w-10 h-[3px] bg-lp-primary rounded-full" />
           <p className="text-white/45 text-sm leading-relaxed">Your wellness data is waiting. Pick up right where you left off.</p>
         </div>
@@ -889,7 +834,7 @@ function RegisterPromoPanel({ step }: { step: number }) {
         >
           <div className="text-5xl">{c.emoji}</div>
           <div className="space-y-3">
-            <h2 className="text-4xl font-black text-white leading-tight">{c.title}</h2>
+            <h1 className="text-4xl font-black text-white leading-tight">{c.title}</h1>
             <div className="w-10 h-[3px] bg-lp-primary rounded-full" />
             <p className="text-white/45 text-sm leading-relaxed max-w-xs">{c.message}</p>
           </div>

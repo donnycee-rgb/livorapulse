@@ -1,0 +1,24 @@
+# LivoraPulse
+
+> LivoraPulse is a free web-based wellness tracker built for Kenya and Africa. It combines six dimensions of wellness — physical activity, nutrition, digital usage, productivity, mood and environmental (eco) habits — into one personalised LifePulse Score.
+
+## What it does
+
+- Physical: step, distance and calorie tracking, plus GPS walk tracking with route replay.
+- Nutrition: calorie and water logging with a built-in Kenyan / East African food database (ugali, sukuma wiki, nyama choma, chapati, mandazi, chai and more), with Open Food Facts as a fallback.
+- Digital: screen-time and app-usage tracking.
+- Productivity: focus and study session timers.
+- Mood: mood and stress logging over time.
+- Environment: eco actions, transport choices and carbon impact.
+- Cycle tracking with smart cycle-length averaging.
+- An AI wellness coach that answers questions using the user's own data.
+
+## Key pages
+
+- [Home](https://livorapulse.netlify.app/): overview of features and how the LifePulse Score works.
+- [Sign in / create account](https://livorapulse.netlify.app/login): free sign-up with email or Google.
+
+## Notes
+
+- Everything after sign-in is private user data and is not publicly accessible.
+- Audience: individuals in Kenya and across Africa looking to track and improve their overall wellbeing.

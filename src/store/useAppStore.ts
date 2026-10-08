@@ -1,17 +1,19 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { AppCategory, AppState, DayKey, MoodEmoji, ThemeMode, TransportMode, Units, UserGoals } from '../data/types'
+import type { AppCategory, AppState, DayKey, MoodEmoji, ScoreDimension, ThemeMode, TransportMode, Units, UserGoals } from '../data/types'
 import { seedState } from '../data/seed'
 import { apiGet, apiPost, apiPut } from '../api/client'
 
-const DEFAULT_GOALS: UserGoals = {
+// Same defaults as the server (GoalService.DEFAULT_GOALS)
+const DEFAULT_GOALS: Required<UserGoals> = {
   goalStepsPerDay: 8000,
   goalSleepHours: 8,
   goalScreenMinutes: 240,
-  goalFocusMinutes: 120,
+  goalFocusMinutes: 60,
   goalEcoActionsPerDay: 3,
   goalSocialMinutes: 60,
   goalEntertainmentMinutes: 90,
+  goalCaloriesPerDay: 2000,
 }
 
 function uid(prefix: string) {
@@ -86,19 +88,48 @@ type ScoreResponse = {
   date: string
   score: number
   insight: string
-  components: {
-    physical: number
-    digital: number
-    productivity: number
-    mood: number
-    eco: number
-  }
+  components: Record<ScoreDimension, number>
+  logged: Record<ScoreDimension, boolean>
+  goals: Required<UserGoals>
+  streak: number
+  multiplier: number
+}
+
+/** Today's date as YYYY-MM-DD in the user's own timezone (not UTC) */
+function localDateKey(d = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+// Refresh the server score shortly after any change is saved. Several quick
+// changes (e.g. nudging the stress slider) collapse into one request.
+let scoreSyncTimer: ReturnType<typeof setTimeout> | undefined
+export function scheduleScoreSync(delayMs = 400) {
+  if (scoreSyncTimer) clearTimeout(scoreSyncTimer)
+  scoreSyncTimer = setTimeout(() => {
+    void useAppStore.getState().syncDashboardScore()
+  }, delayMs)
 }
 
 // ---------------------------------------------------------------------------
 // Map API responses → store shape
 // ---------------------------------------------------------------------------
 const DAYS: DayKey[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+// The charts are bucketed by weekday, so only entries from the last 7 local
+// days may go in — otherwise last Monday's steps would be added to this Monday.
+function startOfLocalDay(daysAgo = 0): number {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() - daysAgo)
+  return d.getTime()
+}
+function inLastWeek(iso: string): boolean {
+  return new Date(iso).getTime() >= startOfLocalDay(6)
+}
+function isToday(iso: string): boolean {
+  return new Date(iso).getTime() >= startOfLocalDay(0)
+}
 
 function dayKeyFromDate(iso: string): DayKey {
   const wd = new Date(iso).toLocaleDateString('en-US', { weekday: 'short' })
@@ -107,6 +138,7 @@ function dayKeyFromDate(iso: string): DayKey {
 }
 
 function buildWeeklySteps(entries: PhysicalEntry[]): AppState['physical']['weeklySteps'] {
+  entries = entries.filter((e) => inLastWeek(e.timestamp))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   // FIX: Only count entries with actual steps (not sleep-only entries)
   entries.filter(e => e.steps > 0).forEach((e) => {
@@ -117,6 +149,7 @@ function buildWeeklySteps(entries: PhysicalEntry[]): AppState['physical']['weekl
 }
 
 function buildWeeklyDistance(entries: PhysicalEntry[]): AppState['physical']['weeklyDistanceKm'] {
+  entries = entries.filter((e) => inLastWeek(e.timestamp))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.filter(e => e.distanceKm > 0).forEach((e) => {
     const day = dayKeyFromDate(e.timestamp)
@@ -126,6 +159,7 @@ function buildWeeklyDistance(entries: PhysicalEntry[]): AppState['physical']['we
 }
 
 function buildWeeklyCalories(entries: PhysicalEntry[]): AppState['physical']['weeklyCaloriesKcal'] {
+  entries = entries.filter((e) => inLastWeek(e.timestamp))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.filter(e => e.caloriesKcal > 0).forEach((e) => {
     const day = dayKeyFromDate(e.timestamp)
@@ -136,6 +170,7 @@ function buildWeeklyCalories(entries: PhysicalEntry[]): AppState['physical']['we
 }
 
 function buildWeeklySleep(entries: PhysicalEntry[]): AppState['physical']['sleepHours'] {
+  entries = entries.filter((e) => inLastWeek(e.timestamp))
   const map = new Map<DayKey, number[]>(DAYS.map((d) => [d, []]))
   // FIX: Only count entries with actual sleep minutes (not activity-only entries)
   entries.filter(e => e.sleepMinutes > 0).forEach((e) => {
@@ -150,6 +185,7 @@ function buildWeeklySleep(entries: PhysicalEntry[]): AppState['physical']['sleep
 }
 
 function buildWeeklyScreen(entries: DigitalEntry[]): AppState['digital']['weeklyScreenTimeMin'] {
+  entries = entries.filter((e) => inLastWeek(e.date))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.forEach((e) => {
     const day = dayKeyFromDate(e.date)
@@ -158,7 +194,9 @@ function buildWeeklyScreen(entries: DigitalEntry[]): AppState['digital']['weekly
   return DAYS.map((day) => ({ day, minutes: map.get(day) ?? 0 }))
 }
 
+// Today's screen time by category (not all-time)
 function buildAppUsageCategories(entries: DigitalEntry[]): AppState['digital']['appUsageCategoriesMin'] {
+  entries = entries.filter((e) => isToday(e.date))
   const totals: Record<string, number> = { Social: 0, Productive: 0, Entertainment: 0 }
   entries.forEach((e) => {
     const bd = e.categoryBreakdown as Record<string, number>
@@ -174,6 +212,7 @@ function buildAppUsageCategories(entries: DigitalEntry[]): AppState['digital']['
 }
 
 function buildWeeklyFocus(entries: ProductivityEntry[]): AppState['productivity']['focusMinutesByDay'] {
+  entries = entries.filter((e) => inLastWeek(e.startedAt))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.filter((e) => e.kind === 'FOCUS').forEach((e) => {
     const day = dayKeyFromDate(e.startedAt)
@@ -183,6 +222,7 @@ function buildWeeklyFocus(entries: ProductivityEntry[]): AppState['productivity'
 }
 
 function buildWeeklyStudy(entries: ProductivityEntry[]): AppState['productivity']['studySessionsByDay'] {
+  entries = entries.filter((e) => inLastWeek(e.startedAt))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.filter((e) => e.kind === 'STUDY').forEach((e) => {
     const day = dayKeyFromDate(e.startedAt)
@@ -202,16 +242,18 @@ function buildFocusSessions(entries: ProductivityEntry[]): AppState['productivit
 }
 
 function buildMoodByDay(entries: MoodEntry[]): AppState['mood']['moodByDay'] {
+  entries = entries.filter((e) => inLastWeek(e.timestamp))
   const map = new Map<DayKey, MoodEmoji>()
   const validEmojis = new Set<string>(['😄', '🙂', '😐', '😕', '😣'])
   entries.forEach((e) => {
     const day = dayKeyFromDate(e.timestamp)
     if (validEmojis.has(e.emoji)) map.set(day, e.emoji as MoodEmoji)
   })
-  return DAYS.map((day) => ({ day, emoji: map.get(day) ?? '😐' }))
+  return DAYS.map((day) => ({ day, emoji: map.get(day) ?? null }))
 }
 
 function buildStressByDay(entries: MoodEntry[]): AppState['mood']['stressByDay'] {
+  entries = entries.filter((e) => inLastWeek(e.timestamp))
   const map = new Map<DayKey, number[]>(DAYS.map((d) => [d, []]))
   entries.forEach((e) => {
     const day = dayKeyFromDate(e.timestamp)
@@ -221,8 +263,8 @@ function buildStressByDay(entries: MoodEntry[]): AppState['mood']['stressByDay']
   })
   return DAYS.map((day) => {
     const vals = map.get(day) ?? []
-    const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 3
-    return { day, score: Math.round(avg) }
+    if (!vals.length) return { day, score: null } // no check-in that day
+    return { day, score: Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) }
   })
 }
 
@@ -236,6 +278,7 @@ function buildEcoActions(entries: EcoEntry[]): AppState['environment']['ecoActio
 }
 
 function buildRecycledByDay(entries: EcoEntry[]): AppState['environment']['recycledItemsByDay'] {
+  entries = entries.filter((e) => inLastWeek(e.timestamp))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.filter((e) => e.category === 'WASTE').forEach((e) => {
     const day = dayKeyFromDate(e.timestamp)
@@ -245,12 +288,14 @@ function buildRecycledByDay(entries: EcoEntry[]): AppState['environment']['recyc
 }
 
 function buildCarbonByDay(entries: EcoEntry[]): AppState['environment']['carbonKgByDay'] {
-  const map = new Map<DayKey, number>(DAYS.map((d) => [d, 5]))
-  entries.forEach((e) => {
+  entries = entries.filter((e) => inLastWeek(e.timestamp))
+  // CO₂ actually saved by logged actions — no invented baseline footprint
+  const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
+  entries.filter((e) => e.impactKgCO2 > 0).forEach((e) => {
     const day = dayKeyFromDate(e.timestamp)
-    map.set(day, Math.max(0, (map.get(day) ?? 5) - e.impactKgCO2))
+    map.set(day, (map.get(day) ?? 0) + e.impactKgCO2)
   })
-  return DAYS.map((day) => ({ day, kg: Math.round((map.get(day) ?? 5) * 10) / 10 }))
+  return DAYS.map((day) => ({ day, kg: Math.round((map.get(day) ?? 0) * 10) / 10 }))
 }
 
 // ---------------------------------------------------------------------------
@@ -292,7 +337,7 @@ function buildEmptyState(): AppState {
       ecoActions: [],
       recycledItemsByDay: DAYS.map((day) => ({ day, items: 0 })),
       plasticUsageByDay: DAYS.map((day) => ({ day, items: 0 })),
-      carbonKgByDay: DAYS.map((day) => ({ day, kg: 5 })),
+      carbonKgByDay: DAYS.map((day) => ({ day, kg: 0 })),
       transportMode: 'Walking',
       transportModeSplit: [
         { mode: 'Walking', trips: 0 },
@@ -302,8 +347,8 @@ function buildEmptyState(): AppState {
     },
     mood: {
       today: { emoji: '😐', stressScore: 3 },
-      moodByDay: DAYS.map((day) => ({ day, emoji: '😐' as MoodEmoji })),
-      stressByDay: DAYS.map((day) => ({ day, score: 3 })),
+      moodByDay: DAYS.map((day) => ({ day, emoji: null })),
+      stressByDay: DAYS.map((day) => ({ day, score: null })),
     },
     meta: { lastUpdatedAt: Date.now() },
   }
@@ -425,6 +470,7 @@ export const useAppStore = create<AppStore>()(
             note: note ?? '',
             trail: trail ?? [],
           })
+          scheduleScoreSync()
           get().pushNotification({
             title: 'Activity saved',
             message: `${steps} steps and ${distanceKm.toFixed(1)} km saved to your profile.`,
@@ -463,6 +509,7 @@ export const useAppStore = create<AppStore>()(
             caloriesKcal: 0,
             sleepMinutes: Math.round(hours * 60),
           })
+          scheduleScoreSync()
         } catch {
           // Rollback
           set((s) => ({
@@ -498,6 +545,7 @@ export const useAppStore = create<AppStore>()(
             screenTimeMinutes: minutes,
             categoryBreakdown: { [category]: minutes },
           })
+          scheduleScoreSync()
         } catch {
           // Rollback
           set((s) => ({
@@ -607,6 +655,7 @@ export const useAppStore = create<AppStore>()(
             endedAt: new Date(endedAt).toISOString(),
             durationSec: elapsed,
           })
+          scheduleScoreSync()
           get().pushNotification({ title: 'Focus saved', message: `${minutes} minutes saved to your profile.` })
         } catch {
           // Rollback focus minutes on failure
@@ -643,6 +692,7 @@ export const useAppStore = create<AppStore>()(
             endedAt: endedAt.toISOString(),
             durationSec: 1800,
           })
+          scheduleScoreSync()
         } catch {
           set((s) => ({
             productivity: {
@@ -666,15 +716,16 @@ export const useAppStore = create<AppStore>()(
             recycledItemsByDay: category === 'WASTE'
               ? incrementByDay(s.environment.recycledItemsByDay, day, 'items', 1)
               : s.environment.recycledItemsByDay,
-            carbonKgByDay: updateByDay(s.environment.carbonKgByDay, day, {
-              kg: Math.max(0, (s.environment.carbonKgByDay.find((x) => x.day === day)?.kg ?? 5) - impactKgCO2),
-            }),
+            carbonKgByDay: impactKgCO2 > 0
+              ? incrementByDay(s.environment.carbonKgByDay, day, 'kg', impactKgCO2)
+              : s.environment.carbonKgByDay,
           },
           meta: { lastUpdatedAt: now() },
         }))
 
         try {
           await apiPost('/api/eco', { category, type, impactKgCO2 })
+          scheduleScoreSync()
           get().pushNotification({ title: 'Eco action saved', message: type })
         } catch {
           set((s) => ({
@@ -713,6 +764,7 @@ export const useAppStore = create<AppStore>()(
             type: mode,
             impactKgCO2: mode === 'Driving' ? 0 : 0.5,
           })
+          scheduleScoreSync()
         } catch {
           set((s) => ({
             environment: {
@@ -744,6 +796,7 @@ export const useAppStore = create<AppStore>()(
           const stressScore = get().mood.today.stressScore
           // FIX: Consistent * 2 to convert 1-5 → 1-10 for backend
           await apiPost('/api/mood', { emoji, stressScore: stressScore * 2 })
+          scheduleScoreSync()
         } catch {
           set((s) => ({
             mood: {
@@ -772,6 +825,7 @@ export const useAppStore = create<AppStore>()(
           const emoji = get().mood.today.emoji
           // FIX: Consistent * 2 to convert 1-5 → 1-10 for backend
           await apiPost('/api/mood', { emoji, stressScore: clamped * 2 })
+          scheduleScoreSync()
         } catch {
           set((s) => ({
             mood: {
@@ -792,6 +846,7 @@ export const useAppStore = create<AppStore>()(
         }))
         try {
           await apiPut('/api/user/onboarding/goals', patch)
+          scheduleScoreSync()
         } catch {
           // Non-fatal — goals are stored locally too
         }
@@ -813,7 +868,7 @@ export const useAppStore = create<AppStore>()(
             apiGet<{ success: boolean; data: ProductivityEntry[] }>('/api/productivity/session'),
             apiGet<{ success: boolean; data: MoodEntry[] }>('/api/mood'),
             apiGet<{ success: boolean; data: EcoEntry[] }>('/api/eco'),
-            apiGet<{ success: boolean; data: { name: string; email: string; avatarUrl?: string | null; preferences?: { theme: string; units: string; notificationsEnabled: boolean } | null; profile?: { onboardingComplete: boolean; primaryGoal?: string; goalStepsPerDay?: number; goalSleepHours?: number; goalScreenMinutes?: number; goalFocusMinutes?: number; goalEcoActionsPerDay?: number; goalSocialMinutes?: number; goalEntertainmentMinutes?: number; hasDisability?: boolean } | null } }>('/api/user/profile'),
+            apiGet<{ success: boolean; data: { name: string; email: string; avatarUrl?: string | null; preferences?: { theme: string; units: string; notificationsEnabled: boolean } | null; profile?: { onboardingComplete: boolean; primaryGoal?: string; goalStepsPerDay?: number; goalSleepHours?: number; goalScreenMinutes?: number; goalFocusMinutes?: number; goalEcoActionsPerDay?: number; goalSocialMinutes?: number; goalEntertainmentMinutes?: number; goalCaloriesPerDay?: number; hasDisability?: boolean } | null } }>('/api/user/profile'),
           ])
 
           // FIX: Start from clean empty state — not from existing store state
@@ -933,6 +988,7 @@ export const useAppStore = create<AppStore>()(
                   goalEcoActionsPerDay: user.profile.goalEcoActionsPerDay ?? DEFAULT_GOALS.goalEcoActionsPerDay,
                   goalSocialMinutes: user.profile.goalSocialMinutes ?? DEFAULT_GOALS.goalSocialMinutes,
                   goalEntertainmentMinutes: user.profile.goalEntertainmentMinutes ?? DEFAULT_GOALS.goalEntertainmentMinutes,
+                  goalCaloriesPerDay: user.profile.goalCaloriesPerDay ?? DEFAULT_GOALS.goalCaloriesPerDay,
                 }
                 next.onboarding = {
                   onboardingComplete: user.profile.onboardingComplete ?? false,
@@ -952,28 +1008,24 @@ export const useAppStore = create<AppStore>()(
       // ── Dashboard score sync ──────────────────────────────────────────────
       syncDashboardScore: async () => {
         try {
-          const today = new Date().toISOString().split('T')[0]
-          const [scoreRes, streakRes] = await Promise.allSettled([
-            apiGet<ScoreResponse>(`/api/score/daily?date=${today}`),
-            apiGet<{ success: boolean; data: { streak: number } }>('/api/score/streak'),
-          ])
-
-          if (scoreRes.status === 'fulfilled') {
-            set((s) => ({
-              dashboard: {
-                ...s.dashboard,
-                score: scoreRes.value.score,
-                insight: scoreRes.value.insight ?? s.dashboard.insight,
-                loading: false,
-              },
-              meta: { lastUpdatedAt: now() },
-            }))
-          }
-
-          if (streakRes.status === 'fulfilled') {
-            const streak = streakRes.value.data.streak
-            localStorage.setItem('lp_streak', String(streak))
-          }
+          // Local calendar day — toISOString() would give yesterday's date
+          // between midnight and 3 a.m. in Nairobi
+          const res = await apiGet<ScoreResponse>(`/api/score/daily?date=${localDateKey()}`)
+          set((s) => ({
+            dashboard: {
+              ...s.dashboard,
+              score: res.score,
+              insight: res.insight ?? s.dashboard.insight,
+              loading: false,
+              components: res.components,
+              logged: res.logged,
+              goals: res.goals,
+              streak: res.streak,
+              multiplier: res.multiplier,
+              date: res.date,
+            },
+            meta: { lastUpdatedAt: now() },
+          }))
         } catch {
           // Non-fatal
         }

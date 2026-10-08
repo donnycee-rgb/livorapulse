@@ -15,6 +15,7 @@ import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 
 import { useAppStore } from '../store/useAppStore'
+import { selectProgressiveGoals } from '../store/selectors'
 import { getDayKey } from '../utils/date'
 import { formatMinutesToHM } from '../utils/format'
 import type { AppCategory } from '../data/types'
@@ -281,9 +282,10 @@ function CategoryBreakdownCard({ categories }: {
 function WeeklySummaryCard({ weeklyScreen }: {
   weeklyScreen: Array<{ day: string; minutes: number }>
 }) {
+  const screenGoal = useAppStore((s) => selectProgressiveGoals(s).goalScreenMinutes)
   const total = weeklyScreen.reduce((s, x) => s + x.minutes, 0)
   const avg = Math.round(total / 7)
-  const daysOver = weeklyScreen.filter(x => x.minutes > 240).length
+  const daysOver = weeklyScreen.filter(x => x.minutes > screenGoal).length
   const bestDay = [...weeklyScreen].sort((a, b) => a.minutes - b.minutes).find(x => x.minutes > 0)
 
   return (
@@ -317,7 +319,7 @@ function WeeklySummaryCard({ weeklyScreen }: {
         <div className="flex items-end gap-1 h-10">
           {weeklyScreen.map((x) => {
             const h = Math.max(3, Math.round((x.minutes / 480) * 40))
-            const over = x.minutes > 240
+            const over = x.minutes > screenGoal
             return (
               <div key={x.day} className="flex-1 flex flex-col items-center gap-0.5">
                 <div
@@ -341,6 +343,7 @@ function WeeklySummaryCard({ weeklyScreen }: {
 // Digital page root
 // ---------------------------------------------------------------------------
 export default function Digital() {
+  const screenGoal = useAppStore((s) => selectProgressiveGoals(s).goalScreenMinutes)
   const digital = useAppStore((s) => s.digital)
   const addScreenSession = useAppStore((s) => s.addScreenSession)
   const toggleFocusMode = useAppStore((s) => s.toggleFocusMode)
@@ -363,11 +366,11 @@ export default function Digital() {
     if (todayScreen === 0) return 'No screen time logged yet today.'
     if (todayScreen <= 60) return `Only ${formatMinutesToHM(todayScreen)} of screen time today — excellent digital balance.`
     if (todayScreen <= 120) return `${formatMinutesToHM(todayScreen)} of screen time today — well within your daily limit.`
-    if (todayScreen <= 240) return `${formatMinutesToHM(todayScreen)} of screen time today — ${formatMinutesToHM(240 - todayScreen)} left before the 4-hour limit.`
-    return `${formatMinutesToHM(todayScreen)} today — you are ${formatMinutesToHM(todayScreen - 240)} over the recommended daily limit.`
+    if (todayScreen <= screenGoal) return `${formatMinutesToHM(todayScreen)} of screen time today — ${formatMinutesToHM(screenGoal - todayScreen)} left before your daily limit.`
+    return `${formatMinutesToHM(todayScreen)} today — you are ${formatMinutesToHM(todayScreen - screenGoal)} over your daily limit.`
   }, [todayScreen])
 
-  const screenTrend = todayScreen <= 120 ? 'up' : todayScreen <= 240 ? 'flat' : 'down'
+  const screenTrend = todayScreen <= 120 ? 'up' : todayScreen <= screenGoal ? 'flat' : 'down'
 
   const categoryColors: Record<AppCategory, string> = {
     Social: '#FF6B6B',
@@ -411,8 +414,8 @@ export default function Digital() {
               context={
                 todayScreen === 0 ? 'Log a session to start tracking' :
                 todayScreen <= 120 ? 'Well under the daily limit' :
-                todayScreen <= 240 ? `${formatMinutesToHM(240 - todayScreen)} left before limit` :
-                `${formatMinutesToHM(todayScreen - 240)} over daily limit`
+                todayScreen <= screenGoal ? `${formatMinutesToHM(screenGoal - todayScreen)} left before limit` :
+                `${formatMinutesToHM(todayScreen - screenGoal)} over daily limit`
               }
               icon={<MonitorSmartphone size={17} />}
               color="#00BCD4"
