@@ -1,4 +1,4 @@
-import { Bell, Sun, Moon, ChevronDown, Settings, User, LogOut, Laptop } from 'lucide-react'
+import { Bell, Sun, Moon, ChevronDown, Settings, User, LogOut, Laptop, FileText } from 'lucide-react'
 import { useRef, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -243,6 +243,7 @@ function ProfileDropdown() {
             <div className="p-1.5 space-y-0.5">
               {[
                 { icon: <User size={14} />, label: 'Profile', to: '/profile' },
+                { icon: <FileText size={14} />, label: 'Health summary', to: '/summary' },
                 { icon: <Settings size={14} />, label: 'Settings', to: '/settings' },
               ].map(({ icon, label, to }) => (
                 <button

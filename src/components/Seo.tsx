@@ -31,6 +31,11 @@ function seoForPath(pathname: string): PageSeo {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
   if (publicPages[path]) return publicPages[path]
 
+  // A shared health summary: private, whoever has the link
+  if (isSharedLink(path)) {
+    return { title: 'Shared health summary | LivoraPulse', description: DEFAULT_DESCRIPTION, index: false }
+  }
+
   // Signed-in app pages and unknown URLs stay out of search results
   const isAppPage = routes.some((r) => path === r.path) || path === '/nutrition' || path === '/welcome'
   return {
@@ -38,6 +43,11 @@ function seoForPath(pathname: string): PageSeo {
     description: DEFAULT_DESCRIPTION,
     index: false,
   }
+}
+
+/** Shared-summary links carry a secret token in the path */
+function isSharedLink(path: string) {
+  return path.startsWith('/shared/')
 }
 
 function setMeta(attr: 'name' | 'property', key: string, content: string) {
@@ -65,7 +75,10 @@ export default function Seo() {
 
   useEffect(() => {
     const seo = seoForPath(pathname)
-    const url = `${SITE_URL}${pathname === '/' ? '/' : pathname.replace(/\/+$/, '')}`
+    // Never copy a shared link's token into page metadata
+    const url = isSharedLink(pathname)
+      ? `${SITE_URL}/`
+      : `${SITE_URL}${pathname === '/' ? '/' : pathname.replace(/\/+$/, '')}`
 
     document.title = seo.title
     setMeta('name', 'description', seo.description)

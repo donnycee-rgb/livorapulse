@@ -53,6 +53,27 @@ export async function apiRequest<T>(
   return data as T
 }
 
+/** For file downloads (e.g. a PDF): same auth and error handling, returns the body as a Blob */
+export async function apiBlob(path: string, auth = true): Promise<Blob> {
+  const url = path.startsWith('http') ? path : `${API_BASE}${path}`
+  const headers = new Headers()
+  if (auth) {
+    const token = getToken()
+    if (token) headers.set('Authorization', `Bearer ${token}`)
+  }
+  const res = await fetch(url, { headers })
+  if (!res.ok) {
+    const data = await parseJsonSafe(res)
+    throw Object.assign(new Error(data?.error?.message || res.statusText || 'Request failed'), { status: res.status })
+  }
+  return res.blob()
+}
+
+/** Full URL for an API path, for plain links (e.g. a public PDF) */
+export function apiUrl(path: string): string {
+  return `${API_BASE}${path}`
+}
+
 export function apiGet<T>(path: string, auth = true) {
   return apiRequest<T>(path, { method: 'GET', auth })
 }

@@ -17,6 +17,8 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Digital = lazy(() => import('./pages/Digital'))
 const Environment = lazy(() => import('./pages/Environment'))
 const Insights = lazy(() => import('./pages/Insights'))
+const HealthSummary = lazy(() => import('./pages/HealthSummary'))
+const SharedSummary = lazy(() => import('./pages/SharedSummary'))
 const Mood = lazy(() => import('./pages/Mood'))
 const Nutrition = lazy(() => import('./pages/Nutrition'))
 const Physical = lazy(() => import('./pages/Physical'))
@@ -62,6 +64,11 @@ export default function App() {
         <Route path="/environment" element={
           <ProtectedRoute><Layout><RouteTransition><Environment /></RouteTransition></Layout></ProtectedRoute>
         } />
+        <Route path="/summary" element={
+          <ProtectedRoute><Layout><RouteTransition><HealthSummary /></RouteTransition></Layout></ProtectedRoute>
+        } />
+        {/* Public: a health summary someone shared; the token is the only key */}
+        <Route path="/shared/summary/:token" element={<SharedSummary />} />
         <Route path="/insights" element={
           <ProtectedRoute><Layout><RouteTransition><Insights /></RouteTransition></Layout></ProtectedRoute>
         } />
