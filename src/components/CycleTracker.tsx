@@ -57,8 +57,10 @@ const PHASE_CONFIG = {
   },
 }
 
+// "Severe cramps" (pain that gets in the way of the day) is kept separate from
+// ordinary cramps so the backend can tell them apart
 const SYMPTOMS = [
-  'Cramps', 'Bloating', 'Fatigue', 'Mood swings',
+  'Cramps', 'Severe cramps', 'Bloating', 'Fatigue', 'Mood swings',
   'Headache', 'Back pain', 'Tender breasts', 'Nausea', 'Acne', 'Insomnia',
 ]
 

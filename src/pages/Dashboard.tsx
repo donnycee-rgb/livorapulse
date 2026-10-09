@@ -18,6 +18,7 @@ import { apiGet } from '../api/client'
 import AssessmentReminder from '../components/AssessmentReminder'
 import CyclePhaseCard from '../components/CyclePhaseCard'
 import TopInsightCard from '../components/TopInsightCard'
+import HealthFlags from '../components/HealthFlags'
 import ExperimentCheckCard from '../components/ExperimentCheckCard'
 
 // ---------------------------------------------------------------------------
@@ -417,6 +418,9 @@ export default function Dashboard() {
 
       {/* Weekly check-in reminder — only shows when one is due */}
       <AssessmentReminder />
+
+      {/* "Worth getting checked" prompts, if any */}
+      <HealthFlags />
 
       {/* ══ ROW 1 — Greeting hero + streak ══ */}
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
