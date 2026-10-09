@@ -17,6 +17,7 @@ import { getDayKey } from '../utils/date'
 import { apiGet } from '../api/client'
 import AssessmentReminder from '../components/AssessmentReminder'
 import CyclePhaseCard from '../components/CyclePhaseCard'
+import TopInsightCard from '../components/TopInsightCard'
 
 // ---------------------------------------------------------------------------
 // Helpers — unchanged
@@ -537,6 +538,9 @@ export default function Dashboard() {
           </div>
         </div>
       </motion.div>
+
+      {/* Top insight from the user's own data, or progress toward the first one */}
+      <TopInsightCard />
 
       {/* ══ ROW 2 — Dimension metric cards ══ */}
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}

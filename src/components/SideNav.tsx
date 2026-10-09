@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Home, Activity, MonitorSmartphone, BarChart3,
-  Leaf, Heart, User, Settings, ChevronRight, UtensilsCrossed,
+  Leaf, Heart, User, Settings, ChevronRight, UtensilsCrossed, Lightbulb,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useAppStore } from '../store/useAppStore'
@@ -12,6 +12,7 @@ const NAV_SECTIONS = [
     label: 'Overview',
     items: [
       { to: '/dashboard', label: 'Dashboard', Icon: Home },
+      { to: '/insights',  label: 'Insights',  Icon: Lightbulb },
     ],
   },
   {
