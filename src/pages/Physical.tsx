@@ -12,6 +12,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import WalkTracker from '../components/WalkTracker'
+import PendingWalksCard from '../components/PendingWalksCard'
 
 import { useAppStore } from '../store/useAppStore'
 import { selectDimensionScores, selectLifePulseScore, selectProgressiveGoals } from '../store/selectors'
@@ -275,6 +276,9 @@ export default function Physical() {
 
   return (
     <div className="space-y-5">
+
+      {/* Walks saved on this phone that haven't uploaded yet */}
+      <PendingWalksCard />
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">

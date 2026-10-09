@@ -7,6 +7,7 @@ import AppToaster from './components/ui/Toaster'
 import { useThemeSync } from './hooks/useThemeSync'
 import { useAuthStore } from './store/useAuthStore'
 import { useAppStore } from './store/useAppStore'
+import { usePendingWalkSync } from './hooks/usePendingWalkSync'
 import './styles/globals.css'
 
 function Root() {
@@ -19,9 +20,12 @@ function Root() {
   const handleGoogleCallback = useAuthStore((s) => s.handleGoogleCallback)
   const [authReady, setAuthReady] = useState(false)
 
-  // Handle Google OAuth redirect (?token= in URL)
+  // Upload walks that were saved on this phone while offline or signed out
+  usePendingWalkSync()
+
+  // Finish Google sign-in (one-time ?code= in the URL)
   useEffect(() => {
-    handleGoogleCallback()
+    handleGoogleCallback().catch(() => null)
   }, [])
 
   // Wait for auth store hydration

@@ -368,7 +368,8 @@ export type AppActions = {
   pushNotification: (n: Omit<AppState['notifications'][number], 'id' | 'timestamp' | 'read'>) => void
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
-  addActivity: (input: { steps: number; distanceKm: number; caloriesKcal: number; note?: string; trail?: Array<{ lat: number; lng: number }>; durationSec?: number }) => Promise<void>
+  /** `startedAt` (ISO) files the activity under the day it happened, even if it's saved later */
+  addActivity: (input: { steps: number; distanceKm: number; caloriesKcal: number; note?: string; trail?: Array<{ lat: number; lng: number }>; durationSec?: number; startedAt?: string }) => Promise<void>
   updateSleepForToday: (hours: number) => Promise<void>
   addScreenSession: (input: { category: AppCategory; minutes: number }) => Promise<void>
   toggleFocusMode: () => void
@@ -446,7 +447,7 @@ export const useAppStore = create<AppStore>()(
       // ── Physical ──────────────────────────────────────────────────────────
       // FIX: Now async — waits for API confirmation before showing success
       // FIX: Activity and sleep are separate API calls — no more sleepMinutes: 0
-      addActivity: async ({ steps, distanceKm, caloriesKcal, note, trail, durationSec }) => {
+      addActivity: async ({ steps, distanceKm, caloriesKcal, note, trail, durationSec, startedAt }) => {
         const day = getDayKey()
         // Optimistic update
         set((s) => ({
@@ -471,6 +472,7 @@ export const useAppStore = create<AppStore>()(
             sleepMinutes: 0,
             note: note ?? '',
             trail: trail ?? [],
+            ...(startedAt ? { timestamp: startedAt } : {}),
           })
           scheduleScoreSync()
           get().pushNotification({
@@ -488,7 +490,8 @@ export const useAppStore = create<AppStore>()(
               activityLog: s.physical.activityLog.filter((a) => a.steps !== steps),
             },
           }))
-          throw new Error('Failed to save activity. Please check your connection and try again.')
+          // Pass the real reason on (offline, signed out, server error) instead of guessing
+          throw err instanceof Error ? err : new Error('Failed to save activity. Please try again.')
         }
       },
 
