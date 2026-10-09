@@ -70,8 +70,9 @@ type ProductivityEntry = {
 
 type MoodEntry = {
   id: string
-  emoji: string
-  stressScore: number
+  // A check-in can hold mood, stress or both
+  emoji: string | null
+  stressScore: number | null
   note: string | null
   timestamp: string
 }
@@ -247,7 +248,7 @@ function buildMoodByDay(entries: MoodEntry[]): AppState['mood']['moodByDay'] {
   const validEmojis = new Set<string>(['😄', '🙂', '😐', '😕', '😣'])
   entries.forEach((e) => {
     const day = dayKeyFromDate(e.timestamp)
-    if (validEmojis.has(e.emoji)) map.set(day, e.emoji as MoodEmoji)
+    if (e.emoji !== null && validEmojis.has(e.emoji)) map.set(day, e.emoji as MoodEmoji)
   })
   return DAYS.map((day) => ({ day, emoji: map.get(day) ?? null }))
 }
@@ -256,6 +257,7 @@ function buildStressByDay(entries: MoodEntry[]): AppState['mood']['stressByDay']
   entries = entries.filter((e) => inLastWeek(e.timestamp))
   const map = new Map<DayKey, number[]>(DAYS.map((d) => [d, []]))
   entries.forEach((e) => {
+    if (e.stressScore === null) return // mood-only check-in
     const day = dayKeyFromDate(e.timestamp)
     // FIX: Backend stores 1-10, frontend uses 1-5 — consistent single division
     const score = Math.min(5, Math.max(1, Math.round(e.stressScore / 2)))
@@ -793,9 +795,9 @@ export const useAppStore = create<AppStore>()(
           meta: { lastUpdatedAt: now() },
         }))
         try {
-          const stressScore = get().mood.today.stressScore
-          // FIX: Consistent * 2 to convert 1-5 → 1-10 for backend
-          await apiPost('/api/mood', { emoji, stressScore: stressScore * 2 })
+          // Send only the mood — the stress slider's current value may be a
+          // default or yesterday's, and must not be saved as today's answer
+          await apiPost('/api/mood', { emoji })
           scheduleScoreSync()
         } catch {
           set((s) => ({
@@ -822,9 +824,9 @@ export const useAppStore = create<AppStore>()(
           meta: { lastUpdatedAt: now() },
         }))
         try {
-          const emoji = get().mood.today.emoji
-          // FIX: Consistent * 2 to convert 1-5 → 1-10 for backend
-          await apiPost('/api/mood', { emoji, stressScore: clamped * 2 })
+          // Send only the stress score (1-5 → 1-10 for the backend) — the
+          // selected emoji may be a default or yesterday's
+          await apiPost('/api/mood', { stressScore: clamped * 2 })
           scheduleScoreSync()
         } catch {
           set((s) => ({
@@ -933,14 +935,18 @@ export const useAppStore = create<AppStore>()(
               // FIX: Get today's mood entry specifically
               const todayKey = getDayKey()
               const todayEntries = entries.filter(e => dayKeyFromDate(e.timestamp) === todayKey)
-              const latest = todayEntries[0] ?? entries[0]
+              // Latest answer of each kind — a check-in may hold only one of them
+              const pick = <K extends 'emoji' | 'stressScore'>(key: K) =>
+                (todayEntries.find((e) => e[key] !== null) ?? entries.find((e) => e[key] !== null))?.[key] ?? null
+              const latestEmoji = pick('emoji')
+              const latestStress = pick('stressScore')
               next.mood = {
                 moodByDay: buildMoodByDay(entries),
                 stressByDay: buildStressByDay(entries),
                 today: {
-                  emoji: (latest?.emoji as MoodEmoji) ?? '😐',
+                  emoji: (latestEmoji as MoodEmoji | null) ?? '😐',
                   // FIX: Consistent /2 conversion from backend 1-10 to frontend 1-5
-                  stressScore: latest ? Math.min(5, Math.max(1, Math.round(latest.stressScore / 2))) : 3,
+                  stressScore: latestStress !== null ? Math.min(5, Math.max(1, Math.round(latestStress / 2))) : 3,
                 },
               }
             }
