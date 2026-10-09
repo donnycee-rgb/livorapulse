@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { apiGet, apiPost } from '../api/client'
+import {
+  clearTokens, getAccessToken, getRefreshToken, onTokensChanged, setAccessTokenOnly, setSessionExpiredHandler, setTokens,
+} from '../api/session'
 
 export type AuthUser = {
   id: string
@@ -50,14 +53,13 @@ type AuthState = {
   register: (input: { name: string; email: string; password: string }) => Promise<void>
   login: (input: { email: string; password: string }) => Promise<void>
   loginWithGoogle: () => void
-  handleGoogleCallback: () => boolean
+  handleGoogleCallback: () => Promise<boolean>
   forgotPassword: (email: string) => Promise<void>
   loadMe: () => Promise<void>
   hydrateFromApi: () => Promise<void>
 }
 
 const STORAGE_KEY = 'livorapulse-auth-v1'
-const TOKEN_KEY = 'lp_access_token'
 const APP_STORE_KEY = 'livorapulse-store-v1'
 
 function clearAppStore() {
@@ -76,15 +78,18 @@ export const useAuthStore = create<AuthState>()(
       profileLoaded: false,
 
       setToken: (token) => {
-        if (token) localStorage.setItem(TOKEN_KEY, token)
-        else localStorage.removeItem(TOKEN_KEY)
+        if (token) setAccessTokenOnly(token)
+        else clearTokens()
         set({ accessToken: token, isAuthenticated: token !== null })
       },
 
       setOnboardingComplete: (val) => set({ onboardingComplete: val }),
 
       logout: () => {
-        localStorage.removeItem(TOKEN_KEY)
+        // Revoke the refresh token on the server too (best effort — sign-out happens either way)
+        const refreshToken = getRefreshToken()
+        if (refreshToken) apiPost('/api/auth/logout', { refreshToken }, false).catch(() => null)
+        clearTokens()
         localStorage.removeItem(STORAGE_KEY)
         clearAppStore()
         set({
@@ -106,19 +111,34 @@ export const useAuthStore = create<AuthState>()(
         window.location.href = `${apiBase}/api/auth/google`
       },
 
-      handleGoogleCallback: () => {
+      handleGoogleCallback: async () => {
         const params = new URLSearchParams(window.location.search)
-        const token = params.get('token')
+        const code = params.get('code')
+        const token = params.get('token') // older servers sent the token itself
         const error = params.get('error')
 
         if (error) {
           window.history.replaceState({}, '', window.location.pathname)
           return false
         }
-        if (!token) return false
-
-        get().setToken(token)
+        if (!code && !token) return false
+        // Take the code or token out of the address bar (and history) straight away
         window.history.replaceState({}, '', '/dashboard')
+
+        if (code) {
+          try {
+            const res = await apiPost<{ success: boolean; accessToken: string; refreshToken: string }>(
+              '/api/auth/exchange', { code }, false,
+            )
+            setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken })
+            set({ accessToken: res.accessToken, isAuthenticated: true })
+          } catch {
+            window.location.href = '/login?error=oauth_failed'
+            return false
+          }
+        } else if (token) {
+          get().setToken(token)
+        }
         get().loadMe().catch(() => null)
         return true
       },
@@ -133,7 +153,7 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: string
             user: AuthUser
           }>('/api/auth/register', { name, email, password }, false)
-          get().setToken(res.accessToken)
+          setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken })
           set({ user: res.user, status: 'idle', isAuthenticated: true, onboardingComplete: false, profileLoaded: true })
           // Load full profile immediately after register
           get().loadMe().catch(() => null)
@@ -153,7 +173,7 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: string
             user: AuthUser
           }>('/api/auth/login', { email, password }, false)
-          get().setToken(res.accessToken)
+          setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken })
           const onboardingComplete = res.user.profile?.onboardingComplete ?? false
           set({ user: res.user, status: 'idle', isAuthenticated: true, onboardingComplete })
           // Load full profile (includes gender, goals etc.) immediately after login
@@ -176,14 +196,15 @@ export const useAuthStore = create<AuthState>()(
       },
 
       loadMe: async () => {
-        if (!get().accessToken && !localStorage.getItem(TOKEN_KEY)) return
+        if (!get().accessToken && !getAccessToken()) return
         set({ status: 'loading' })
         try {
           const res = await apiGet<{ success: boolean; data: AuthUser }>('/api/auth/me')
           const onboardingComplete = res.data.profile?.onboardingComplete ?? false
           set({ user: res.data, status: 'idle', isAuthenticated: true, onboardingComplete, profileLoaded: true })
         } catch {
-          get().logout()
+          // Signing out happens only when the session can't be renewed (the
+          // API client handles that). Being offline must never sign anyone out.
           set({ status: 'idle' })
         }
       },
@@ -200,3 +221,13 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 )
+
+// Keep the store in step when the API client renews the session
+onTokensChanged((accessToken) => {
+  if (accessToken && useAuthStore.getState().accessToken !== accessToken) useAuthStore.setState({ accessToken })
+})
+
+// The session couldn't be renewed: sign out locally and go to the sign-in page
+setSessionExpiredHandler(() => {
+  if (useAuthStore.getState().isAuthenticated) useAuthStore.getState().logout()
+})
