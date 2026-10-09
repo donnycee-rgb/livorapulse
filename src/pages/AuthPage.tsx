@@ -301,7 +301,7 @@ function LoginForm({
 }
 
 // ---------------------------------------------------------------------------
-// Forgot password form (unchanged from original)
+// Forgot password form
 // ---------------------------------------------------------------------------
 function ForgotForm({ onBack }: { onBack: () => void }) {
   const forgotPassword = useAuthStore((s) => s.forgotPassword)
@@ -327,7 +327,9 @@ function ForgotForm({ onBack }: { onBack: () => void }) {
       </motion.div>
       <div>
         <h2 className="text-xl font-bold text-white">Check your inbox</h2>
-        <p className="text-sm text-white/45 mt-2">We sent a reset link to <span className="font-semibold text-white/70">{email}</span></p>
+        <p className="text-sm text-white/45 mt-2 leading-relaxed">
+          If there&apos;s an account for <span className="font-semibold text-white/70">{email}</span>, we&apos;ve sent it a link to set a new password. The link works for 1 hour. Check your spam folder too.
+        </p>
       </div>
       <button type="button" onClick={onBack} className="text-lp-accent/70 hover:text-lp-accent text-sm font-medium transition-colors">← Back to sign in</button>
     </div>
