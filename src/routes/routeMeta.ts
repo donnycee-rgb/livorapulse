@@ -1,4 +1,4 @@
-import { Activity, BarChart3, Home, Leaf, MonitorSmartphone, Settings, Smile, User } from 'lucide-react'
+import { Activity, BarChart3, FileText, Home, Leaf, Lightbulb, MonitorSmartphone, Settings, Smile, User } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export type RouteMeta = {
@@ -11,6 +11,8 @@ export type RouteMeta = {
 // NOTE: `src/App.tsx` uses `/` for the marketing/landing page and `/dashboard` for the main app dashboard.
 export const routes: RouteMeta[] = [
   { path: '/dashboard', title: 'Dashboard', navLabel: 'Dashboard', Icon: Home },
+  { path: '/insights', title: 'Insights', navLabel: 'Insights', Icon: Lightbulb },
+  { path: '/summary', title: 'Health summary', navLabel: 'Health summary', Icon: FileText },
   { path: '/physical', title: 'Physical Activity', navLabel: 'Physical', Icon: Activity },
   { path: '/digital', title: 'Digital Usage', navLabel: 'Digital', Icon: MonitorSmartphone },
   { path: '/productivity', title: 'Productivity', navLabel: 'Productivity', Icon: BarChart3 },
@@ -39,6 +41,8 @@ export function getTitleForPath(pathname: string) {
   if (pathname.startsWith('/productivity')) return 'Productivity'
   if (pathname.startsWith('/environment')) return 'Environment'
   if (pathname.startsWith('/mood')) return 'Mood & Mindset'
+  if (pathname.startsWith('/insights')) return 'Insights'
+  if (pathname.startsWith('/summary')) return 'Health summary'
   if (pathname.startsWith('/profile')) return 'Profile'
   if (pathname.startsWith('/settings')) return 'Settings'
   return 'LivoraPulse'
