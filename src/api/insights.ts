@@ -20,6 +20,8 @@ export type Insight = {
   nDays: number
   feedback: 'useful' | 'not-true' | null
   firstFoundAt: string
+  /** The change to try in a 14-day experiment, or null if there isn't one */
+  suggestion: string | null
   comparison: InsightComparison
 }
 

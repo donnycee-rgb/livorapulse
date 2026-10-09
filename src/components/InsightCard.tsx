@@ -1,10 +1,13 @@
-import { Check, ThumbsUp, X } from 'lucide-react'
+import { Check, FlaskConical, ThumbsUp, X } from 'lucide-react'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
+import type { ExperimentList } from '../api/experiments'
+import { startExperiment } from '../api/experiments'
 import type { Insight, InsightComparison } from '../api/insights'
 import { sendInsightFeedback } from '../api/insights'
+import Modal from './ui/Modal'
 import { formatMinutesToHM, formatNumber } from '../utils/format'
 
 function formatValue(value: number, c: InsightComparison): string {
@@ -46,11 +49,76 @@ type Props = {
   insight: Insight
   /** Called after "Not true for me" so the list can drop the card */
   onDismissed?: (id: string) => void
+  /** Key of the insight the running experiment tests, if any — only one runs at a time */
+  runningExperimentKey?: string | null
+  /** Called with the updated experiments after one is started from this card */
+  onExperimentStarted?: (list: ExperimentList) => void
 }
 
-export default function InsightCard({ insight, onDismissed }: Props) {
+/** "Try it for 14 days": confirm (and optionally reword) the suggested change */
+function TryItDialog({ insight, open, onClose, onStarted }: {
+  insight: Insight
+  open: boolean
+  onClose: () => void
+  onStarted: (list: ExperimentList) => void
+}) {
+  const [change, setChange] = useState(insight.suggestion ?? '')
+  const [starting, setStarting] = useState(false)
+
+  const start = async () => {
+    setStarting(true)
+    try {
+      const trimmed = change.trim()
+      onStarted(await startExperiment(insight.id, trimmed && trimmed !== insight.suggestion ? trimmed : undefined))
+      toast.success('Experiment started — day 1 is today')
+      onClose()
+    } catch (e) {
+      toast.error(e instanceof Error && e.message ? e.message : "Couldn't start the experiment. Please try again.")
+    } finally {
+      setStarting(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Try it for 14 days">
+      <div className="space-y-4">
+        <p className="text-sm text-black/60 dark:text-white/55 leading-relaxed">
+          For the next 14 days, try this change and keep logging as usual. Each day, answer "Did you do it today?".
+          Afterwards you'll see how it compares with the 14 days before, whatever the result.
+        </p>
+        <label className="block">
+          <span className="text-xs font-semibold text-black/55 dark:text-white/50">Your change</span>
+          <input
+            value={change}
+            onChange={(e) => setChange(e.target.value)}
+            maxLength={140}
+            className="mt-1 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-black/80 dark:text-white/85 focus:outline-none focus:ring-2 focus:ring-lp-primary/40"
+          />
+        </label>
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-xl px-3 py-2 text-sm font-semibold text-black/60 dark:text-white/60 hover:bg-black/5 dark:hover:bg-white/10">
+            Not now
+          </button>
+          <button
+            type="button"
+            onClick={start}
+            disabled={starting || change.trim().length < 3}
+            className="rounded-xl px-4 py-2 text-sm font-semibold bg-lp-primary text-white shadow-card hover:opacity-95 disabled:opacity-60"
+          >
+            {starting ? 'Starting…' : 'Start today'}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+export default function InsightCard({ insight, onDismissed, runningExperimentKey, onExperimentStarted }: Props) {
   const [feedback, setFeedback] = useState(insight.feedback)
   const [sending, setSending] = useState<'useful' | 'not-true' | null>(null)
+  const [tryOpen, setTryOpen] = useState(false)
+  const testingThis = runningExperimentKey === insight.key
+  const canTry = !!insight.suggestion && !runningExperimentKey && !!onExperimentStarted
 
   const send = async (value: 'useful' | 'not-true') => {
     setSending(value)
@@ -83,6 +151,28 @@ export default function InsightCard({ insight, onDismissed }: Props) {
       <div className="mt-4">
         <ComparisonBars comparison={insight.comparison} />
       </div>
+
+      {testingThis && (
+        <div className="mt-4 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold bg-lp-primary/15 text-lp-primary">
+          <FlaskConical size={12} /> You're testing this now
+        </div>
+      )}
+      {canTry && (
+        <button
+          type="button"
+          onClick={() => setTryOpen(true)}
+          className="mt-4 w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left bg-lp-primary/10 hover:bg-lp-primary/15 transition"
+        >
+          <span className="min-w-0">
+            <span className="block text-xs font-bold text-lp-primary">Try it for 14 days</span>
+            <span className="block text-sm text-black/70 dark:text-white/70 truncate">{insight.suggestion}</span>
+          </span>
+          <FlaskConical size={18} className="text-lp-primary flex-shrink-0" />
+        </button>
+      )}
+      {canTry && (
+        <TryItDialog insight={insight} open={tryOpen} onClose={() => setTryOpen(false)} onStarted={onExperimentStarted!} />
+      )}
 
       <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
         <span className="text-[11px] text-black/40 dark:text-white/35">

@@ -18,6 +18,7 @@ import { apiGet } from '../api/client'
 import AssessmentReminder from '../components/AssessmentReminder'
 import CyclePhaseCard from '../components/CyclePhaseCard'
 import TopInsightCard from '../components/TopInsightCard'
+import ExperimentCheckCard from '../components/ExperimentCheckCard'
 
 // ---------------------------------------------------------------------------
 // Helpers — unchanged
@@ -538,6 +539,9 @@ export default function Dashboard() {
           </div>
         </div>
       </motion.div>
+
+      {/* Running experiment: today's "did you do it?" */}
+      <ExperimentCheckCard />
 
       {/* Top insight from the user's own data, or progress toward the first one */}
       <TopInsightCard />

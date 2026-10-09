@@ -1,8 +1,11 @@
 import { Lightbulb, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+import type { ExperimentList } from '../api/experiments'
+import { fetchExperiments } from '../api/experiments'
 import type { Insight, InsightStatus } from '../api/insights'
 import { fetchInsights, fetchInsightStatus } from '../api/insights'
+import { ActiveExperimentCard, PastExperimentCard } from '../components/ExperimentCard'
 import InsightCard from '../components/InsightCard'
 import Skeleton from '../components/ui/Skeleton'
 
@@ -78,14 +81,17 @@ export default function Insights() {
   const [insights, setInsights] = useState<Insight[] | null>(null)
   const [status, setStatus] = useState<InsightStatus | null>(null)
   const [failed, setFailed] = useState(false)
+  const [experiments, setExperiments] = useState<ExperimentList>({ active: null, past: [] })
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([fetchInsights(), fetchInsightStatus()])
-      .then(([list, s]) => {
+    // Experiments are extra: if they fail to load, insights still show
+    Promise.all([fetchInsights(), fetchInsightStatus(), fetchExperiments().catch((): ExperimentList => ({ active: null, past: [] }))])
+      .then(([list, s, exps]) => {
         if (cancelled) return
         setInsights(list)
         setStatus(s)
+        setExperiments(exps)
       })
       .catch(() => { if (!cancelled) setFailed(true) })
     return () => { cancelled = true }
@@ -115,13 +121,28 @@ export default function Insights() {
         </div>
       )}
 
+      {experiments.active && <ActiveExperimentCard exp={experiments.active} onChange={setExperiments} />}
+
       {insights && insights.length === 0 && status && <ProgressPanel status={status} />}
 
       {insights && insights.length > 0 && (
         <div className="grid lg:grid-cols-2 gap-4">
           {insights.map((i) => (
-            <InsightCard key={i.id} insight={i} onDismissed={(id) => setInsights((list) => list?.filter((x) => x.id !== id) ?? null)} />
+            <InsightCard
+              key={i.id}
+              insight={i}
+              onDismissed={(id) => setInsights((list) => list?.filter((x) => x.id !== id) ?? null)}
+              runningExperimentKey={experiments.active?.insightKey ?? null}
+              onExperimentStarted={setExperiments}
+            />
           ))}
+        </div>
+      )}
+
+      {experiments.past.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-bold text-black/70 dark:text-white/75">Past experiments</h2>
+          {experiments.past.map((e) => <PastExperimentCard key={e.id} exp={e} />)}
         </div>
       )}
 
@@ -130,7 +151,7 @@ export default function Insights() {
           <Lightbulb size={14} className="flex-shrink-0 mt-0.5" />
           <span>
             These are links in your logs, not proven causes. Insights update every night. Tap "Not true for me" to hide one,
-            or ask the coach how to test it.
+            or try a change for 14 days to see if it helps you.
           </span>
         </div>
       )}
