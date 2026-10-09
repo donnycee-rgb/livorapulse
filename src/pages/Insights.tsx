@@ -7,6 +7,7 @@ import type { Insight, InsightStatus } from '../api/insights'
 import { fetchInsights, fetchInsightStatus } from '../api/insights'
 import { ActiveExperimentCard, PastExperimentCard } from '../components/ExperimentCard'
 import InsightCard from '../components/InsightCard'
+import HealthFlags from '../components/HealthFlags'
 import Skeleton from '../components/ui/Skeleton'
 
 /** Shown until the first insights appear: what's been logged and what's still needed */
@@ -120,6 +121,8 @@ export default function Insights() {
           Couldn't load your insights. Check your connection and try again.
         </div>
       )}
+
+      <HealthFlags />
 
       {experiments.active && <ActiveExperimentCard exp={experiments.active} onChange={setExperiments} />}
 
