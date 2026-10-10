@@ -44,7 +44,17 @@ export function selectLifePulseScore(s: AppState): number {
   return s.dashboard.score ?? 0
 }
 
-/** Per-dimension scores (0–100) behind today's LifePulse Score */
+/** False until anything has been logged in the last 7 days */
+export function selectScoreReady(s: AppState): boolean {
+  return s.dashboard.scoreReady ?? true
+}
+
+/** Each area's 7-day value behind the LifePulse Score; null = not tracked this week */
+export function selectRollingScores(s: AppState): Record<ScoreDimension, number | null> {
+  return s.dashboard.rolling ?? selectDimensionScores(s)
+}
+
+/** Today's per-area scores (0–100), for the "today's goals" cards */
 export function selectDimensionScores(s: AppState): Record<ScoreDimension, number> {
   return s.dashboard.components ?? { physical: 0, digital: 0, productivity: 0, mood: 0, eco: 0, nutrition: 0 }
 }

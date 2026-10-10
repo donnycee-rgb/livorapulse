@@ -98,9 +98,14 @@ export type AppState = {
   onboarding: UserOnboardingProfile
 
 
-  // Today's LifePulse Score, calculated by the server (the single source of truth)
+  // The LifePulse Score, calculated by the server (the single source of truth):
+  // the last 7 days, today counting most, so it doesn't reset at midnight
   dashboard: {
     score: number
+    /** False until anything has been logged in the last 7 days (score is then 0 and shown as "—") */
+    scoreReady?: boolean
+    /** Each area's 7-day value behind the score; null = not tracked this week */
+    rolling?: Record<ScoreDimension, number | null>
     insight: string
     loading: boolean
     components?: Record<ScoreDimension, number>
