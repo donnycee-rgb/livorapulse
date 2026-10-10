@@ -37,7 +37,7 @@ function seoForPath(pathname: string): PageSeo {
   }
 
   // Signed-in app pages and unknown URLs stay out of search results
-  const isAppPage = routes.some((r) => path === r.path) || path === '/nutrition' || path === '/welcome'
+  const isAppPage = routes.some((r) => path === r.path) || ['/nutrition', '/welcome', '/verify-email', '/reset-password'].includes(path)
   return {
     title: isAppPage ? `${getTitleForPath(path)} | LivoraPulse` : 'Page Not Found | LivoraPulse',
     description: DEFAULT_DESCRIPTION,

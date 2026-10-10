@@ -10,6 +10,8 @@ import AuthPage from './pages/AuthPage'
 import LandingPage from './pages/LandingPage'
 import NotFound from './pages/NotFound'
 import WelcomeSetup from './pages/WelcomeSetup'
+import VerifyEmail from './pages/VerifyEmail'
+import ResetPassword from './pages/ResetPassword'
 
 // Signed-in pages are split into their own chunks so the public landing
 // page doesn't download charts and maps up front (faster Core Web Vitals)
@@ -39,6 +41,12 @@ export default function App() {
         <Route path="/login" element={<AuthPage />} />
         <Route path="/register" element={<Navigate to="/login" replace />} />
         <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
+        {/* Public: set a new password from the emailed link */}
+        <Route path="/reset-password" element={<ResetPassword />} />
+        {/* Signed in but email not confirmed yet */}
+        <Route path="/verify-email" element={
+          <ProtectedRoute requireSetup={false} allowUnverified><VerifyEmail /></ProtectedRoute>
+        } />
 
         {/* Setup right after sign-up (signed in, setup not finished yet) */}
         <Route path="/welcome" element={

@@ -9,6 +9,8 @@ export type AuthUser = {
   id: string
   name: string
   email: string
+  /** null until the email is confirmed; missing on copies saved before this existed */
+  emailVerifiedAt?: string | null
   avatarUrl?: string | null
   preferences?: {
     theme: 'light' | 'dark'
@@ -45,6 +47,8 @@ type AuthState = {
   /** True once the profile has been loaded from the server this session (not persisted) —
    *  until then onboardingComplete may be a stale copy from the last visit */
   profileLoaded: boolean
+  /** Right after sign-up: whether the confirmation code email went out (not saved) */
+  verificationSent: boolean | null
 
   setToken: (token: string | null) => void
   setLastAssessmentAt: (ts: number) => void
@@ -55,6 +59,9 @@ type AuthState = {
   loginWithGoogle: () => void
   handleGoogleCallback: () => Promise<boolean>
   forgotPassword: (email: string) => Promise<void>
+  verifyEmail: (code: string) => Promise<void>
+  resendVerification: () => Promise<void>
+  resetPassword: (token: string, password: string) => Promise<void>
   loadMe: () => Promise<void>
   hydrateFromApi: () => Promise<void>
 }
@@ -76,6 +83,7 @@ export const useAuthStore = create<AuthState>()(
       status: 'idle',
       lastAssessmentAt: null,
       profileLoaded: false,
+      verificationSent: null,
 
       setToken: (token) => {
         if (token) setAccessTokenOnly(token)
@@ -152,9 +160,13 @@ export const useAuthStore = create<AuthState>()(
             accessToken: string
             refreshToken: string
             user: AuthUser
+            verificationSent?: boolean
           }>('/api/auth/register', { name, email, password }, false)
           setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken })
-          set({ user: res.user, status: 'idle', isAuthenticated: true, onboardingComplete: false, profileLoaded: true })
+          set({
+            user: res.user, status: 'idle', isAuthenticated: true, onboardingComplete: false, profileLoaded: true,
+            verificationSent: res.verificationSent ?? null,
+          })
           // Load full profile immediately after register
           get().loadMe().catch(() => null)
         } catch (e) {
@@ -193,6 +205,21 @@ export const useAuthStore = create<AuthState>()(
           set({ status: 'idle' })
           throw e
         }
+      },
+
+      verifyEmail: async (code) => {
+        await apiPost('/api/auth/verify-email', { code })
+        const user = get().user
+        if (user) set({ user: { ...user, emailVerifiedAt: new Date().toISOString() } })
+        await get().loadMe()
+      },
+
+      resendVerification: async () => {
+        await apiPost('/api/auth/resend-verification')
+      },
+
+      resetPassword: async (token, password) => {
+        await apiPost('/api/auth/reset-password', { token, password }, false)
       },
 
       loadMe: async () => {

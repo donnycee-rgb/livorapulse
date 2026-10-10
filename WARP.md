@@ -3,62 +3,56 @@
 This file provides guidance to WARP (warp.dev) when working with code in this repository.
 
 ## Repo overview
-LivoraPulse is a **frontend-only MVP** built with **React + Vite + TypeScript + TailwindCSS + Recharts** (no backend). Data is currently seeded and stored locally in browser state.
+LivoraPulse is a wellness tracker for Kenya and Africa. This repo is the **frontend**: **React 18 + Vite + TypeScript + Tailwind CSS + Recharts + Zustand**, deployed on Netlify. All data comes from the backend API ([livorapulse_backend](https://github.com/donnycee-rgb/livorapulse_backend), Fastify + Prisma + Postgres + Redis). See `README.md` for features.
 
 ## Common commands
-Install dependencies:
 - `npm install`
+- `npm run dev` — Vite on port 5173; proxies `/api` to the backend on `http://localhost:4000`
+- `npm run build` — type-check, then build to `dist/`
+- `npm run preview` — serve the production build
+- `npm test` — Vitest (setup in `src/test/setup.ts`)
+- `npm run typecheck`
 
-Run the dev server (Vite):
-- `npm run dev`
-
-Production build (outputs to `dist/`):
-- `npm run build`
-
-Preview the production build locally:
-- `npm run preview`
-
-Type-check (no dedicated script in `package.json`):
-- `npx tsc -p tsconfig.json --noEmit`
-
-Notes:
-- There are currently **no** `lint` / `test` scripts in `package.json` (no ESLint/Vitest/Jest configuration in this repo as-is).
+Environment: `VITE_API_URL` is the backend address in production. Leave it empty locally to use the Vite proxy.
 
 ## High-level architecture
 
 ### App entry + routing
-- HTML entry: `index.html` loads `src/main.tsx`.
-- `src/main.tsx` mounts `Root` inside `BrowserRouter`.
+- `index.html` loads `src/main.tsx`, which mounts the app inside `BrowserRouter`.
   - `useThemeSync()` applies the Tailwind dark-mode `class` to `<html>`.
   - `AppToaster` (`src/components/ui/Toaster.tsx`) hosts toast notifications.
-- `src/App.tsx` defines all routes with React Router.
-  - Uses `framer-motion` (`AnimatePresence`) and `src/components/RouteTransition.tsx` for page transitions.
-  - Most routes render a page inside `src/components/Layout.tsx`.
+- `src/App.tsx` defines all routes. Pages are lazy-loaded (`React.lazy`).
+  - Public: landing (`/`), `/login`, `/reset-password`, `/shared/summary/:token`.
+  - Signed-in pages are wrapped in `ProtectedRoute`, which sends unverified users to `/verify-email` and new users to `/welcome` (setup).
+  - In-app pages render inside `Layout` with `RouteTransition` (framer-motion).
+- Route titles and metadata: `src/routes/routeMeta.ts`. Per-page SEO tags: `src/components/Seo.tsx`.
 
 ### Layout + navigation
-- `src/components/Layout.tsx` is the shell for “in-app” pages.
-  - Renders `AppHeader`, `SideNav` (desktop), and `BottomNav` (mobile).
-  - Uses `useStoreHydration()` to avoid rendering real content until the persisted store has hydrated.
-- Route titles / metadata live in `src/routes/routeMeta.ts` (used by the header).
+- `src/components/Layout.tsx` renders `AppHeader`, `SideNav` (desktop) and `BottomNav` (mobile).
+- `useStoreHydration()` waits for the persisted store before rendering content.
 
-### State management (primary)
-- Global app state is managed by a persisted **Zustand** store in `src/store/useAppStore.ts`.
-  - Seed data comes from `src/data/seed.json` via `src/data/seed.ts`.
-  - The store is persisted (see `persist(...)` configuration) and includes most user-facing state (preferences, notifications, metrics, etc.).
-- Derived values live in `src/store/selectors.ts` (e.g., “Life Pulse Score” and the daily insight).
+### Talking to the backend
+- `src/api/client.ts` — `apiGet` / `apiPost` / `apiPut` / … with JSON handling and error mapping.
+- `src/api/session.ts` — access/refresh tokens in `localStorage`. Access tokens last 15 minutes; refresh tokens are single-use, so renewals are serialised (also across tabs). Tested in `session.test.ts`.
+- Feature clients: `experiments.ts`, `insights.ts`, `summary.ts`.
+
+### State
+- `src/store/useAuthStore.ts` — the signed-in user, sign-in/out, registration, verification state.
+- `src/store/useAppStore.ts` — persisted Zustand store (`livorapulse-store-v1`) for metrics, goals, preferences and running timers. Loads from the API; real users always start from empty state, not seed data.
+  - `src/data/seed.json` / `seed.ts` only supply default `user` / `preferences` shapes.
+- `src/store/selectors.ts` — derived values for the UI. The LifePulse Score itself is computed on the server.
+- Types: `src/data/types.ts`.
+
+### Offline walks
+- `WalkTracker` records GPS walks (`utils/stepDetector.ts`, `utils/walkMetrics.ts`). Walks recorded offline are queued (`utils/pendingWalks.ts`) and synced by `usePendingWalkSync`.
 
 ### UI, charts, styling
-- Reusable UI primitives are in `src/components/ui/` (Button, Modal, Dropdown, etc.).
-- Feature/dashboard components are in `src/components/`.
-- Recharts visualizations are in `src/components/charts/`.
-  - Chart color tokens are centralized in `src/theme/useChartTheme.ts` (light/dark aware).
-- Tailwind setup:
-  - Tokens: `tailwind.config.cjs` defines `colors.lp.*` (primary/secondary/accent/alert, etc.).
-  - Global styles: `src/styles/globals.css`.
+- UI primitives: `src/components/ui/` (Button, Input, Modal, Skeleton, Toaster).
+- Feature components: `src/components/` (check-in modal, cycle tracker, insight and experiment cards, AI coach, health summary view…).
+- Recharts charts: `src/components/charts/`. Colours are in `src/theme/useChartTheme.ts` (light/dark aware).
+- Tailwind tokens: `tailwind.config.cjs` (`colors.lp.*`). Global styles: `src/styles/globals.css`.
+- Pages often define small local components (e.g. `StatCard`, `ScoreRing`) inside the page file rather than in `components/`.
 
-### Data model
-- Core domain and store typing lives in `src/data/types.ts`.
-
-### Note: legacy/alternate data path
-- `src/context/AppDataContext.tsx` + `src/data/dummyData.ts` implement an alternate “dummy data” context.
-  - As of the current codebase, this context is **not wired into** `src/main.tsx` / `src/App.tsx`; the app primarily uses the Zustand store + `seed.json`.
+### Deployment (Netlify)
+- `public/_redirects` — SPA fallback. `public/_headers` — security headers.
+- `public/robots.txt`, `sitemap.xml`, `llms.txt` — SEO and AI crawler descriptions.
