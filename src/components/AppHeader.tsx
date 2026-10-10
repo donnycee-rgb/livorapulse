@@ -7,7 +7,7 @@ import clsx from 'clsx'
 
 import { useAppStore } from '../store/useAppStore'
 import { useAuthStore } from '../store/useAuthStore'
-import { selectLifePulseScore, selectStreak } from '../store/selectors'
+import { selectLifePulseScore, selectScoreReady, selectStreak } from '../store/selectors'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -286,7 +286,8 @@ export default function AppHeader() {
   const theme = useAppStore((s) => s.preferences.theme)
   const toggleTheme = useAppStore((s) => s.toggleTheme)
   const score = useAppStore(selectLifePulseScore)
-  const scoreColor = getScoreColor(score)
+  const scoreReady = useAppStore(selectScoreReady)
+  const scoreColor = scoreReady ? getScoreColor(score) : '#94a3b8'
   const navigate = useNavigate()
 
   const streak = useAppStore(selectStreak)
@@ -325,7 +326,7 @@ export default function AppHeader() {
               style={{ backgroundColor: scoreColor }}
             />
             <span className="text-xs font-black tabular-nums" style={{ color: scoreColor }}>
-              {score}
+              {scoreReady ? score : '–'}
             </span>
             <span className="text-[10px] text-black/30 dark:text-white/25 font-semibold">
               LifePulse Score

@@ -11,7 +11,7 @@ import { motion } from 'framer-motion'
 import ActivityAnalyticsChart from '../components/charts/ActivityAnalyticsChart'
 import { useAppStore } from '../store/useAppStore'
 import { useAuthStore } from '../store/useAuthStore'
-import { selectDailyInsight, selectDimensionScores, selectLifePulseScore, selectProgressiveGoals, selectStreak } from '../store/selectors'
+import { selectDailyInsight, selectLifePulseScore, selectProgressiveGoals, selectRollingScores, selectScoreReady, selectStreak } from '../store/selectors'
 import { formatMinutesToHM, formatNumber } from '../utils/format'
 import { getDayKey } from '../utils/date'
 import { apiGet } from '../api/client'
@@ -69,11 +69,11 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
 // ---------------------------------------------------------------------------
 // Score ring — gradient version
 // ---------------------------------------------------------------------------
-function ScoreRing({ score }: { score: number }) {
+function ScoreRing({ score, ready = true }: { score: number; ready?: boolean }) {
   const r = 54
   const circ = 2 * Math.PI * r
   const [displayed, setDisplayed] = useState(0)
-  const color = getScoreColor(score)
+  const color = ready ? getScoreColor(score) : '#94a3b8'
 
   useEffect(() => {
     let start: number | null = null
@@ -112,7 +112,7 @@ function ScoreRing({ score }: { score: number }) {
           style={{ transition: 'stroke-dashoffset 0.03s linear' }} />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-        <span className="text-3xl max-sm:text-[26px] font-black leading-none" style={{ color }}>{displayed}</span>
+        <span className="text-3xl max-sm:text-[26px] font-black leading-none" style={{ color }}>{ready ? displayed : '–'}</span>
         <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5"
           style={{ color, opacity: 0.6 }}>score</span>
       </div>
@@ -343,7 +343,9 @@ export default function Dashboard() {
   const lastUpdatedAt = useAppStore((s) => s.meta.lastUpdatedAt)
   const score = useAppStore(selectLifePulseScore)
   const insight = useAppStore(selectDailyInsight)
-  const dimensionScores = useAppStore(selectDimensionScores)
+  // The ring's breakdown uses the same 7-day values as the score itself
+  const dimensionScores = useAppStore(selectRollingScores)
+  const scoreReady = useAppStore(selectScoreReady)
   const stepGoal = useAppStore((s) => selectProgressiveGoals(s).goalStepsPerDay)
 
   const day = getDayKey()
@@ -396,8 +398,8 @@ export default function Dashboard() {
   const screenSparkline = weeklyScreen.map(x => x.minutes)
   const focusSparkline = weeklyFocus.map(x => x.minutes)
 
-  const scoreColor = getScoreColor(score)
-  const scoreLabel = getScoreLabel(score)
+  const scoreColor = scoreReady ? getScoreColor(score) : '#94a3b8' // neutral until there's a score
+  const scoreLabel = scoreReady ? getScoreLabel(score) : 'Not started'
   const hasAnyData = steps > 0 || sleep > 0 || screenMin > 0 || focusMin > 0
 
   const timeOfDay = new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'
@@ -437,7 +439,7 @@ export default function Dashboard() {
           </div>
 
           <div className="relative z-10 flex items-start gap-6 max-sm:gap-3.5 max-sm:items-center">
-            <ScoreRing score={score} />
+            <ScoreRing score={score} ready={scoreReady} />
             <div className="flex-1 min-w-0">
               {/* Greeting */}
               <div className="flex items-center gap-2 mb-1">
@@ -458,7 +460,7 @@ export default function Dashboard() {
               {/* Score label */}
               <div className="flex items-baseline gap-2 mb-2 max-sm:flex-col max-sm:gap-0.5 max-sm:mb-1">
                 <span className="text-3xl max-sm:text-2xl font-black leading-none" style={{ color: scoreColor }}>{scoreLabel}</span>
-                <span className="text-xs max-sm:text-[10px] font-semibold text-black/35 dark:text-white/30 uppercase tracking-wider">LifePulse Score</span>
+                <span className="text-xs max-sm:text-[10px] font-semibold text-black/35 dark:text-white/30 uppercase tracking-wider" title="Your last 7 days, today counting most. It doesn't reset at midnight.">LifePulse Score · last 7 days</span>
               </div>
 
               {/* Insight */}
@@ -485,14 +487,14 @@ export default function Dashboard() {
                   <div className="flex justify-between items-center">
                     <span className="text-[9px] max-sm:text-[10.5px] font-bold uppercase tracking-wider max-sm:tracking-wide"
                       style={{ color: `${d.color}99` }}>{d.label}</span>
-                    <span className="text-[9px] max-sm:text-[11px] font-black" style={{ color: d.color }}>{d.value}</span>
+                    <span className="text-[9px] max-sm:text-[11px] font-black" style={{ color: d.color }} title={d.value === null ? 'Not tracked this week, so left out of the score' : undefined}>{d.value ?? '–'}</span>
                   </div>
                   <div className="h-1.5 rounded-full overflow-hidden"
                     style={{ background: `${d.color}18` }}>
                     <motion.div className="h-full rounded-full"
                       style={{ background: `linear-gradient(to right, ${d.color}80, ${d.color})` }}
                       initial={{ width: 0 }}
-                      animate={{ width: `${d.value}%` }}
+                      animate={{ width: `${d.value ?? 0}%` }}
                       transition={{ duration: 0.9, delay: 0.3, ease: 'easeOut' }} />
                   </div>
                 </div>

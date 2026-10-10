@@ -87,7 +87,9 @@ type EcoEntry = {
 
 type ScoreResponse = {
   date: string
-  score: number
+  /** Rolling 7 days; null until anything has been logged this week */
+  score: number | null
+  rolling?: Record<ScoreDimension, number | null>
   insight: string
   components: Record<ScoreDimension, number>
   logged: Record<ScoreDimension, boolean>
@@ -1024,7 +1026,9 @@ export const useAppStore = create<AppStore>()(
           set((s) => ({
             dashboard: {
               ...s.dashboard,
-              score: res.score,
+              score: res.score ?? 0,
+              scoreReady: res.score !== null,
+              rolling: res.rolling,
               insight: res.insight ?? s.dashboard.insight,
               loading: false,
               components: res.components,
