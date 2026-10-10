@@ -85,7 +85,8 @@ export default function SideNav() {
         </div>
 
         {/* Nav sections */}
-        <nav className="flex-1 flex flex-col overflow-hidden px-3 pb-2">
+        {/* Scrolls when the links don't fit (short laptop screens, browser zoom) */}
+        <nav className="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden overscroll-contain px-3 pb-2 [scrollbar-width:thin]">
           <div className="space-y-0.5">
             {NAV_SECTIONS.map((section) => (
               <div key={section.label}>
