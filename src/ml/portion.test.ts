@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest'
-import { nutritionFor, topK, rememberGrams, rememberedGrams } from './portion'
+import { nutritionFor, perServing, topK, rememberGrams, rememberedGrams } from './portion'
 import { SCAN_FOODS, scanFoodFor } from './foodLabels'
 
 const ugali = { calories: 122, proteinG: 2.7, carbsG: 27, fatG: 0.4 } // per 100 g
@@ -16,6 +16,17 @@ describe('nutritionFor', () => {
   it('never goes negative or above the full portion', () => {
     expect(nutritionFor(ugali, -50).calories).toBe(0)
     expect(nutritionFor(ugali, 100, 3).calories).toBe(122)
+  })
+})
+
+describe('perServing', () => {
+  it('scales per-100g search results to one serving', () => {
+    const chapati = { name: 'Chapati', calories: 300, proteinG: 8, carbsG: 50, fatG: 9, servingGrams: 60 }
+    expect(perServing(chapati)).toMatchObject({ name: 'Chapati', calories: 180, proteinG: 4.8, carbsG: 30, fatG: 5.4 })
+  })
+
+  it('treats a missing serving weight as 100 g', () => {
+    expect(perServing({ calories: 250, proteinG: 1, carbsG: 2, fatG: 3 }).calories).toBe(250)
   })
 })
 
