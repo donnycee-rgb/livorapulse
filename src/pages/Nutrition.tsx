@@ -4,13 +4,14 @@ import {
   Search, Plus, Trash2, Droplets, UtensilsCrossed,
   Target, TrendingUp, X, Flame, Coffee, Sun,
   Moon, Apple, CheckCircle2, AlertCircle, Info,
-  Pencil,
+  Pencil, Camera,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { scheduleScoreSync, useAppStore } from '../store/useAppStore'
 import { selectProgressiveGoals } from '../store/selectors'
 import { apiGet, apiPost, apiDel } from '../api/client'
+import FoodScanner from '../components/FoodScanner'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -195,7 +196,8 @@ function AddFoodModal({ open, onClose, onSave }: {
   const [mealType, setMealType] = useState('breakfast')
   const [quantity, setQuantity] = useState('1')
   const [saving, setSaving] = useState(false)
-  const [manualMode, setManualMode] = useState(false)
+  const [mode, setMode] = useState<'scan' | 'search' | 'manual'>('scan')
+  const manualMode = mode === 'manual'
   const [manualName, setManualName] = useState('')
   const [manualCal, setManualCal] = useState('')
   const [manualProtein, setManualProtein] = useState('')
@@ -295,19 +297,26 @@ function AddFoodModal({ open, onClose, onSave }: {
 
           {/* Mode toggle */}
           <div className="flex gap-1.5 p-1 bg-black/[0.04] dark:bg-white/[0.05] rounded-xl">
-            <button type="button" onClick={() => setManualMode(false)}
+            <button type="button" onClick={() => setMode('scan')}
               className={clsx('flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all',
-                !manualMode ? 'bg-white dark:bg-slate-800 text-black/80 dark:text-white/80 shadow-sm' : 'text-black/40 dark:text-white/35')}>
-              <Search size={12} /> Search database
+                mode === 'scan' ? 'bg-white dark:bg-slate-800 text-black/80 dark:text-white/80 shadow-sm' : 'text-black/40 dark:text-white/35')}>
+              <Camera size={12} /> Scan
             </button>
-            <button type="button" onClick={() => setManualMode(true)}
+            <button type="button" onClick={() => setMode('search')}
+              className={clsx('flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all',
+                mode === 'search' ? 'bg-white dark:bg-slate-800 text-black/80 dark:text-white/80 shadow-sm' : 'text-black/40 dark:text-white/35')}>
+              <Search size={12} /> Search
+            </button>
+            <button type="button" onClick={() => setMode('manual')}
               className={clsx('flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all',
                 manualMode ? 'bg-white dark:bg-slate-800 text-black/80 dark:text-white/80 shadow-sm' : 'text-black/40 dark:text-white/35')}>
-              <Pencil size={12} /> Manual entry
+              <Pencil size={12} /> Manual
             </button>
           </div>
 
-          {!manualMode ? (
+          {mode === 'scan' ? (
+            <FoodScanner mealType={mealType} onSave={onSave} onSearchInstead={() => setMode('search')} />
+          ) : !manualMode ? (
             <>
               {/* Search row */}
               <div className="flex gap-2">
@@ -418,7 +427,7 @@ function AddFoodModal({ open, onClose, onSave }: {
           )}
 
           {/* Quantity */}
-          {(selected || manualMode) && (
+          {mode !== 'scan' && (selected || manualMode) && (
             <div>
               <div className="text-xs font-semibold text-black/45 dark:text-white/40 uppercase tracking-widest mb-1.5">
                 Quantity {selected ? `(× ${selected.servingSize})` : '(× serving)'}
@@ -435,6 +444,12 @@ function AddFoodModal({ open, onClose, onSave }: {
           )}
 
           {/* Actions */}
+          {mode === 'scan' ? (
+            <button type="button" onClick={onClose}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 hover:bg-black/[0.09] transition-all">
+              Done
+            </button>
+          ) : (
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose}
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 hover:bg-black/[0.09] transition-all">
@@ -446,6 +461,7 @@ function AddFoodModal({ open, onClose, onSave }: {
               {saving ? 'Saving…' : 'Log Food'}
             </button>
           </div>
+          )}
         </div>
       </motion.div>
     </motion.div>
