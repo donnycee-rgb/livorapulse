@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
+    "@tensorflow/tfjs": "^4.22.0",
     "clsx": "^2.1.1",
     "framer-motion": "^11.11.17",
     "lucide-react": "^0.473.0",
