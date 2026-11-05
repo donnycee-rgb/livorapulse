@@ -1,0 +1,39 @@
+{
+  "labels": [
+    "beef_stew",
+    "chai",
+    "chapati",
+    "chicken_stew",
+    "fried_fish",
+    "githeri",
+    "kachumbari",
+    "mandazi",
+    "masala_chips",
+    "matoke",
+    "nyama_choma",
+    "pilau",
+    "samosa",
+    "sukuma_wiki",
+    "ugali"
+  ],
+  "imageSize": 224,
+  "base": "v2_100",
+  "trainedOn": "2026-11-05",
+  "photosPerFood": {
+    "beef_stew": 22,
+    "chai": 14,
+    "chapati": 18,
+    "chicken_stew": 19,
+    "fried_fish": 17,
+    "githeri": 23,
+    "kachumbari": 12,
+    "mandazi": 15,
+    "masala_chips": 24,
+    "matoke": 10,
+    "nyama_choma": 11,
+    "pilau": 20,
+    "samosa": 20,
+    "sukuma_wiki": 15,
+    "ugali": 21
+  }
+}
