@@ -3,7 +3,7 @@
 // pick a portion (hand-size guides, remembered per user) → say how much was
 // eaten → log. Nothing is logged without the user confirming.
 // ---------------------------------------------------------------------------
-import { useEffect, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { Camera, ImagePlus, RefreshCw, Search, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
@@ -30,11 +30,19 @@ type Status = 'idle' | 'analyzing' | 'results' | 'unavailable' | 'error'
 
 const LOW_CONFIDENCE = 0.5
 
-export default function FoodScanner({ mealType, onSave, onSearchInstead }: {
+/** Lets the Log Food window save a food the user picked but hasn't logged yet. */
+export interface FoodScannerHandle {
+  /** Logs the picked food if there is one. Resolves false if saving failed. */
+  savePending: () => Promise<boolean>
+}
+
+const FoodScanner = forwardRef<FoodScannerHandle, {
   mealType: string
   onSave: (entry: ScannedEntry) => Promise<void>
   onSearchInstead: () => void
-}) {
+  /** Called with true while a food is picked and ready to log but not saved. */
+  onPendingChange?: (pending: boolean) => void
+}>(function FoodScanner({ mealType, onSave, onSearchInstead, onPendingChange }, ref) {
   const fileRef = useRef<HTMLInputElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
@@ -93,9 +101,13 @@ export default function FoodScanner({ mealType, onSave, onSearchInstead }: {
   }
 
   const totals = per100g ? nutritionFor(per100g, grams, eaten) : null
+  const pending = !!chosen && !!totals && grams > 0
 
-  const log = async () => {
-    if (!chosen || !totals) return
+  useEffect(() => { onPendingChange?.(pending) }, [pending, onPendingChange])
+
+  /** Saves the picked food. Returns false if it could not be saved. */
+  const log = async (): Promise<boolean> => {
+    if (!chosen || !totals || grams <= 0) return true
     setSaving(true)
     try {
       const eatenLabel = EATEN_OPTIONS.find((o) => o.fraction === eaten)?.label ?? ''
@@ -112,12 +124,16 @@ export default function FoodScanner({ mealType, onSave, onSearchInstead }: {
       rememberGrams(chosen.food.foodId, grams)
       setLoggedCount((n) => n + 1)
       setChosen(null); setPer100g(null)
+      return true
     } catch {
       toast.error('Failed to save. Try again.')
+      return false
     } finally {
       setSaving(false)
     }
   }
+
+  useImperativeHandle(ref, () => ({ savePending: log }))
 
   const fileInput = (
     <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
@@ -296,4 +312,6 @@ export default function FoodScanner({ mealType, onSave, onSearchInstead }: {
       )}
     </div>
   )
-}
+})
+
+export default FoodScanner

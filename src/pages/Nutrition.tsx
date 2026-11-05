@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Plus, Trash2, Droplets, UtensilsCrossed,
@@ -11,7 +11,7 @@ import clsx from 'clsx'
 import { scheduleScoreSync, useAppStore } from '../store/useAppStore'
 import { selectProgressiveGoals } from '../store/selectors'
 import { apiGet, apiPost, apiDel } from '../api/client'
-import FoodScanner from '../components/FoodScanner'
+import FoodScanner, { type FoodScannerHandle } from '../components/FoodScanner'
 import { perServing } from '../ml/portion'
 
 // ---------------------------------------------------------------------------
@@ -205,6 +205,17 @@ function AddFoodModal({ open, onClose, onSave }: {
   const [manualProtein, setManualProtein] = useState('')
   const [manualCarbs, setManualCarbs] = useState('')
   const [manualFat, setManualFat] = useState('')
+  const scannerRef = useRef<FoodScannerHandle>(null)
+  const [scanPending, setScanPending] = useState(false)
+  const [finishing, setFinishing] = useState(false)
+
+  // Done in Scan mode: log a food the user picked but didn't tap "Log this food" for.
+  const handleScanDone = async () => {
+    setFinishing(true)
+    const saved = (await scannerRef.current?.savePending()) ?? true
+    setFinishing(false)
+    if (saved) onClose()
+  }
 
   const handleSearch = useCallback(async () => {
     if (query.trim().length < 2) return
@@ -317,7 +328,8 @@ function AddFoodModal({ open, onClose, onSave }: {
           </div>
 
           {mode === 'scan' ? (
-            <FoodScanner mealType={mealType} onSave={onSave} onSearchInstead={() => setMode('search')} />
+            <FoodScanner ref={scannerRef} mealType={mealType} onSave={onSave}
+              onSearchInstead={() => setMode('search')} onPendingChange={setScanPending} />
           ) : !manualMode ? (
             <>
               {/* Search row */}
@@ -447,9 +459,12 @@ function AddFoodModal({ open, onClose, onSave }: {
 
           {/* Actions */}
           {mode === 'scan' ? (
-            <button type="button" onClick={onClose}
-              className="w-full py-2.5 rounded-xl text-sm font-semibold bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 hover:bg-black/[0.09] transition-all">
-              Done
+            <button type="button" onClick={handleScanDone} disabled={finishing}
+              className={clsx('w-full py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40',
+                scanPending
+                  ? 'bg-lp-primary text-white hover:bg-green-500'
+                  : 'bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 hover:bg-black/[0.09]')}>
+              {finishing ? 'Saving…' : scanPending ? 'Log & close' : 'Done'}
             </button>
           ) : (
           <div className="flex gap-3 pt-1">
