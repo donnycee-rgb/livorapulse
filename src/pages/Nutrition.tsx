@@ -12,6 +12,7 @@ import { scheduleScoreSync, useAppStore } from '../store/useAppStore'
 import { selectProgressiveGoals } from '../store/selectors'
 import { apiGet, apiPost, apiDel } from '../api/client'
 import FoodScanner from '../components/FoodScanner'
+import { perServing } from '../ml/portion'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -67,7 +68,8 @@ async function searchFoods(query: string): Promise<FoodSearchResult[]> {
     const res = await apiGet<{ success: boolean; data: FoodSearchResult[] }>(
       `/api/nutrition/search?q=${encodeURIComponent(query)}`
     )
-    return res.data ?? []
+    // Search values are per 100 g; everything below works per serving.
+    return (res.data ?? []).map(perServing)
   } catch { return [] }
 }
 

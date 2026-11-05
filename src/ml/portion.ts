@@ -30,6 +30,16 @@ export function nutritionFor(food: Per100g, grams: number, eatenFraction = 1): N
   }
 }
 
+/**
+ * Food search returns values per 100 g plus the weight of one serving.
+ * Convert to values for one serving, so "1 chapati" means 60 g, not 100 g.
+ * With no serving weight, a serving is taken to be 100 g.
+ */
+export function perServing<T extends Per100g & { servingGrams?: number }>(food: T): T {
+  const grams = food.servingGrams && food.servingGrams > 0 ? food.servingGrams : 100
+  return { ...food, ...nutritionFor(food, grams) }
+}
+
 export interface Prediction {
   label: string
   probability: number
