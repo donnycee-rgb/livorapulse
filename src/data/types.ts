@@ -61,8 +61,13 @@ export type FocusTimerStatus = 'idle' | 'running' | 'paused'
 export type FocusTimerState = {
   status: FocusTimerStatus
   durationSec: number
+  /** Seconds left; exact while paused, refreshed from endsAt while running */
   remainingSec: number
   startedAt: number | null
+  /** When a running timer reaches zero (ms). Null while idle or paused. */
+  endsAt?: number | null
+  /** What the user is working on, saved with the session */
+  label?: string
 }
 
 export type FocusSession = {

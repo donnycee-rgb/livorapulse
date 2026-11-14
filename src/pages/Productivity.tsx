@@ -1,4 +1,4 @@
-import { Pause, Play, Square, Plus, Timer, BarChart3, Target, TrendingUp, Zap, Award } from 'lucide-react'
+import { Pause, Play, Square, Timer, BarChart3, Target, TrendingUp, Zap, Award } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -8,7 +8,6 @@ import FocusMinutesBarChart from '../components/charts/FocusMinutesBarChart'
 import StudySessionsBarChart from '../components/charts/StudySessionsBarChart'
 import Input from '../components/ui/Input'
 
-import { useInterval } from '../hooks/useInterval'
 import { useAppStore } from '../store/useAppStore'
 import { selectDimensionScores, selectProgressiveGoals } from '../store/selectors'
 import { getDayKey } from '../utils/date'
@@ -177,12 +176,19 @@ function WeeklySummaryCard({ focusByDay, studyByDay }: {
 // ---------------------------------------------------------------------------
 // Tips sidebar card
 // ---------------------------------------------------------------------------
+/** 90 → "1h 30m", 120 → "2 hours", 45 → "45 minutes" */
+function fmtGoal(min: number) {
+  if (min < 60) return `${min} minutes`
+  if (min % 60 === 0) return `${min / 60} hour${min === 60 ? '' : 's'}`
+  return `${Math.floor(min / 60)}h ${min % 60}m`
+}
+
 function ProductivityTipCard({ focusMin }: { focusMin: number }) {
   const focusGoal = useAppStore((s) => selectProgressiveGoals(s).goalFocusMinutes)
   const tips = [
     { condition: focusMin === 0, text: 'Start with a short 25-minute session. Even one focused block a day adds up significantly over a week.' },
-    { condition: focusMin > 0 && focusMin < 60, text: 'Good start. Try to reach 2 hours of focused work today for a meaningful productivity score boost.' },
-    { condition: focusMin >= focusGoal / 2 && focusMin < focusGoal, text: 'Solid progress. One more focused session would push your productivity score above 80.' },
+    { condition: focusMin > 0 && focusMin < focusGoal / 2, text: `Good start. Aim for your ${fmtGoal(focusGoal)} of focus today for a meaningful score boost.` },
+    { condition: focusMin >= focusGoal / 2 && focusMin < focusGoal, text: `Solid progress. ${focusGoal - focusMin} more minutes reaches your daily focus goal.` },
     { condition: focusMin >= focusGoal, text: 'Excellent focus today. Consider taking a proper break — sustained focus works best with recovery time.' },
   ]
   const tip = tips.find(t => t.condition) ?? tips[0]
@@ -209,9 +215,7 @@ export default function Productivity() {
   const startFocusTimer = useAppStore((s) => s.startFocusTimer)
   const pauseFocusTimer = useAppStore((s) => s.pauseFocusTimer)
   const resumeFocusTimer = useAppStore((s) => s.resumeFocusTimer)
-  const tickFocusTimer = useAppStore((s) => s.tickFocusTimer)
   const endFocusTimer = useAppStore((s) => s.endFocusTimer)
-  const addStudySession = useAppStore((s) => s.addStudySession)
 
   const [durationMin, setDurationMin] = useState(25)
   const [label, setLabel] = useState('Deep work')
@@ -225,10 +229,17 @@ export default function Productivity() {
     (s) => s.productivity.studySessionsByDay.find((x) => x.day === day)?.sessions ?? 0,
   )
 
-  useInterval(
-    () => tickFocusTimer(),
-    productivity.focusTimer.status === 'running' ? 1000 : null,
-  )
+  // The timer keeps running on every page (FocusTimerTicker in the Layout)
+
+  const endSession = async () => {
+    const minutes = Math.round((productivity.focusTimer.durationSec - productivity.focusTimer.remainingSec) / 60)
+    try {
+      await endFocusTimer('manual')
+      toast.success(minutes >= 1 ? 'Session saved' : 'Session ended. Under a minute, so it wasn’t saved')
+    } catch {
+      toast.error('Could not save the session. Check your connection and try again.')
+    }
+  }
 
   const progress = useMemo(() => {
     const { durationSec, remainingSec } = productivity.focusTimer
@@ -259,14 +270,6 @@ export default function Productivity() {
           <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Productivity</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => { addStudySession(); toast.success('Study session added') }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 text-sm font-semibold rounded-xl hover:bg-black/[0.09] dark:hover:bg-white/[0.10] transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
-        >
-          <Plus size={15} />
-          Add study session
-        </button>
       </div>
 
       {/* Two-column layout */}
@@ -329,9 +332,9 @@ export default function Productivity() {
               {status === 'idle'
                 ? 'Set a label and duration, then start your session'
                 : status === 'running'
-                ? 'Session in progress — stay focused'
+                ? `${productivity.focusTimer.label ?? 'Focus session'} · keeps running if you switch pages`
                 : status === 'paused'
-                ? 'Session paused — resume when ready'
+                ? `${productivity.focusTimer.label ?? 'Focus session'} · paused, resume when ready`
                 : 'Session complete'}
             </div>
 
@@ -409,7 +412,7 @@ export default function Productivity() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { endFocusTimer('manual'); toast.success('Session saved') }}
+                    onClick={endSession}
                     className="flex items-center gap-2 px-6 py-3 bg-lp-alert/15 text-lp-alert font-semibold rounded-xl border border-lp-alert/25 hover:bg-lp-alert/25 transition-all duration-200"
                   >
                     <Square size={18} />
@@ -429,7 +432,7 @@ export default function Productivity() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { endFocusTimer('manual'); toast.success('Session saved') }}
+                    onClick={endSession}
                     className="flex items-center gap-2 px-6 py-3 bg-lp-alert/15 text-lp-alert font-semibold rounded-xl border border-lp-alert/25 hover:bg-lp-alert/25 transition-all duration-200"
                   >
                     <Square size={18} />
@@ -523,7 +526,7 @@ export default function Productivity() {
               </div>
               <div>
                 <div className="text-sm font-semibold text-black/75 dark:text-white/75">Focus goal reached</div>
-                <div className="text-xs text-black/45 dark:text-white/40 mt-0.5">2 hours of focus today</div>
+                <div className="text-xs text-black/45 dark:text-white/40 mt-0.5">{fmtGoal(focusGoal)} of focus today</div>
               </div>
             </motion.div>
           )}

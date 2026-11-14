@@ -5,6 +5,7 @@ import BottomNav from './BottomNav'
 import SideNav from './SideNav'
 import Skeleton from './ui/Skeleton'
 import AICoachButton from './AICoachButton'
+import FocusTimerTicker from './FocusTimerTicker'
 import { useStoreHydration } from '../hooks/useStoreHydration'
 
 export default function Layout({ children }: PropsWithChildren) {
@@ -48,6 +49,9 @@ export default function Layout({ children }: PropsWithChildren) {
 
       {/* AI Coach — fixed to viewport */}
       <AICoachButton />
+
+      {/* Keeps a running focus session going on every page */}
+      {hydrated && <FocusTimerTicker />}
     </div>
   )
 }
