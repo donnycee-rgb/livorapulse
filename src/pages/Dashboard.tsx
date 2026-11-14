@@ -29,7 +29,7 @@ const WATER_GOAL = 8
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
 
 /** Shared card look: white, soft shadow, hairline border — like the landing page. */
-const card = 'rounded-3xl bg-white dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.07] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.04)]'
+const card = 'lp-card rounded-3xl'
 
 /** "1h", "1h 30m", "45m" — drops the "0m" the shared formatter keeps. */
 function hm(minutes: number) {

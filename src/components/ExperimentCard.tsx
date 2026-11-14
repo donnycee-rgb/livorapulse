@@ -104,14 +104,10 @@ export function ActiveExperimentCard({ exp, onChange, compact = false }: ActiveP
     }
   }
 
-  const frame = {
-    background: 'linear-gradient(135deg, rgba(76,175,80,0.10) 0%, rgba(99,102,241,0.05) 100%)',
-    border: '1px solid rgba(76,175,80,0.20)',
-  }
 
   if (exp.waitingForResult) {
     return (
-      <div className="rounded-3xl p-5 max-sm:p-4" style={frame}>
+      <div className="lp-card rounded-3xl p-5 max-sm:p-4">
         <div className="flex items-center gap-2 text-[10px] font-bold text-black/40 dark:text-white/35 uppercase tracking-wider">
           <FlaskConical size={13} className="text-lp-primary" /> Experiment finished
         </div>
@@ -124,7 +120,7 @@ export function ActiveExperimentCard({ exp, onChange, compact = false }: ActiveP
   }
 
   return (
-    <div className="rounded-3xl p-5 max-sm:p-4" style={frame}>
+    <div className="lp-card rounded-3xl p-5 max-sm:p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-[10px] font-bold text-black/40 dark:text-white/35 uppercase tracking-wider">
           <FlaskConical size={13} className="text-lp-primary" />

@@ -69,7 +69,7 @@ function StatCard({ label, value, context, icon, color, goalValue, goalMax, inve
   const trendColor = trend === 'up' ? '#4CAF50' : trend === 'down' ? '#FF6B6B' : '#94a3b8'
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: color + '18' }}>
@@ -169,7 +169,7 @@ function ScoreImpactCard({ screenMin }: { screenMin: number }) {
   const remaining = Math.max(0, LIMIT - screenMin)
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-accent/15 flex items-center justify-center">
           <Target size={14} className="text-lp-accent" />
@@ -230,7 +230,7 @@ function CategoryBreakdownCard({ categories }: {
   if (total === 0) return null
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-[#6366F1]/15 flex items-center justify-center">
           <BarChart3 size={14} className="text-[#6366F1]" />
@@ -289,7 +289,7 @@ function WeeklySummaryCard({ weeklyScreen }: {
   const bestDay = [...weeklyScreen].sort((a, b) => a.minutes - b.minutes).find(x => x.minutes > 0)
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-accent/15 flex items-center justify-center">
           <TrendingUp size={14} className="text-lp-accent" />
@@ -384,7 +384,7 @@ export default function Digital() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
-          <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Digital Usage</h1>
+          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Digital Usage</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
         </div>
         <button
@@ -452,7 +452,7 @@ export default function Digital() {
           />
 
           {/* Recent sessions */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-sm font-semibold text-black/80 dark:text-white/85">Recent sessions</div>
@@ -501,14 +501,14 @@ export default function Digital() {
 
           {/* Charts */}
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
+            <div className="rounded-3xl p-4 lp-card">
               <div className="text-sm font-semibold text-black/80 dark:text-white/85">App category split</div>
               <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Distribution by category</div>
               <div className="h-44">
                 <AppUsagePieChart data={digital.appUsageCategoriesMin} />
               </div>
             </div>
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
+            <div className="rounded-3xl p-4 lp-card">
               <div className="text-sm font-semibold text-black/80 dark:text-white/85">Screen time trend</div>
               <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Minutes per day this week</div>
               <div className="h-44">

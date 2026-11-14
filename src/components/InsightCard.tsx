@@ -140,11 +140,7 @@ export default function InsightCard({ insight, onDismissed, runningExperimentKey
 
   return (
     <div
-      className="rounded-3xl p-5 max-sm:p-4"
-      style={{
-        background: 'linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(76,175,80,0.04) 100%)',
-        border: '1px solid rgba(99,102,241,0.14)',
-      }}
+      className="lp-card rounded-3xl p-5 max-sm:p-4"
     >
       <p className="text-sm leading-relaxed text-black/80 dark:text-white/85">{insight.text}</p>
 

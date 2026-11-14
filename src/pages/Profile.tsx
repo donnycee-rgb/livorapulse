@@ -18,8 +18,8 @@ import { getDayKey } from '../utils/date'
 function MiniScoreRing({ score }: { score: number }) {
   const r = 38
   const circ = 2 * Math.PI * r
-  const color = score >= 80 ? '#4CAF50' : score >= 60 ? '#FFA500' : score >= 40 ? '#00BCD4' : '#FF6B6B'
-  const label = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : score >= 40 ? 'Fair' : 'Needs work'
+  const color = score >= 80 ? '#4CAF50' : score >= 60 ? '#FFA500' : score >= 40 ? '#00BCD4' : '#94A3B8'
+  const label = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : score >= 40 ? 'Fair' : 'Building up'
 
   return (
     <div className="flex items-center gap-4">
@@ -207,7 +207,7 @@ export default function Profile() {
     <div className="space-y-5">
 
       {/* Header */}
-      <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Profile</h1>
+      <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Profile</h1>
 
       {/* Two-column layout */}
       <div className="grid lg:grid-cols-[1fr_320px] gap-5 max-sm:grid-cols-1">
@@ -216,7 +216,7 @@ export default function Profile() {
         <div className="space-y-5">
 
           {/* Profile card */}
-          <div className="rounded-3xl p-6 max-sm:p-4" style={{ background: `linear-gradient(135deg, #4CAF5008 0%, #4CAF5004 100%)`, border: `1px solid #4CAF5018` }}>
+          <div className="rounded-3xl p-6 max-sm:p-4 lp-card">
             <div className="flex items-start justify-between gap-4 mb-6 max-sm:gap-2 max-sm:mb-5">
               <div className="flex items-center gap-4 max-sm:gap-3 max-sm:min-w-0">
                 {/* Avatar with photo upload */}
@@ -389,7 +389,7 @@ export default function Profile() {
           </div>
 
           {/* Achievements */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #4CAF5008 0%, #4CAF5004 100%)`, border: `1px solid #4CAF5018` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-sm font-semibold text-black/80 dark:text-white/85">Achievements</div>
@@ -427,7 +427,7 @@ export default function Profile() {
         <div className="space-y-4">
 
           {/* Score card */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #4CAF5008 0%, #4CAF5004 100%)`, border: `1px solid #4CAF5018` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="text-xs font-bold text-black/35 dark:text-white/30 uppercase tracking-wider mb-4">Today's Score</div>
             <MiniScoreRing score={score} />
 
@@ -457,7 +457,7 @@ export default function Profile() {
           </div>
 
           {/* Streak card */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #4CAF5008 0%, #4CAF5004 100%)`, border: `1px solid #4CAF5018` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-9 h-9 rounded-2xl bg-lp-primary/15 flex items-center justify-center">
                 <Flame size={14} className="text-lp-primary" />
@@ -479,7 +479,7 @@ export default function Profile() {
           </div>
 
           {/* Distance card */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #4CAF5008 0%, #4CAF5004 100%)`, border: `1px solid #4CAF5018` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-9 h-9 rounded-2xl bg-lp-accent/15 flex items-center justify-center">
                 <TrendingUp size={14} className="text-lp-accent" />

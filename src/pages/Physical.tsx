@@ -62,7 +62,7 @@ function StatCard({ label, value, context, icon, color, goalValue, goalMax, tren
   const trendColor = trend === 'up' ? '#4CAF50' : trend === 'down' ? '#FF6B6B' : '#94a3b8'
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #4CAF500A 0%, #4CAF5005 100%)`, border: `1px solid #4CAF5020` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: color + '18' }}>
           <div style={{ color }}>{icon}</div>
@@ -97,7 +97,7 @@ function ScoreImpactCard({ steps, sleep }: { steps: number; sleep: number }) {
   )
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #4CAF500A 0%, #4CAF5005 100%)`, border: `1px solid #4CAF5020` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-primary/15 flex items-center justify-center">
           <Target size={14} className="text-lp-primary" />
@@ -149,7 +149,7 @@ function WeeklySummaryCard({ weeklySteps, sleepHours }: {
     : 0
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #4CAF500A 0%, #4CAF5005 100%)`, border: `1px solid #4CAF5020` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-accent/15 flex items-center justify-center">
           <TrendingUp size={14} className="text-lp-accent" />
@@ -201,10 +201,10 @@ function WeeklySummaryCard({ weeklySteps, sleepHours }: {
 function SleepLogger({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const levels = [5, 6, 6.5, 7, 7.5, 8, 8.5, 9]
   const getColor = (h: number) => h >= 8 ? '#4CAF50' : h >= 7 ? '#00BCD4' : h >= 6 ? '#FFA500' : '#FF6B6B'
-  const getLabel = (h: number) => h >= 8 ? 'Great' : h >= 7 ? 'Good' : h >= 6 ? 'Fair' : 'Low'
+  const getLabel = (h: number) => h >= 8 ? 'Great' : h >= 7 ? 'Good' : h >= 6 ? 'Fair' : 'Short'
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #4CAF500A 0%, #4CAF5005 100%)`, border: `1px solid #4CAF5020` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-[#6366F1]/15 flex items-center justify-center">
           <Moon size={14} className="text-[#6366F1]" />
@@ -283,14 +283,14 @@ export default function Physical() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
-          <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Physical Activity</h1>
+          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Physical Activity</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 max-sm:w-full">
           <button
             type="button"
             onClick={() => setWalkOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all duration-200 max-sm:flex-1 max-sm:justify-center max-sm:py-3" style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}
+            className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-full bg-[#2E7D32] hover:bg-[#276b2b] transition-all duration-200 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
           >
             <Navigation size={15} />
             Start Walk
@@ -357,7 +357,7 @@ export default function Physical() {
           </div>
 
           {/* Recent activity */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #4CAF500A 0%, #4CAF5005 100%)`, border: `1px solid #4CAF5020` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-sm font-semibold text-black/80 dark:text-white/85">Recent activity</div>
@@ -411,7 +411,7 @@ export default function Physical() {
               { title: 'Calories burned', sub: 'Daily calorie burn', chart: <CaloriesLineChart data={physical.weeklyCaloriesKcal} /> },
               { title: 'Sleep pattern', sub: 'Hours per night', chart: <SleepAreaChart data={physical.sleepHours} /> },
             ].map(({ title, sub, chart }) => (
-              <div key={title} className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #4CAF500A 0%, #4CAF5005 100%)`, border: `1px solid #4CAF5020` }}>
+              <div key={title} className="rounded-3xl p-4 lp-card">
                 <div className="text-sm font-semibold text-black/80 dark:text-white/85">{title}</div>
                 <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">{sub}</div>
                 <div className="h-44">{chart}</div>
