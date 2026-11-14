@@ -74,7 +74,7 @@ function SettingsRow({ icon, label, description, right, danger = false }: {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-3xl overflow-hidden" style={{ background: `linear-gradient(135deg, #4CAF5008 0%, #4CAF5004 100%)`, border: `1px solid #4CAF5018` }}>
+    <div className="rounded-3xl overflow-hidden lp-card">
       <div className="px-4 sm:px-5 pt-4 pb-1">
         <div className="text-[10px] font-bold uppercase tracking-widest text-black/30 dark:text-white/25">
           {title}
@@ -171,7 +171,7 @@ export default function Settings() {
   return (
     <div className="space-y-4 sm:space-y-5 max-w-2xl">
 
-      <h1 className="text-lg sm:text-xl font-bold text-black/85 dark:text-white/90">Settings</h1>
+      <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Settings</h1>
 
       {/* Appearance */}
       <Section title="Appearance">

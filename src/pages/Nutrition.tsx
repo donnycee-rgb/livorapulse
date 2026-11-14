@@ -81,7 +81,7 @@ function WaterTracker({ glasses, goal, onAdd }: {
 }) {
   const pct = Math.min(Math.round((glasses / goal) * 100), 100)
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FF6B6B08 0%, #FF6B6B04 100%)`, border: `1px solid #FF6B6B18` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-2xl bg-blue-500/15 flex items-center justify-center">
@@ -142,7 +142,7 @@ function MacrosCard({ protein, carbs, fat }: { protein: number; carbs: number; f
   })
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FF6B6B08 0%, #FF6B6B04 100%)`, border: `1px solid #FF6B6B18` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-2xl bg-lp-primary/15 flex items-center justify-center">
           <TrendingUp size={14} className="text-lp-primary" />
@@ -552,7 +552,7 @@ export default function Nutrition() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
-          <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Nutrition</h1>
+          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Nutrition</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5">
             {totals.calories === 0
               ? 'Log your meals to track daily nutrition'
@@ -560,7 +560,7 @@ export default function Nutrition() {
           </p>
         </div>
         <button type="button" onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-2xl hover:shadow-lg hover:shadow-lp-primary/25 hover:scale-[1.02] transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3" style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}>
+          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-full bg-[#2E7D32] hover:bg-[#276b2b] transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3">
           <Plus size={15} /> Log Food
         </button>
       </div>
@@ -569,7 +569,7 @@ export default function Nutrition() {
         <div className="space-y-5 min-w-0">
 
           {/* Calorie progress */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #FF6B6B08 0%, #FF6B6B04 100%)`, border: `1px solid #FF6B6B18` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: calColor + '18' }}>
@@ -617,7 +617,7 @@ export default function Nutrition() {
           ) : (
             <div className="space-y-4">
               {groupedEntries.map(meal => (
-                <div key={meal.value} className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FF6B6B08 0%, #FF6B6B04 100%)`, border: `1px solid #FF6B6B18` }}>
+                <div key={meal.value} className="rounded-3xl p-4 lp-card">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ backgroundColor: meal.color + '18' }}>
                       <meal.Icon size={14} style={{ color: meal.color }} />
@@ -660,7 +660,7 @@ export default function Nutrition() {
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Score impact */}
-          <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FF6B6B08 0%, #FF6B6B04 100%)`, border: `1px solid #FF6B6B18` }}>
+          <div className="rounded-3xl p-4 lp-card">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-9 h-9 rounded-2xl bg-lp-primary/15 flex items-center justify-center">
                 <Target size={14} className="text-lp-primary" />
@@ -692,7 +692,7 @@ export default function Nutrition() {
           )}
 
           {/* Summary */}
-          <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FF6B6B08 0%, #FF6B6B04 100%)`, border: `1px solid #FF6B6B18` }}>
+          <div className="rounded-3xl p-4 lp-card">
             <div className="text-xs font-bold text-black/30 dark:text-white/25 uppercase tracking-widest mb-3">Today</div>
             <div className="space-y-2">
               {[

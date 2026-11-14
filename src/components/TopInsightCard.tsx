@@ -42,11 +42,7 @@ export default function TopInsightCard() {
     <button
       type="button"
       onClick={() => navigate('/insights')}
-      className="w-full text-left rounded-3xl p-5 max-sm:p-4 transition hover:shadow-card group"
-      style={{
-        background: 'linear-gradient(135deg, rgba(99,102,241,0.07) 0%, rgba(76,175,80,0.05) 100%)',
-        border: '1px solid rgba(99,102,241,0.15)',
-      }}
+      className="lp-card w-full text-left rounded-3xl p-5 max-sm:p-4 transition hover:shadow-card group"
     >
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-2">

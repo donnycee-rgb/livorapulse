@@ -71,7 +71,7 @@ function ScoreImpactCard({ focusMin }: { focusMin: number }) {
   const gain = Math.round(Math.min(needed / goal, 1) * 100 * 0.2)
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #6366F10A 0%, #6366F105 100%)`, border: `1px solid #6366F120` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-[#6366F1]/15 flex items-center justify-center">
           <Target size={14} className="text-[#6366F1]" />
@@ -122,7 +122,7 @@ function WeeklySummaryCard({ focusByDay, studyByDay }: {
   const bestDay = [...focusByDay].sort((a, b) => b.minutes - a.minutes)[0]
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #6366F10A 0%, #6366F105 100%)`, border: `1px solid #6366F120` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-primary/15 flex items-center justify-center">
           <TrendingUp size={14} className="text-lp-primary" />
@@ -256,7 +256,7 @@ export default function Productivity() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
-          <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Productivity</h1>
+          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Productivity</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
         </div>
         <button
@@ -277,7 +277,7 @@ export default function Productivity() {
 
           {/* Today's stats */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #6366F10A 0%, #6366F105 100%)`, border: `1px solid #6366F120` }}>
+            <div className="rounded-3xl p-4 lp-card">
               <div className="w-9 h-9 rounded-xl bg-[#6366F1]/15 flex items-center justify-center mb-3">
                 <Timer size={17} className="text-[#6366F1]" />
               </div>
@@ -304,7 +304,7 @@ export default function Productivity() {
               </div>
             </div>
 
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #6366F10A 0%, #6366F105 100%)`, border: `1px solid #6366F120` }}>
+            <div className="rounded-3xl p-4 lp-card">
               <div className="w-9 h-9 rounded-xl bg-lp-primary/15 flex items-center justify-center mb-3">
                 <BarChart3 size={17} className="text-lp-primary" />
               </div>
@@ -323,7 +323,7 @@ export default function Productivity() {
           </div>
 
           {/* Focus timer */}
-          <div className="rounded-3xl p-6" style={{ background: `linear-gradient(135deg, #6366F10A 0%, #6366F105 100%)`, border: `1px solid #6366F120` }}>
+          <div className="rounded-3xl p-6 lp-card">
             <div className="text-sm font-semibold text-black/80 dark:text-white/85 mb-1">Focus Timer</div>
             <div className="text-xs text-black/40 dark:text-white/35 mb-6">
               {status === 'idle'
@@ -441,7 +441,7 @@ export default function Productivity() {
           </div>
 
           {/* Recent sessions list */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #6366F10A 0%, #6366F105 100%)`, border: `1px solid #6366F120` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="text-sm font-semibold text-black/80 dark:text-white/85 mb-1">Recent focus sessions</div>
             <div className="text-xs text-black/40 dark:text-white/35 mb-4">Your most recent completed sessions</div>
 
@@ -487,14 +487,14 @@ export default function Productivity() {
 
           {/* Charts */}
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #6366F10A 0%, #6366F105 100%)`, border: `1px solid #6366F120` }}>
+            <div className="rounded-3xl p-4 lp-card">
               <div className="text-sm font-semibold text-black/80 dark:text-white/85">Focus minutes</div>
               <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Weekly total per day</div>
               <div className="h-44">
                 <FocusMinutesBarChart data={productivity.focusMinutesByDay} />
               </div>
             </div>
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #6366F10A 0%, #6366F105 100%)`, border: `1px solid #6366F120` }}>
+            <div className="rounded-3xl p-4 lp-card">
               <div className="text-sm font-semibold text-black/80 dark:text-white/85">Study sessions</div>
               <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Sessions per day</div>
               <div className="h-44">
