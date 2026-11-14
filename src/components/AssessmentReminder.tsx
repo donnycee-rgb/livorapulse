@@ -26,14 +26,14 @@ export default function AssessmentReminder() {
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      className="relative bg-lp-primary/[0.07] dark:bg-lp-primary/[0.10] border border-lp-primary/25 rounded-2xl p-4 flex items-center justify-between gap-4"
+      className="relative bg-white dark:bg-white/[0.04] border border-black/[0.06] dark:border-white/[0.07] rounded-2xl px-4 py-3 flex items-center justify-between gap-4"
     >
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-lp-primary/15 flex items-center justify-center flex-shrink-0">
-          <ClipboardList size={18} className="text-lp-primary" />
+        <div className="w-8 h-8 rounded-full bg-[#E8F5E9] dark:bg-[#3D9A41]/15 flex items-center justify-center flex-shrink-0">
+          <ClipboardList size={15} className="text-[#3D9A41]" />
         </div>
         <div>
-          <div className="text-sm font-semibold text-black/80 dark:text-white/85">
+          <div className="text-sm font-medium text-black/75 dark:text-white/80">
             {lastAssessmentAt ? 'Time for your weekly check-in' : 'Complete your Life Balance Check'}
           </div>
           <div className="text-xs text-black/45 dark:text-white/40 mt-0.5">
@@ -48,7 +48,7 @@ export default function AssessmentReminder() {
         <button
           type="button"
           onClick={() => setCheckInOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-lp-primary text-white hover:bg-green-500 transition-all"
+          className="flex items-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#2E7D32] bg-[#E8F5E9] hover:bg-[#d7efd9] dark:bg-[#3D9A41]/15 dark:text-[#6FCF73] transition-colors"
         >
           Start
           <ChevronRight size={12} />

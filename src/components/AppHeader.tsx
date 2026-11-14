@@ -1,6 +1,6 @@
 import { Bell, Sun, Moon, ChevronDown, Settings, User, LogOut, Laptop, FileText } from 'lucide-react'
 import { useRef, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
@@ -291,6 +291,8 @@ export default function AppHeader() {
   const navigate = useNavigate()
 
   const streak = useAppStore(selectStreak)
+  // The dashboard shows the score and streak itself, so the header doesn't repeat them there
+  const onDashboard = useLocation().pathname === '/dashboard'
 
   return (
     <header className="h-16 flex-shrink-0 flex items-center border-b border-black/[0.06] dark:border-white/[0.06] bg-white/95 dark:bg-[#0a0f1a]/95 backdrop-blur-md z-30">
@@ -315,7 +317,7 @@ export default function AppHeader() {
         </button>
 
         {/* Center — score + streak */}
-        <div className="hidden md:flex items-center gap-2.5">
+        <div className={clsx('items-center gap-2.5', onDashboard ? 'hidden' : 'hidden md:flex')}>
           {/* Score pill */}
           <div
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border transition-colors duration-300"
