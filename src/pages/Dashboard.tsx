@@ -8,6 +8,9 @@ import { motion } from 'framer-motion'
 import clsx from 'clsx'
 
 import ActivityAnalyticsChart from '../components/charts/ActivityAnalyticsChart'
+import HabitWeekDots from '../components/visuals/WeekDots'
+import SeeDetails from '../components/visuals/SeeDetails'
+import { weekSentence } from '../lib/weekStory'
 import { useAppStore } from '../store/useAppStore'
 import { selectDailyInsight, selectLifePulseScore, selectProgressiveGoals, selectRollingScores, selectScoreReady, selectStreak } from '../store/selectors'
 import { formatMinutesToHM, formatNumber } from '../utils/format'
@@ -217,6 +220,19 @@ export default function Dashboard() {
     }))
   }, [weeklySteps, weeklyScreen, weeklyFocus])
 
+  const weeklySleep = useAppStore((s) => s.physical.sleepHours)
+  // "This week": each habit as seven circles that fill toward the day's goal
+  const weekRows = [
+    { label: 'Steps', icon: Activity, color: '#22C55E', goal: goals.goalStepsPerDay, lowerIsBetter: false,
+      values: weeklySteps.map((x) => ({ day: x.day, value: x.steps || null })), noun: 'step goal', format: (v: number) => `${formatNumber(v)} steps` },
+    { label: 'Sleep', icon: Moon, color: '#6366F1', goal: goals.goalSleepHours, lowerIsBetter: false,
+      values: weeklySleep.map((x) => ({ day: x.day, value: x.hours || null })), noun: 'sleep goal', format: (v: number) => `${v.toFixed(1)}h sleep` },
+    { label: 'Focus', icon: Timer, color: '#8B5CF6', goal: goals.goalFocusMinutes, lowerIsBetter: false,
+      values: weeklyFocus.map((x) => ({ day: x.day, value: x.minutes || null })), noun: 'focus goal', format: (v: number) => `${hm(v)} focus` },
+    { label: 'Screen time', icon: MonitorSmartphone, color: '#0EA5E9', goal: goals.goalScreenMinutes, lowerIsBetter: true,
+      values: weeklyScreen.map((x) => ({ day: x.day, value: x.minutes || null })), noun: 'screen limit', format: (v: number) => `${hm(v)} on screens` },
+  ].map((r) => ({ ...r, sentence: weekSentence({ values: r.values, today: day, goal: r.goal, noun: r.noun, lowerIsBetter: r.lowerIsBetter }) }))
+
   const hasAnyData = steps > 0 || sleep > 0 || screenMin > 0 || focusMin > 0
   const hour = new Date().getHours()
   const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening'
@@ -372,19 +388,35 @@ export default function Dashboard() {
         </div>
 
         <div className={clsx(card, 'p-5 flex flex-col')}>
-          <div className="flex items-baseline justify-between gap-3 mb-4 max-sm:flex-col max-sm:items-start max-sm:gap-1">
-            <h2 className="font-serif text-xl text-black/85 dark:text-white/90">This week</h2>
-            <div className="flex items-center gap-3 text-xs text-black/45 dark:text-white/45">
+          <h2 className="font-serif text-xl text-black/85 dark:text-white/90">This week</h2>
+          <p className="text-sm text-black/55 dark:text-white/55 mt-1 mb-4 leading-relaxed">
+            {weekRows.map((r) => r.sentence).find(Boolean) ?? 'Log a walk, your sleep or a focus session and your week will fill in here.'}
+          </p>
+          <div className="space-y-3">
+            {weekRows.map((r) => (
+              <div key={r.label} className="flex items-center gap-3 max-sm:flex-col max-sm:items-start max-sm:gap-1.5">
+                <div className="w-28 flex items-center gap-2 flex-shrink-0">
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: `${r.color}1A`, color: r.color }}>
+                    <r.icon size={13} />
+                  </span>
+                  <span className="text-sm text-black/65 dark:text-white/65">{r.label}</span>
+                </div>
+                <HabitWeekDots values={r.values} goal={r.goal} today={day} color={r.color} lowerIsBetter={r.lowerIsBetter} format={r.format} />
+              </div>
+            ))}
+          </div>
+          <SeeDetails>
+            <div className="flex items-center gap-3 text-xs text-black/45 dark:text-white/45 mb-2">
               {[['Steps', '#4CAF50'], ['Screen', '#00BCD4'], ['Focus', '#6366F1']].map(([label, color]) => (
                 <span key={label} className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full" style={{ background: color }} /> {label}
                 </span>
               ))}
             </div>
-          </div>
-          <div className="h-60 max-sm:h-48 flex-1">
-            <ActivityAnalyticsChart data={chartData} />
-          </div>
+            <div className="h-60 max-sm:h-48">
+              <ActivityAnalyticsChart data={chartData} />
+            </div>
+          </SeeDetails>
         </div>
       </motion.section>
     </div>

@@ -8,6 +8,11 @@ import CaloriesLineChart from '../components/charts/CaloriesLineChart'
 import DistanceLineChart from '../components/charts/DistanceLineChart'
 import SleepAreaChart from '../components/charts/SleepAreaChart'
 import StepsBarChart from '../components/charts/StepsBarChart'
+import StepsJourney from '../components/visuals/StepsJourney'
+import SleepNightSky from '../components/visuals/SleepNightSky'
+import WeekDots from '../components/visuals/WeekDots'
+import SeeDetails from '../components/visuals/SeeDetails'
+import { weekSentence } from '../lib/weekStory'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
@@ -254,6 +259,12 @@ export default function Physical() {
   const updateSleepForToday = useAppStore((s) => s.updateSleepForToday)
 
   const day = getDayKey()
+  const goals = useAppStore(selectProgressiveGoals)
+  // Distance from walks; where only steps were logged, about 0.75 m per step
+  const weekKm = physical.weeklyDistanceKm.reduce((sum, d) => sum + (d.km || 0), 0) ||
+    physical.weeklySteps.reduce((sum, d) => sum + d.steps, 0) * 0.00075
+  const stepsSentence = weekSentence({ values: physical.weeklySteps.map((x) => ({ day: x.day, value: x.steps || null })), today: day, goal: stepGoal, noun: 'step goal' })
+  const sleepSentence = weekSentence({ values: physical.sleepHours.map((x) => ({ day: x.day, value: x.hours || null })), today: day, goal: goals.goalSleepHours, noun: 'sleep goal' })
   const todaySteps = physical.weeklySteps.find((x) => x.day === day)?.steps ?? 0
   const todayDistance = physical.weeklyDistanceKm.find((x) => x.day === day)?.km ?? 0
   const todayCalories = physical.weeklyCaloriesKcal.find((x) => x.day === day)?.kcal ?? 0
@@ -403,20 +414,43 @@ export default function Physical() {
             )}
           </div>
 
-          {/* Charts 2x2 grid */}
-          <div className="grid md:grid-cols-2 gap-4">
-            {[
-              { title: 'Steps this week', sub: 'Daily step count', chart: <StepsBarChart data={physical.weeklySteps} /> },
-              { title: 'Distance this week', sub: 'Kilometres walked', chart: <DistanceLineChart data={physical.weeklyDistanceKm} /> },
-              { title: 'Calories burned', sub: 'Daily calorie burn', chart: <CaloriesLineChart data={physical.weeklyCaloriesKcal} /> },
-              { title: 'Sleep pattern', sub: 'Hours per night', chart: <SleepAreaChart data={physical.sleepHours} /> },
-            ].map(({ title, sub, chart }) => (
-              <div key={title} className="rounded-3xl p-4 lp-card">
-                <div className="text-sm font-semibold text-black/80 dark:text-white/85">{title}</div>
-                <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">{sub}</div>
-                <div className="h-44">{chart}</div>
+          {/* Your week as a journey and a night sky — the charts are one tap away */}
+          <div className="rounded-3xl p-5 lp-card">
+            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your walking journey</div>
+            <StepsJourney km={weekKm} />
+            <div className="mt-1 flex items-center gap-3 max-sm:flex-col max-sm:items-start">
+              <span className="text-sm text-black/60 dark:text-white/60 w-24 flex-shrink-0">Step goal</span>
+              <WeekDots values={physical.weeklySteps.map((x) => ({ day: x.day, value: x.steps || null }))} goal={stepGoal}
+                today={day} color="#22C55E" format={(v) => `${formatNumber(v)} steps`} />
+            </div>
+            {stepsSentence && <p className="text-sm text-black/55 dark:text-white/55 mt-3">{stepsSentence}</p>}
+          </div>
+
+          <div className="rounded-3xl p-5 lp-card">
+            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your nights</div>
+            <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug mb-4">
+              {sleepSentence ?? 'Log your sleep each morning and your week of nights will appear here.'}
+            </p>
+            <SleepNightSky nights={physical.sleepHours} goalHours={goals.goalSleepHours} today={day} />
+          </div>
+
+          <div className="rounded-3xl px-5 py-3 lp-card">
+            <SeeDetails label="See detailed charts">
+              <div className="grid md:grid-cols-2 gap-4">
+                {[
+                  { title: 'Steps this week', sub: 'Daily step count', chart: <StepsBarChart data={physical.weeklySteps} /> },
+                  { title: 'Distance this week', sub: 'Kilometres walked', chart: <DistanceLineChart data={physical.weeklyDistanceKm} /> },
+                  { title: 'Calories burned', sub: 'Daily calorie burn', chart: <CaloriesLineChart data={physical.weeklyCaloriesKcal} /> },
+                  { title: 'Sleep pattern', sub: 'Hours per night', chart: <SleepAreaChart data={physical.sleepHours} /> },
+                ].map(({ title, sub, chart }) => (
+                  <div key={title}>
+                    <div className="text-sm font-semibold text-black/80 dark:text-white/85">{title}</div>
+                    <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">{sub}</div>
+                    <div className="h-44">{chart}</div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </SeeDetails>
           </div>
         </div>
 

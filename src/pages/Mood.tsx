@@ -10,6 +10,9 @@ import clsx from 'clsx'
 
 import MoodTimelineChart from '../components/charts/MoodTimelineChart'
 import StressLineChart from '../components/charts/StressLineChart'
+import MoodWeatherWeek from '../components/visuals/MoodWeatherWeek'
+import SeeDetails from '../components/visuals/SeeDetails'
+import { moodForecastSentence } from '../lib/weekStory'
 
 import type { MoodEmoji } from '../data/types'
 import { useAppStore } from '../store/useAppStore'
@@ -430,22 +433,27 @@ function MoodTab() {
             </div>
           </div>
 
-          {/* Charts */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-3xl p-4 lp-card">
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Mood this week</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Daily mood level</div>
-              <div className="h-44">
-                <MoodTimelineChart data={mood.moodByDay} />
+          {/* Your week as weather — the charts are one tap away */}
+          <div className="rounded-3xl p-5 lp-card">
+            <h2 className="font-serif text-xl text-black/85 dark:text-white/90">Your mood forecast</h2>
+            <p className="text-sm text-black/55 dark:text-white/55 mt-1 mb-4 leading-relaxed">
+              {moodForecastSentence(mood.moodByDay, getDayKey()) ?? 'Log how you feel each day and your week will show up here as weather.'}
+            </p>
+            <MoodWeatherWeek byDay={mood.moodByDay} today={getDayKey()} />
+            <SeeDetails>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Mood this week</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Daily mood level</div>
+                  <div className="h-44"><MoodTimelineChart data={mood.moodByDay} /></div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Stress trend</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Daily stress score</div>
+                  <div className="h-44"><StressLineChart data={mood.stressByDay} /></div>
+                </div>
               </div>
-            </div>
-            <div className="rounded-3xl p-4 lp-card">
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Stress trend</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Daily stress score</div>
-              <div className="h-44">
-                <StressLineChart data={mood.stressByDay} />
-              </div>
-            </div>
+            </SeeDetails>
           </div>
         </div>
 
