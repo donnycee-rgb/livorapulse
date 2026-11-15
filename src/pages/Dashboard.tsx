@@ -17,6 +17,8 @@ import AssessmentReminder from '../components/AssessmentReminder'
 import CyclePhaseCard from '../components/CyclePhaseCard'
 import TopInsightCard from '../components/TopInsightCard'
 import ExperimentCheckCard from '../components/ExperimentCheckCard'
+import TodayOutlookCard from '../components/TodayOutlookCard'
+import { useMoodModel } from '../components/WhatHelpsYou'
 
 // ---------------------------------------------------------------------------
 // The dashboard is a calm "Today" page in the landing page's style: white
@@ -178,6 +180,7 @@ export default function Dashboard() {
   const scoreReady = useAppStore(selectScoreReady)
   const goals = useAppStore(selectProgressiveGoals)
   const streak = useAppStore(selectStreak)
+  const moodModel = useMoodModel()
 
   const day = getDayKey()
   const steps = useAppStore((s) => s.physical.weeklySteps.find((x) => x.day === day)?.steps ?? 0)
@@ -297,6 +300,9 @@ export default function Dashboard() {
           </div>
         </div>
       </motion.section>
+
+      {/* Today's mood outlook from the nightly model — only when there is one */}
+      <TodayOutlookCard model={moodModel} />
 
       {/* Running experiment and the top insight — each shows only when it has something to say */}
       <ExperimentCheckCard />
