@@ -36,7 +36,7 @@ export default function ResetPassword() {
     }
   }
 
-  const field = 'w-full rounded-xl bg-white/[0.06] border border-white/15 text-white placeholder:text-white/25 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-lp-primary/50'
+  const field = 'w-full rounded-xl bg-white dark:bg-white/[0.06] border border-black/[0.12] dark:border-white/15 text-black/85 dark:text-white placeholder:text-black/30 dark:placeholder:text-white/25 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-lp-primary/50'
 
   return (
     <AuthShell>
@@ -44,31 +44,31 @@ export default function ResetPassword() {
         <div className="w-14 h-14 rounded-2xl bg-lp-primary/15 border border-lp-primary/25 flex items-center justify-center mx-auto">
           <KeyRound size={26} className="text-lp-primary" />
         </div>
-        <h1 className="mt-4 text-xl font-bold text-white">{done ? 'Password changed' : 'Set a new password'}</h1>
+        <h1 className="mt-4 font-serif text-2xl text-black/85 dark:text-white">{done ? 'Password changed' : 'Set a new password'}</h1>
       </div>
 
       {!token ? (
-        <p className="mt-4 text-sm text-white/50 text-center leading-relaxed">
+        <p className="mt-4 text-sm text-black/65 dark:text-white/50 text-center leading-relaxed">
           This link is incomplete. Open the link from the email again, or{' '}
           <Link to="/login" className="font-semibold text-lp-accent hover:underline">ask for a new one</Link>.
         </p>
       ) : done ? (
         <div className="mt-4 text-center space-y-4">
-          <p className="text-sm text-white/50 leading-relaxed">
+          <p className="text-sm text-black/65 dark:text-white/50 leading-relaxed">
             You can now sign in with your new password. For your security, you&apos;ve been signed out on other devices.
           </p>
-          <Link to="/login" className="block w-full bg-lp-primary text-white font-semibold rounded-xl py-2.5 hover:bg-green-500 transition text-sm">
+          <Link to="/login" className="block w-full bg-[#2E7D32] text-white font-semibold rounded-full py-3 hover:bg-[#276b2b] transition text-sm">
             Sign in
           </Link>
         </div>
       ) : (
         <form className="mt-6 space-y-3" onSubmit={submit} noValidate>
           <label className="block">
-            <span className="text-xs font-semibold text-white/50">New password</span>
+            <span className="text-xs font-semibold text-black/65 dark:text-white/50">New password</span>
             <input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} className={`${field} mt-1`} placeholder="At least 8 characters" />
           </label>
           <label className="block">
-            <span className="text-xs font-semibold text-white/50">Type it again</span>
+            <span className="text-xs font-semibold text-black/65 dark:text-white/50">Type it again</span>
             <input type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={`${field} mt-1`} />
           </label>
           {error && (
@@ -79,7 +79,7 @@ export default function ResetPassword() {
               )}
             </p>
           )}
-          <button type="submit" disabled={busy} className="w-full bg-lp-primary text-white font-semibold rounded-xl py-2.5 hover:bg-green-500 transition disabled:opacity-50 text-sm">
+          <button type="submit" disabled={busy} className="w-full bg-[#2E7D32] text-white font-semibold rounded-full py-3 hover:bg-[#276b2b] transition disabled:opacity-50 text-sm">
             {busy ? 'Saving…' : 'Save new password'}
           </button>
         </form>
