@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
+import BrandMark from './BrandMark'
 
 import { useAppStore } from '../store/useAppStore'
 import { useAuthStore } from '../store/useAuthStore'
@@ -35,23 +36,6 @@ function formatTime(ts: number) {
 // ---------------------------------------------------------------------------
 // Animated pulse ECG logo
 // ---------------------------------------------------------------------------
-function PulseLogo() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-      <rect width="36" height="36" rx="10" fill="#4CAF50" fillOpacity="0.12" />
-      <rect width="36" height="36" rx="10" stroke="#4CAF50" strokeOpacity="0.25" strokeWidth="1" />
-      <polyline
-        points="3,18 8,18 11,11 14,25 17,8 20,22 23,15 27,18 33,18"
-        stroke="#4CAF50"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </svg>
-  )
-}
-
 // ---------------------------------------------------------------------------
 // User avatar — photo or initials
 // ---------------------------------------------------------------------------
@@ -305,7 +289,7 @@ export default function AppHeader() {
           className="flex items-center gap-3 group flex-shrink-0"
           aria-label="Go to dashboard"
         >
-          <PulseLogo />
+          <BrandMark />
           <div className="flex flex-col items-start leading-none">
             <span className="text-[15px] font-black text-black/85 dark:text-white/90 tracking-tight group-hover:text-lp-primary transition-colors duration-200">
               Livora<span className="text-lp-primary">Pulse</span>
