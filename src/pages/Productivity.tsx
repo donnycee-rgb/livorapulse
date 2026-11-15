@@ -7,6 +7,10 @@ import clsx from 'clsx'
 import FocusMinutesBarChart from '../components/charts/FocusMinutesBarChart'
 import StudySessionsBarChart from '../components/charts/StudySessionsBarChart'
 import Input from '../components/ui/Input'
+import FocusTimesGrid from '../components/visuals/FocusTimesGrid'
+import WeekDots from '../components/visuals/WeekDots'
+import SeeDetails from '../components/visuals/SeeDetails'
+import { focusGrid, focusSentence } from '../lib/visualStories'
 
 import { useAppStore } from '../store/useAppStore'
 import { selectDimensionScores, selectProgressiveGoals } from '../store/selectors'
@@ -221,6 +225,7 @@ export default function Productivity() {
   const [label, setLabel] = useState('Deep work')
 
   const day = getDayKey()
+  const focusTimes = useMemo(() => focusGrid(productivity.focusSessions), [productivity.focusSessions])
   const todayFocus = useAppStore(
     (s) => s.productivity.focusMinutesByDay.find((x) => x.day === day)?.minutes ?? 0,
   )
@@ -488,22 +493,32 @@ export default function Productivity() {
             )}
           </div>
 
-          {/* Charts */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-3xl p-4 lp-card">
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Focus minutes</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Weekly total per day</div>
-              <div className="h-44">
-                <FocusMinutesBarChart data={productivity.focusMinutesByDay} />
-              </div>
+          {/* When you focus best — the charts are one tap away */}
+          <div className="rounded-3xl p-5 lp-card">
+            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your best focus times</div>
+            <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug mb-4">
+              {focusSentence(focusTimes) ?? 'Finish a few focus sessions and you’ll see when you focus best.'}
+            </p>
+            <FocusTimesGrid grid={focusTimes} today={day} />
+            <div className="mt-4 flex items-center gap-3 max-sm:flex-col max-sm:items-start">
+              <span className="text-sm text-black/60 dark:text-white/60 w-24 flex-shrink-0">Focus goal</span>
+              <WeekDots values={productivity.focusMinutesByDay.map((x) => ({ day: x.day, value: x.minutes || null }))}
+                goal={focusGoal} today={day} color="#8B5CF6" format={(v) => `${v} min of focus`} />
             </div>
-            <div className="rounded-3xl p-4 lp-card">
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Study sessions</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Sessions per day</div>
-              <div className="h-44">
-                <StudySessionsBarChart data={productivity.studySessionsByDay} />
+            <SeeDetails>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Focus minutes</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Weekly total per day</div>
+                  <div className="h-44"><FocusMinutesBarChart data={productivity.focusMinutesByDay} /></div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Study sessions</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Sessions per day</div>
+                  <div className="h-44"><StudySessionsBarChart data={productivity.studySessionsByDay} /></div>
+                </div>
               </div>
-            </div>
+            </SeeDetails>
           </div>
         </div>
 
