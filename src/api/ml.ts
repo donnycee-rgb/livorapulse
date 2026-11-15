@@ -16,7 +16,8 @@ export type MoodModel = {
   minMoodDays: number
   moodDays: number
   effects: MoodEffect[]
-  forecast: { date: string; mean: number; lower: number; upper: number } | null
+  /** usesSleep: last night's sleep was logged and is part of the forecast */
+  forecast: { date: string; mean: number; lower: number; upper: number; usesSleep?: boolean } | null
   lastRun: { status: string; finishedAt: string | null } | null
 }
 
