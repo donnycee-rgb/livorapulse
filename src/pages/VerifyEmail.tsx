@@ -71,14 +71,14 @@ export default function VerifyEmail() {
         <div className="w-14 h-14 rounded-2xl bg-lp-primary/15 border border-lp-primary/25 flex items-center justify-center mx-auto">
           <MailCheck size={26} className="text-lp-primary" />
         </div>
-        <h1 className="mt-4 text-xl font-bold text-white">Confirm your email</h1>
+        <h1 className="mt-4 font-serif text-2xl text-black/85 dark:text-white">Confirm your email</h1>
         {sendFailed ? (
-          <p className="mt-2 text-sm text-white/50 leading-relaxed">
-            We couldn&apos;t send your code to <span className="font-semibold text-white/80">{user?.email ?? 'your email'}</span> just now. Tap &ldquo;send a new code&rdquo; below to try again.
+          <p className="mt-2 text-sm text-black/65 dark:text-white/50 leading-relaxed">
+            We couldn&apos;t send your code to <span className="font-semibold text-black/85 dark:text-white/80">{user?.email ?? 'your email'}</span> just now. Tap &ldquo;send a new code&rdquo; below to try again.
           </p>
         ) : (
-          <p className="mt-2 text-sm text-white/50 leading-relaxed">
-            We sent a 6-digit code to <span className="font-semibold text-white/80">{user?.email ?? 'your email'}</span>. It works for 15 minutes.
+          <p className="mt-2 text-sm text-black/65 dark:text-white/50 leading-relaxed">
+            We sent a 6-digit code to <span className="font-semibold text-black/85 dark:text-white/80">{user?.email ?? 'your email'}</span>. It works for 15 minutes.
           </p>
         )}
       </div>
@@ -100,28 +100,28 @@ export default function VerifyEmail() {
           autoFocus
           placeholder="••••••"
           aria-invalid={!!error}
-          className="w-full text-center tracking-[0.6em] text-2xl font-bold rounded-xl bg-white/[0.06] border border-white/15 text-white placeholder:text-white/20 py-3 focus:outline-none focus:ring-2 focus:ring-lp-primary/50"
+          className="w-full text-center tracking-[0.6em] text-2xl font-bold rounded-xl bg-white dark:bg-white/[0.06] border border-black/[0.12] dark:border-white/15 text-black/85 dark:text-white placeholder:text-black/30 dark:placeholder:text-white/20 py-3 focus:outline-none focus:ring-2 focus:ring-lp-primary/50"
         />
         {error && <p role="alert" className="text-sm text-lp-alert text-center">{error}</p>}
         <button
           type="submit"
           disabled={busy || code.length !== 6}
-          className="w-full bg-lp-primary text-white font-semibold rounded-xl py-2.5 hover:bg-green-500 transition disabled:opacity-50 text-sm"
+          className="w-full bg-[#2E7D32] text-white font-semibold rounded-full py-3 hover:bg-[#276b2b] transition disabled:opacity-50 text-sm"
         >
           {busy ? 'Checking…' : 'Confirm email'}
         </button>
       </form>
 
-      <div className="mt-5 text-center text-sm text-white/45 space-y-2">
+      <div className="mt-5 text-center text-sm text-black/60 dark:text-white/45 space-y-2">
         <p>
           Didn&apos;t get it? Check spam, or{' '}
           {wait > 0 ? (
-            <span className="text-white/35">send a new code in {wait}s</span>
+            <span className="text-black/50 dark:text-white/35">send a new code in {wait}s</span>
           ) : (
             <button type="button" onClick={resend} className="font-semibold text-lp-accent hover:underline">send a new code</button>
           )}
         </p>
-        <button type="button" onClick={logout} className="text-white/35 hover:text-white/60">Wrong email? Sign out and start again</button>
+        <button type="button" onClick={logout} className="text-black/50 dark:text-white/35 hover:text-black/75 dark:hover:text-white/60">Wrong email? Sign out and start again</button>
       </div>
     </AuthShell>
   )
