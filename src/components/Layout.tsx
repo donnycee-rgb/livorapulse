@@ -1,15 +1,44 @@
-import type { PropsWithChildren } from 'react'
+import { Suspense, useEffect, useRef, type PropsWithChildren } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
 
 import AppHeader from './AppHeader'
 import BottomNav from './BottomNav'
 import SideNav from './SideNav'
-import Skeleton from './ui/Skeleton'
+import PageSkeleton from './PageSkeleton'
 import AICoachButton from './AICoachButton'
 import FocusTimerTicker from './FocusTimerTicker'
 import { useStoreHydration } from '../hooks/useStoreHydration'
+import { preloadPages } from '../pages/lazyPages'
 
+/**
+ * The signed-in frame: header, side nav, bottom nav. It stays on screen while
+ * moving between pages; only the content area changes. A page that's still
+ * downloading shows a skeleton there, never a blank screen.
+ *
+ * Used as a layout route (renders the matched page through <Outlet />), or
+ * with children for one-off pages like Not Found.
+ */
 export default function Layout({ children }: PropsWithChildren) {
   const hydrated = useStoreHydration()
+  const { pathname } = useLocation()
+  const mainRef = useRef<HTMLElement>(null)
+
+  // The frame no longer remounts per page, so start each page at the top
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 })
+  }, [pathname])
+
+  // Once signed in and idle, fetch the other pages so switching is instant
+  useEffect(() => {
+    if (!hydrated) return
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void }
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(preloadPages, { timeout: 4000 })
+      return () => w.cancelIdleCallback?.(id)
+    }
+    const t = setTimeout(preloadPages, 1500)
+    return () => clearTimeout(t)
+  }, [hydrated])
 
   return (
     <div className="h-dvh flex flex-col bg-slate-50 dark:bg-[#0a0f1a]">
@@ -27,18 +56,17 @@ export default function Layout({ children }: PropsWithChildren) {
         </div>
 
         {/* Main content — takes all remaining space, never shrinks to 0 */}
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+        <main ref={mainRef} className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
           <div className="max-w-[1200px] px-5 py-5 md:py-6 pb-24 md:pb-6 max-sm:px-4 max-sm:pt-4 max-sm:pb-28">
             {hydrated ? (
-              children
-            ) : (
-              <div className="space-y-4">
-                <Skeleton className="h-28" />
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Skeleton className="h-64" />
-                  <Skeleton className="h-64" />
+              <Suspense fallback={<PageSkeleton />}>
+                {/* A CSS fade per page: no waiting for the old page to animate out */}
+                <div key={pathname} className="animate-fadeIn">
+                  {children ?? <Outlet />}
                 </div>
-              </div>
+              </Suspense>
+            ) : (
+              <PageSkeleton />
             )}
           </div>
         </main>

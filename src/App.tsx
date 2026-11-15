@@ -1,10 +1,8 @@
 import { lazy, Suspense } from 'react'
-import { AnimatePresence } from 'framer-motion'
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
-import RouteTransition from './components/RouteTransition'
 import Seo from './components/Seo'
 import AuthPage from './pages/AuthPage'
 import LandingPage from './pages/LandingPage'
@@ -12,30 +10,20 @@ import NotFound from './pages/NotFound'
 import WelcomeSetup from './pages/WelcomeSetup'
 import VerifyEmail from './pages/VerifyEmail'
 import ResetPassword from './pages/ResetPassword'
+import {
+  Dashboard, Digital, Environment, HealthSummary, Insights, Mood, Nutrition, Physical, Productivity, Profile, Settings,
+} from './pages/lazyPages'
 
-// Signed-in pages are split into their own chunks so the public landing
-// page doesn't download charts and maps up front (faster Core Web Vitals)
-const Dashboard = lazy(() => import('./pages/Dashboard'))
-const Digital = lazy(() => import('./pages/Digital'))
-const Environment = lazy(() => import('./pages/Environment'))
-const Insights = lazy(() => import('./pages/Insights'))
-const HealthSummary = lazy(() => import('./pages/HealthSummary'))
+// Public, opened from a shared link only
 const SharedSummary = lazy(() => import('./pages/SharedSummary'))
-const Mood = lazy(() => import('./pages/Mood'))
-const Nutrition = lazy(() => import('./pages/Nutrition'))
-const Physical = lazy(() => import('./pages/Physical'))
-const Productivity = lazy(() => import('./pages/Productivity'))
-const Profile = lazy(() => import('./pages/Profile'))
-const Settings = lazy(() => import('./pages/Settings'))
 
 export default function App() {
-  const location = useLocation()
-
   return (
-    <Suspense fallback={<div className="min-h-screen" />}>
-    <Seo />
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+    // Only public lazy pages reach this fallback; signed-in pages load inside
+    // the Layout, which shows a page skeleton instead
+    <Suspense fallback={<div className="min-h-dvh bg-[#F5F5F5] dark:bg-[#050b18]" />}>
+      <Seo />
+      <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<AuthPage />} />
@@ -53,49 +41,27 @@ export default function App() {
           <ProtectedRoute requireSetup={false}><WelcomeSetup /></ProtectedRoute>
         } />
 
-        {/* Protected in-app routes */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute><Layout><RouteTransition><Dashboard /></RouteTransition></Layout></ProtectedRoute>
-        } />
-        <Route path="/physical" element={
-          <ProtectedRoute><Layout><RouteTransition><Physical /></RouteTransition></Layout></ProtectedRoute>
-        } />
-        <Route path="/nutrition" element={
-          <ProtectedRoute><Layout><RouteTransition><Nutrition /></RouteTransition></Layout></ProtectedRoute>
-        } />
-        <Route path="/digital" element={
-          <ProtectedRoute><Layout><RouteTransition><Digital /></RouteTransition></Layout></ProtectedRoute>
-        } />
-        <Route path="/productivity" element={
-          <ProtectedRoute><Layout><RouteTransition><Productivity /></RouteTransition></Layout></ProtectedRoute>
-        } />
-        <Route path="/environment" element={
-          <ProtectedRoute><Layout><RouteTransition><Environment /></RouteTransition></Layout></ProtectedRoute>
-        } />
-        <Route path="/summary" element={
-          <ProtectedRoute><Layout><RouteTransition><HealthSummary /></RouteTransition></Layout></ProtectedRoute>
-        } />
+        {/* Signed-in pages share one Layout that stays on screen between them */}
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/physical" element={<Physical />} />
+          <Route path="/nutrition" element={<Nutrition />} />
+          <Route path="/digital" element={<Digital />} />
+          <Route path="/productivity" element={<Productivity />} />
+          <Route path="/environment" element={<Environment />} />
+          <Route path="/summary" element={<HealthSummary />} />
+          <Route path="/insights" element={<Insights />} />
+          <Route path="/mood" element={<Mood />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+
         {/* Public: a health summary someone shared; the token is the only key */}
         <Route path="/shared/summary/:token" element={<SharedSummary />} />
-        <Route path="/insights" element={
-          <ProtectedRoute><Layout><RouteTransition><Insights /></RouteTransition></Layout></ProtectedRoute>
-        } />
-        <Route path="/mood" element={
-          <ProtectedRoute><Layout><RouteTransition><Mood /></RouteTransition></Layout></ProtectedRoute>
-        } />
-        <Route path="/profile" element={
-          <ProtectedRoute><Layout><RouteTransition><Profile /></RouteTransition></Layout></ProtectedRoute>
-        } />
-        <Route path="/settings" element={
-          <ProtectedRoute><Layout><RouteTransition><Settings /></RouteTransition></Layout></ProtectedRoute>
-        } />
 
         <Route path="/home" element={<Navigate to="/" replace />} />
-        <Route path="*" element={
-          <Layout><RouteTransition><NotFound /></RouteTransition></Layout>
-        } />
+        <Route path="*" element={<Layout><NotFound /></Layout>} />
       </Routes>
-    </AnimatePresence>
     </Suspense>
   )
 }
