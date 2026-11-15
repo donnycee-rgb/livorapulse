@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Sun } from 'lucide-react'
+import { ArrowRight, Moon, Sun } from 'lucide-react'
 import type { MoodModel } from '../api/ml'
 import { describeEffect, describeForecast } from '../ml/moodWording'
 
@@ -26,6 +26,16 @@ export default function TodayOutlookCard({ model }: { model: MoodModel | null })
         <div className="text-xs text-black/40 dark:text-white/40">Today’s outlook</div>
         <h2 className="font-serif text-xl text-black/85 dark:text-white/90 leading-tight mt-0.5">{title}</h2>
         <p className="text-sm text-black/55 dark:text-white/55 mt-1 leading-relaxed">{body}</p>
+        {model.forecast.usesSleep ? (
+          <p className="mt-1 text-xs text-black/40 dark:text-white/40 flex items-center gap-1">
+            <Moon size={11} /> Includes last night’s sleep
+          </p>
+        ) : (
+          <button type="button" onClick={() => navigate('/physical')}
+            className="mt-1 text-xs text-black/50 dark:text-white/50 hover:text-black/75 dark:hover:text-white/80 flex items-center gap-1 text-left">
+            <Moon size={11} /> Log last night’s sleep for a sharper outlook
+          </button>
+        )}
         {tip && (
           <button type="button" onClick={() => navigate(tip.to)}
             className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[#2E7D32] dark:text-[#6FCF73] hover:underline text-left">
