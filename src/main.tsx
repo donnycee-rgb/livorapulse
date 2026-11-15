@@ -56,6 +56,14 @@ function Root() {
   )
 }
 
+// An address like "https://site//dashboard?code=..." (a link built from a URL
+// ending in "/") matches no route and shows "Page not found". Repair it before
+// the router reads it, keeping the query (e.g. Google sign-in's ?code=).
+if (window.location.pathname.startsWith('//')) {
+  const { pathname, search, hash } = window.location
+  window.history.replaceState(window.history.state, '', pathname.replace(/^\/+/, '/') + search + hash)
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
