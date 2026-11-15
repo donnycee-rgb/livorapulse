@@ -1,4 +1,5 @@
 import { Lightbulb, Sparkles } from 'lucide-react'
+import WhatHelpsYou, { useMoodModel } from '../components/WhatHelpsYou'
 import { useEffect, useState } from 'react'
 
 import type { ExperimentList } from '../api/experiments'
@@ -74,6 +75,7 @@ function ProgressPanel({ status }: { status: InsightStatus }) {
 }
 
 export default function Insights() {
+  const moodModel = useMoodModel()
   const [insights, setInsights] = useState<Insight[] | null>(null)
   const [status, setStatus] = useState<InsightStatus | null>(null)
   const [failed, setFailed] = useState(false)
@@ -116,6 +118,8 @@ export default function Insights() {
           Couldn't load your insights. Check your connection and try again.
         </div>
       )}
+
+      <WhatHelpsYou model={moodModel} />
 
       {experiments.active && <ActiveExperimentCard exp={experiments.active} onChange={setExperiments} />}
 
