@@ -11,6 +11,7 @@ import {
 
 import { useAppStore } from '../store/useAppStore'
 import { useAuthStore } from '../store/useAuthStore'
+import BrandMark from '../components/BrandMark'
 
 // ─── palette ─────────────────────────────────────────────────────────────────
 const C = {
@@ -59,12 +60,7 @@ const navLinks = [
 function Logo() {
   return (
     <Link to="/" className="flex items-center gap-2 flex-shrink-0" aria-label="LivoraPulse home">
-      <span className="w-8 h-8 rounded-xl flex items-center justify-center" style={btn}>
-        <svg width="15" height="15" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-          <polyline points="3,18 8,18 11,11 14,25 17,8 20,22 23,15 27,18 33,18"
-            stroke="white" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </span>
+      <BrandMark className="h-8" />
       <span className="font-semibold text-[15px] tracking-tight whitespace-nowrap" style={{ color: C.ink }}>LivoraPulse</span>
     </Link>
   )

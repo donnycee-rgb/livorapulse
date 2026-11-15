@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import BrandMark from '../components/BrandMark'
 import { ArrowLeft, Eye, EyeOff, Lock, Mail, ShieldCheck, User } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
@@ -25,21 +26,10 @@ function readRemembered(): string {
 // ---------------------------------------------------------------------------
 // Small pieces
 // ---------------------------------------------------------------------------
-export function PulseMark({ size = 36 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
-      <rect width="36" height="36" rx="10" fill="#4CAF50" fillOpacity="0.12" />
-      <rect width="36" height="36" rx="10" stroke="#4CAF50" strokeOpacity="0.25" strokeWidth="1" />
-      <polyline points="3,18 8,18 11,11 14,25 17,8 20,22 23,15 27,18 33,18" stroke="#3D9A41" strokeWidth="2.2"
-        strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </svg>
-  )
-}
-
 export function Wordmark({ sub = true }: { sub?: boolean }) {
   return (
     <div className="flex items-center gap-2.5">
-      <PulseMark />
+      <BrandMark />
       <div className="leading-none">
         <div className="text-[15px] font-bold tracking-tight text-black/85 dark:text-white/90">
           Livora<span style={{ color: ACCENT }}>Pulse</span>

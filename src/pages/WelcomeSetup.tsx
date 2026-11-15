@@ -13,6 +13,7 @@ import type { LucideIcon } from 'lucide-react'
 import { apiPost } from '../api/client'
 import { useAuthStore } from '../store/useAuthStore'
 import { useAppStore } from '../store/useAppStore'
+import BrandMark from '../components/BrandMark'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Setup after sign-up: Goal → About you → Your typical day → Your targets.
@@ -227,11 +228,7 @@ export default function WelcomeSetup() {
       <div className="w-full max-w-md">
         {/* Brand */}
         <div className="flex items-center gap-2.5 mb-6">
-          <span className="w-9 h-9 rounded-xl flex items-center justify-center bg-lp-primary/15 border border-lp-primary/25">
-            <svg width="18" height="18" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-              <polyline points="3,18 8,18 11,11 14,25 17,8 20,22 23,15 27,18 33,18" stroke="#4CAF50" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
+          <BrandMark />
           <span className="text-white font-bold text-[15px]">LivoraPulse</span>
         </div>
 
