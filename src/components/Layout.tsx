@@ -21,11 +21,11 @@ import { preloadPages } from '../pages/lazyPages'
 export default function Layout({ children }: PropsWithChildren) {
   const hydrated = useStoreHydration()
   const { pathname } = useLocation()
-  const mainRef = useRef<HTMLElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   // The frame no longer remounts per page, so start each page at the top
   useEffect(() => {
-    mainRef.current?.scrollTo({ top: 0 })
+    scrollRef.current?.scrollTo({ top: 0 })
   }, [pathname])
 
   // Once signed in and idle, fetch the other pages so switching is instant
@@ -46,30 +46,34 @@ export default function Layout({ children }: PropsWithChildren) {
       {/* Header — full width, never scrolls */}
       <AppHeader />
 
-      {/* Body row — fills remaining height */}
-      <div className="flex-1 flex min-h-0 w-full overflow-hidden">
+      {/* Body — the scroll area spans the window (scrollbar at the edge); inside
+          it the side nav and the page sit together in a centred column that
+          lines up with the header, like the landing page */}
+      <div ref={scrollRef} className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden">
+        <div className="w-full max-w-[1400px] mx-auto flex">
 
-        {/* SideNav column — fixed width, never shrinks below its own width */}
-        {/* Hidden on phones — the side nav is md+ only, so its padding just wasted 16px */}
-        <div className="flex-shrink-0 pl-4 py-5 min-h-0 max-sm:hidden">
-          <SideNav />
-        </div>
-
-        {/* Main content — takes all remaining space, never shrinks to 0 */}
-        <main ref={mainRef} className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
-          <div className="max-w-[1200px] px-5 py-5 md:py-6 pb-24 md:pb-6 max-sm:px-4 max-sm:pt-4 max-sm:pb-28">
-            {hydrated ? (
-              <Suspense fallback={<PageSkeleton />}>
-                {/* A CSS fade per page: no waiting for the old page to animate out */}
-                <div key={pathname} className="animate-fadeIn">
-                  {children ?? <Outlet />}
-                </div>
-              </Suspense>
-            ) : (
-              <PageSkeleton />
-            )}
+          {/* SideNav column — stays in view while the page scrolls */}
+          {/* Hidden on phones — the side nav is md+ only, so its padding just wasted 16px */}
+          <div className="flex-shrink-0 pl-4 py-5 sticky top-0 self-start max-sm:hidden">
+            <SideNav />
           </div>
-        </main>
+
+          {/* Main content — takes the remaining width, centred within it */}
+          <main className="flex-1 min-w-0">
+            <div className="max-w-[1200px] mx-auto px-5 py-5 md:py-6 pb-24 md:pb-6 max-sm:px-4 max-sm:pt-4 max-sm:pb-28">
+              {hydrated ? (
+                <Suspense fallback={<PageSkeleton />}>
+                  {/* A CSS fade per page: no waiting for the old page to animate out */}
+                  <div key={pathname} className="animate-fadeIn">
+                    {children ?? <Outlet />}
+                  </div>
+                </Suspense>
+              ) : (
+                <PageSkeleton />
+              )}
+            </div>
+          </main>
+        </div>
       </div>
 
       {/* Mobile bottom nav */}
