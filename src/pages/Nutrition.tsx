@@ -13,6 +13,7 @@ import { selectProgressiveGoals } from '../store/selectors'
 import { apiGet, apiPost, apiDel } from '../api/client'
 import FoodScanner, { type FoodScannerHandle } from '../components/FoodScanner'
 import { perServing } from '../ml/portion'
+import { dismissInterrupted, interruptedThisLoad } from '../ml/scanRecovery'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -185,9 +186,11 @@ function MacrosCard({ protein, carbs, fat }: { protein: number; carbs: number; f
 // ---------------------------------------------------------------------------
 // Add food modal — no emojis
 // ---------------------------------------------------------------------------
-function AddFoodModal({ open, onClose, onSave }: {
+function AddFoodModal({ open, onClose, onSave, scanInterrupted = false }: {
   open: boolean
   onClose: () => void
+  /** Reopened after the phone closed the page during a photo */
+  scanInterrupted?: boolean
   onSave: (entry: Omit<FoodEntry, 'id' | 'timestamp'>) => Promise<void>
 }) {
   const [query, setQuery] = useState('')
@@ -328,7 +331,7 @@ function AddFoodModal({ open, onClose, onSave }: {
           </div>
 
           {mode === 'scan' ? (
-            <FoodScanner ref={scannerRef} mealType={mealType} onSave={onSave}
+            <FoodScanner ref={scannerRef} mealType={mealType} onSave={onSave} interrupted={scanInterrupted}
               onSearchInstead={() => setMode('search')} onPendingChange={setScanPending} />
           ) : !manualMode ? (
             <>
@@ -495,7 +498,9 @@ export default function Nutrition() {
   const [entries, setEntries] = useState<FoodEntry[]>([])
   const [totals, setTotals] = useState<DailyTotals>({ calories: 0, proteinG: 0, carbsG: 0, fatG: 0 })
   const [glasses, setGlasses] = useState(0)
-  const [modalOpen, setModalOpen] = useState(false)
+  // If the phone closed the page while the camera was open, reopen the scanner and explain
+  const [scanInterrupted] = useState(interruptedThisLoad)
+  const [modalOpen, setModalOpen] = useState(scanInterrupted)
   const [loading, setLoading] = useState(true)
 
   const fetchData = async () => {
@@ -713,7 +718,7 @@ export default function Nutrition() {
 
       <AnimatePresence>
         {modalOpen && (
-          <AddFoodModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSaveFood} />
+          <AddFoodModal open={modalOpen} onClose={() => { dismissInterrupted(); setModalOpen(false) }} onSave={handleSaveFood} scanInterrupted={scanInterrupted} />
         )}
       </AnimatePresence>
     </div>

@@ -10,6 +10,8 @@ import toast from 'react-hot-toast'
 import { apiGet } from '../api/client'
 import { classifyFood, ModelUnavailableError } from '../ml/foodClassifier'
 import { scanFoodFor, type ScanFood } from '../ml/foodLabels'
+import { shrinkPhoto } from '../ml/photo'
+import { clearHandoff, markHandoff } from '../ml/scanRecovery'
 import {
   EATEN_OPTIONS, nutritionFor, rememberGrams, rememberedGrams,
   type Per100g, type Prediction,
@@ -42,8 +44,12 @@ const FoodScanner = forwardRef<FoodScannerHandle, {
   onSearchInstead: () => void
   /** Called with true while a food is picked and ready to log but not saved. */
   onPendingChange?: (pending: boolean) => void
-}>(function FoodScanner({ mealType, onSave, onSearchInstead, onPendingChange }, ref) {
-  const fileRef = useRef<HTMLInputElement>(null)
+  /** The phone closed the page while the camera was open last time: explain and suggest the gallery */
+  interrupted?: boolean
+}>(function FoodScanner({ mealType, onSave, onSearchInstead, onPendingChange, interrupted = false }, ref) {
+  const cameraRef = useRef<HTMLInputElement>(null)
+  const galleryRef = useRef<HTMLInputElement>(null)
+  const [showInterrupted, setShowInterrupted] = useState(interrupted)
   const imgRef = useRef<HTMLImageElement>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [status, setStatus] = useState<Status>('idle')
@@ -59,15 +65,39 @@ const FoodScanner = forwardRef<FoodScannerHandle, {
   // Free the photo's memory when it changes or the scanner closes.
   useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }, [photoUrl])
 
-  const openCamera = () => fileRef.current?.click()
+  // Opening the camera or picker sends the browser to the background. On
+  // phones low on memory Android may close the page meanwhile; the note
+  // lets the Nutrition page notice and reopen the scanner (scanRecovery.ts).
+  const pick = (input: HTMLInputElement | null) => {
+    if (!input) return
+    markHandoff()
+    input.click()
+  }
+  const openCamera = () => pick(cameraRef.current)
+  const openGallery = () => pick(galleryRef.current)
 
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Picker closed without a photo: forget the note (browsers that support it)
+  useEffect(() => {
+    const inputs = [cameraRef.current, galleryRef.current].filter(Boolean) as HTMLInputElement[]
+    inputs.forEach((i) => i.addEventListener('cancel', clearHandoff))
+    return () => inputs.forEach((i) => i.removeEventListener('cancel', clearHandoff))
+  })
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    clearHandoff()
     const file = e.target.files?.[0]
-    e.target.value = '' // allow picking the same photo again
+    e.target.value = '' // allow picking the same photo again; also drops the browser's hold on the file
     if (!file) return
-    setPhotoUrl(URL.createObjectURL(file))
+    setShowInterrupted(false)
     setChosen(null); setPer100g(null); setPredictions([]); setLoggedCount(0)
     setStatus('analyzing')
+    let small: Blob = file
+    try {
+      small = await shrinkPhoto(file) // full-size photos use a lot of memory; the model needs 224px
+    } catch {
+      // keep the original if shrinking isn't possible
+    }
+    setPhotoUrl(URL.createObjectURL(small))
   }
 
   const analyze = async () => {
@@ -135,22 +165,40 @@ const FoodScanner = forwardRef<FoodScannerHandle, {
 
   useImperativeHandle(ref, () => ({ savePending: log }))
 
-  const fileInput = (
-    <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
+  const fileInputs = (
+    <>
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
+      <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
+    </>
   )
 
   // ── No photo yet ──────────────────────────────────────────────────────────
   if (!photoUrl) {
     return (
       <div className="space-y-3">
-        {fileInput}
+        {fileInputs}
+        {showInterrupted && (
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200/70 dark:border-amber-500/20">
+            <AlertCircle size={14} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-black/65 dark:text-white/65 leading-relaxed">
+              Your phone closed LivoraPulse while the camera was open, so the photo was lost. This happens on phones
+              that are low on memory. Take the photo with your camera app first, then use <b>Choose from gallery</b>.
+            </p>
+          </div>
+        )}
         <button type="button" onClick={openCamera}
-          className="w-full flex flex-col items-center gap-2 py-8 rounded-2xl border-2 border-dashed border-lp-primary/30 bg-lp-primary/[0.04] hover:bg-lp-primary/[0.08] transition-all">
+          className="w-full flex flex-col items-center gap-2 py-7 rounded-2xl border-2 border-dashed border-lp-primary/30 bg-lp-primary/[0.04] hover:bg-lp-primary/[0.08] transition-all">
           <div className="w-12 h-12 rounded-2xl bg-lp-primary/15 flex items-center justify-center">
             <Camera size={22} className="text-lp-primary" />
           </div>
           <span className="text-sm font-semibold text-black/70 dark:text-white/75">Take a photo of your plate</span>
-          <span className="text-xs text-black/40 dark:text-white/35">or choose one from your gallery</span>
+        </button>
+        <button type="button" onClick={openGallery}
+          className={clsx('w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all',
+            showInterrupted
+              ? 'bg-[#2E7D32] text-white hover:bg-[#276b2b]'
+              : 'bg-black/[0.05] dark:bg-white/[0.06] text-black/65 dark:text-white/65 hover:bg-black/[0.08]')}>
+          <ImagePlus size={15} /> Choose from gallery
         </button>
         <p className="text-[11px] text-black/35 dark:text-white/30 text-center leading-relaxed">
           Scanning runs on your phone. Your photo is not uploaded.
@@ -162,7 +210,7 @@ const FoodScanner = forwardRef<FoodScannerHandle, {
   // ── Photo taken ───────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      {fileInput}
+      {fileInputs}
       <div className="relative rounded-2xl overflow-hidden bg-black/5">
         <img ref={imgRef} src={photoUrl} alt="Your meal" onLoad={analyze}
           className="w-full max-h-52 object-cover" />
@@ -304,9 +352,9 @@ const FoodScanner = forwardRef<FoodScannerHandle, {
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55">
             <Search size={12} /> {status === 'results' ? 'Not listed? Search' : 'Search instead'}
           </button>
-          <button type="button" onClick={openCamera}
+          <button type="button" onClick={openGallery}
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55">
-            <ImagePlus size={12} /> New photo
+            <ImagePlus size={12} /> From gallery
           </button>
         </div>
       )}
