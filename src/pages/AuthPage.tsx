@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 import { useAuthStore } from '../store/useAuthStore'
+import { googleSignInFailed } from '../auth/googleReturn'
 
 // ---------------------------------------------------------------------------
 // Sign in / create account, in the landing page's style: light, one green
@@ -425,6 +426,8 @@ function BrandSide({ mode }: { mode: Mode }) {
 export default function AuthPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [mode, setMode] = useState<Mode>('login')
+  // Sent back here when Google sign-in didn't finish (/login?error=oauth_failed)
+  const [googleFailed] = useState(googleSignInFailed)
 
   // Signed in: the dashboard route sends anyone who hasn't finished setup to /welcome
   if (isAuthenticated) return <Navigate to="/dashboard" replace />
@@ -438,6 +441,11 @@ export default function AuthPage() {
           <div className="lg:hidden mb-8 max-sm:mb-6"><Wordmark /></div>
 
           <div className="lp-card rounded-3xl p-8 max-sm:p-5">
+            {googleFailed && mode !== 'forgot' && (
+              <p role="alert" className="mb-5 text-sm text-[#8a4b00] dark:text-[#F5C26B] bg-[#FFF4E5] dark:bg-[#F5A623]/10 border border-[#F5A623]/30 rounded-xl px-3 py-2.5">
+                Google sign-in didn’t finish. Please try again, or sign in with your email.
+              </p>
+            )}
             {mode !== 'forgot' && (
               <>
                 <h2 className="font-serif text-[28px] max-sm:text-2xl text-black/85 dark:text-white/90 leading-tight">

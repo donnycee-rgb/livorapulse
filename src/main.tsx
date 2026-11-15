@@ -6,6 +6,7 @@ import App from './App'
 import AppToaster from './components/ui/Toaster'
 import { useThemeSync } from './hooks/useThemeSync'
 import { useAuthStore } from './store/useAuthStore'
+import { readGoogleReturn } from './auth/googleReturn'
 import { useAppStore } from './store/useAppStore'
 import { usePendingWalkSync } from './hooks/usePendingWalkSync'
 import './styles/globals.css'
@@ -17,16 +18,10 @@ function Root() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const hydrateFromApi = useAppStore((s) => s.hydrateFromApi)
   const syncDashboardScore = useAppStore((s) => s.syncDashboardScore)
-  const handleGoogleCallback = useAuthStore((s) => s.handleGoogleCallback)
   const [authReady, setAuthReady] = useState(false)
 
   // Upload walks that were saved on this phone while offline or signed out
   usePendingWalkSync()
-
-  // Finish Google sign-in (one-time ?code= in the URL)
-  useEffect(() => {
-    handleGoogleCallback().catch(() => null)
-  }, [])
 
   // Wait for auth store hydration
   useEffect(() => {
@@ -62,6 +57,15 @@ function Root() {
 if (window.location.pathname.startsWith('//')) {
   const { pathname, search, hash } = window.location
   window.history.replaceState(window.history.state, '', pathname.replace(/^\/+/, '/') + search + hash)
+}
+
+// Back from Google sign-in: take the one-time code now, before the router and
+// the dashboard's sign-in guard run (the guard would redirect to /login and
+// drop it). Pages show "Signing you in" until the exchange finishes.
+const googleCode = readGoogleReturn(window.location)
+if (googleCode) {
+  window.history.replaceState(null, '', '/dashboard') // keep the code out of the address bar and history
+  void useAuthStore.getState().completeGoogleSignIn(googleCode)
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
