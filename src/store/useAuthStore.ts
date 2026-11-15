@@ -49,6 +49,8 @@ type AuthState = {
   profileLoaded: boolean
   /** Right after sign-up: whether the confirmation code email went out (not saved) */
   verificationSent: boolean | null
+  /** Back from Google and exchanging the one-time code (not saved): pages wait instead of redirecting */
+  oauthPending: boolean
 
   setToken: (token: string | null) => void
   setLastAssessmentAt: (ts: number) => void
@@ -57,7 +59,8 @@ type AuthState = {
   register: (input: { name: string; email: string; password: string }) => Promise<void>
   login: (input: { email: string; password: string }) => Promise<void>
   loginWithGoogle: () => void
-  handleGoogleCallback: () => Promise<boolean>
+  /** Finish Google sign-in with the one-time code from /dashboard?code=... (see auth/googleReturn.ts) */
+  completeGoogleSignIn: (code: string) => Promise<void>
   forgotPassword: (email: string) => Promise<void>
   verifyEmail: (code: string) => Promise<void>
   resendVerification: () => Promise<void>
@@ -84,6 +87,7 @@ export const useAuthStore = create<AuthState>()(
       lastAssessmentAt: null,
       profileLoaded: false,
       verificationSent: null,
+      oauthPending: false,
 
       setToken: (token) => {
         if (token) setAccessTokenOnly(token)
@@ -119,36 +123,20 @@ export const useAuthStore = create<AuthState>()(
         window.location.href = `${apiBase}/api/auth/google`
       },
 
-      handleGoogleCallback: async () => {
-        const params = new URLSearchParams(window.location.search)
-        const code = params.get('code')
-        const token = params.get('token') // older servers sent the token itself
-        const error = params.get('error')
-
-        if (error) {
-          window.history.replaceState({}, '', window.location.pathname)
-          return false
+      completeGoogleSignIn: async (code) => {
+        set({ oauthPending: true })
+        clearAppStore() // like password login: never show the previous account's data
+        try {
+          const res = await apiPost<{ success: boolean; accessToken: string; refreshToken: string }>(
+            '/api/auth/exchange', { code }, false,
+          )
+          setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken })
+          set({ accessToken: res.accessToken, isAuthenticated: true, oauthPending: false })
+          get().loadMe().catch(() => null)
+        } catch {
+          set({ oauthPending: false })
+          window.location.replace('/login?error=oauth_failed')
         }
-        if (!code && !token) return false
-        // Take the code or token out of the address bar (and history) straight away
-        window.history.replaceState({}, '', '/dashboard')
-
-        if (code) {
-          try {
-            const res = await apiPost<{ success: boolean; accessToken: string; refreshToken: string }>(
-              '/api/auth/exchange', { code }, false,
-            )
-            setTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken })
-            set({ accessToken: res.accessToken, isAuthenticated: true })
-          } catch {
-            window.location.href = '/login?error=oauth_failed'
-            return false
-          }
-        } else if (token) {
-          get().setToken(token)
-        }
-        get().loadMe().catch(() => null)
-        return true
       },
 
       register: async ({ name, email, password }) => {
