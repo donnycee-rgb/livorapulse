@@ -221,7 +221,7 @@ export default function Dashboard() {
   }, [weeklySteps, weeklyScreen, weeklyFocus])
 
   const weeklySleep = useAppStore((s) => s.physical.sleepHours)
-  // "This week": each habit as seven circles that fill toward the day's goal
+  // "This week": each habit as seven hearts that fill toward the day's goal
   const weekRows = [
     { label: 'Steps', icon: Activity, color: '#22C55E', goal: goals.goalStepsPerDay, lowerIsBetter: false,
       values: weeklySteps.map((x) => ({ day: x.day, value: x.steps || null })), noun: 'step goal', format: (v: number) => `${formatNumber(v)} steps` },
