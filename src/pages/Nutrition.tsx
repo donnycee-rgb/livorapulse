@@ -13,6 +13,8 @@ import { selectProgressiveGoals } from '../store/selectors'
 import { apiGet, apiPost, apiDel } from '../api/client'
 import FoodScanner, { type FoodScannerHandle } from '../components/FoodScanner'
 import { perServing } from '../ml/portion'
+import YourPlate from '../components/visuals/YourPlate'
+import { plateSentence, plateSlices } from '../lib/visualStories'
 import { dismissInterrupted, interruptedThisLoad } from '../ml/scanRecovery'
 
 // ---------------------------------------------------------------------------
@@ -544,6 +546,7 @@ export default function Nutrition() {
   }
 
   const calPct = Math.min(Math.round((totals.calories / calorieGoal) * 100), 100)
+  const plate = plateSlices(totals)
   const calColor = calPct > 110 ? '#FF6B6B' : calPct >= 80 ? '#4CAF50' : '#FFA500'
 
   const groupedEntries = MEAL_TYPES.map(m => ({
@@ -601,6 +604,15 @@ export default function Nutrition() {
               <span>{calorieGoal.toLocaleString()}</span>
             </div>
           </div>
+
+          {/* Your plate: today's food as slices of a plate, with what's missing */}
+          {plate && (
+            <div className="rounded-3xl p-5 lp-card">
+              <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your plate today</div>
+              <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug mb-4">{plateSentence(plate)}</p>
+              <YourPlate slices={plate} />
+            </div>
+          )}
 
           {/* Meals */}
           {loading ? (

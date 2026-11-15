@@ -1,4 +1,9 @@
 import { useMemo, useState } from 'react'
+import ScreenSplitBar from '../components/visuals/ScreenSplitBar'
+import WeekDots from '../components/visuals/WeekDots'
+import SeeDetails from '../components/visuals/SeeDetails'
+import { weekSentence } from '../lib/weekStory'
+import { screenSplitSentence } from '../lib/visualStories'
 import toast from 'react-hot-toast'
 import {
   MonitorSmartphone, Plus, TrendingUp, TrendingDown,
@@ -349,6 +354,10 @@ export default function Digital() {
   const toggleFocusMode = useAppStore((s) => s.toggleFocusMode)
 
   const day = getDayKey()
+  const screenWeekSentence = weekSentence({
+    values: digital.weeklyScreenTimeMin.map((x) => ({ day: x.day, value: x.minutes || null })),
+    today: day, goal: screenGoal, noun: 'screen limit', lowerIsBetter: true,
+  })
   const todayScreen = useAppStore(
     (s) => s.digital.weeklyScreenTimeMin.find((x) => x.day === day)?.minutes ?? 0,
   )
@@ -499,22 +508,37 @@ export default function Digital() {
             )}
           </div>
 
-          {/* Charts */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-3xl p-4 lp-card">
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">App category split</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Distribution by category</div>
-              <div className="h-44">
-                <AppUsagePieChart data={digital.appUsageCategoriesMin} />
-              </div>
+          {/* Your week on screens — the charts are one tap away */}
+          <div className="rounded-3xl p-5 lp-card">
+            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your week on screens</div>
+            <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug mb-4">
+              {screenWeekSentence ?? 'Log your screen time and your week will show up here.'}
+            </p>
+            <div className="flex items-center gap-3 max-sm:flex-col max-sm:items-start">
+              <span className="text-sm text-black/60 dark:text-white/60 w-24 flex-shrink-0">Within limit</span>
+              <WeekDots values={digital.weeklyScreenTimeMin.map((x) => ({ day: x.day, value: x.minutes || null }))}
+                goal={screenGoal} today={day} color="#0EA5E9" lowerIsBetter format={(v) => `${v} min on screens`} />
             </div>
-            <div className="rounded-3xl p-4 lp-card">
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Screen time trend</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Minutes per day this week</div>
-              <div className="h-44">
-                <ScreenTimeLineChart data={digital.weeklyScreenTimeMin} />
+            {screenSplitSentence(digital.appUsageCategoriesMin) && (
+              <div className="mt-5">
+                <p className="text-sm text-black/60 dark:text-white/60 mb-2">{screenSplitSentence(digital.appUsageCategoriesMin)}</p>
+                <ScreenSplitBar parts={digital.appUsageCategoriesMin} />
               </div>
-            </div>
+            )}
+            <SeeDetails>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">App category split</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Distribution by category</div>
+                  <div className="h-44"><AppUsagePieChart data={digital.appUsageCategoriesMin} /></div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Screen time trend</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Minutes per day this week</div>
+                  <div className="h-44"><ScreenTimeLineChart data={digital.weeklyScreenTimeMin} /></div>
+                </div>
+              </div>
+            </SeeDetails>
           </div>
         </div>
 

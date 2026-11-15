@@ -1,4 +1,7 @@
 import { Plus, Leaf, Target, TrendingUp, Wind, Car, Bike, Footprints, Award, Zap } from 'lucide-react'
+import GrowingPlant from '../components/visuals/GrowingPlant'
+import SeeDetails from '../components/visuals/SeeDetails'
+import { ecoSentence } from '../lib/visualStories'
 import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { motion } from 'framer-motion'
@@ -240,6 +243,10 @@ export default function Environment() {
   const [impact, setImpact] = useState('0.4')
 
   const day = getDayKey()
+  // This week (from Monday): one leaf per eco action, and the CO₂ they saved
+  const weekStart = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime() })()
+  const weekActions = env.ecoActions.filter((a) => a.timestamp >= weekStart).length
+  const weekKgSaved = env.carbonKgByDay.reduce((sum, d) => sum + (d.kg || 0), 0)
   const todayActions = useMemo(() =>
     env.ecoActions.filter(a => {
       const d = new Date(a.timestamp)
@@ -435,29 +442,37 @@ export default function Environment() {
             )}
           </div>
 
-          {/* Charts — real data only */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-3xl p-4 lp-card">
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Recycling this week</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Items recycled per day</div>
-              <div className="h-44">
-                <RecyclePlasticBarChart recycled={env.recycledItemsByDay} plastic={env.plasticUsageByDay} />
+          {/* Your plant grows with each eco action — the charts are one tap away */}
+          <div className="rounded-3xl p-5 lp-card">
+            <div className="flex items-center gap-6 max-sm:flex-col max-sm:items-start max-sm:gap-3">
+              <GrowingPlant leaves={weekActions} />
+              <div className="flex-1">
+                <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your eco plant this week</div>
+                <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug">
+                  {ecoSentence(weekActions, weekKgSaved) ?? 'Log an eco action, like walking instead of driving or recycling a bottle, and your plant will grow its first leaf.'}
+                </p>
+                <p className="text-sm text-black/50 dark:text-white/50 mt-2">Each eco action adds a leaf. It starts again every Monday.</p>
               </div>
             </div>
-            <div className="rounded-3xl p-4 lp-card">
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Transport split</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Trips by mode this week</div>
-              <div className="h-44">
-                <TransportModeChart data={env.transportModeSplit} />
+            <SeeDetails>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Recycling this week</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Items recycled per day</div>
+                  <div className="h-44"><RecyclePlasticBarChart recycled={env.recycledItemsByDay} plastic={env.plasticUsageByDay} /></div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Transport split</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Trips by mode this week</div>
+                  <div className="h-44"><TransportModeChart data={env.transportModeSplit} /></div>
+                </div>
+                <div className="md:col-span-2">
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Carbon impact</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">kg CO₂ saved per day</div>
+                  <div className="h-44"><CarbonLineChart data={env.carbonKgByDay} /></div>
+                </div>
               </div>
-            </div>
-            <div className="md:col-span-2 bg-white dark:bg-slate-900 rounded-3xl p-4">
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Carbon impact</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">kg CO₂ saved per day</div>
-              <div className="h-44">
-                <CarbonLineChart data={env.carbonKgByDay} />
-              </div>
-            </div>
+            </SeeDetails>
           </div>
         </div>
 
