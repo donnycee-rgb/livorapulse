@@ -171,7 +171,7 @@ export default function Settings() {
   return (
     <div className="space-y-4 sm:space-y-5 max-w-2xl">
 
-      <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Settings</h1>
+      <h1 className="text-[24px] max-sm:text-[22px] font-bold leading-tight tracking-tight text-ui-ink">Settings</h1>
 
       {/* Appearance */}
       <Section title="Appearance">

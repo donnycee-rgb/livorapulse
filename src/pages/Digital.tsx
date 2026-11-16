@@ -1,4 +1,9 @@
 import { useMemo, useState } from 'react'
+import { Clapperboard, Shield, Users } from 'lucide-react'
+import RingGauge from '../components/ui/RingGauge'
+import PageTabs from '../components/ui/PageTabs'
+import { ActionButton, MiniStat, PageHeader } from '../components/ui/PageHeader'
+import { HABIT } from '../theme/habits'
 import ScreenSplitBar from '../components/visuals/ScreenSplitBar'
 import WeekDots from '../components/visuals/WeekDots'
 import SeeDetails from '../components/visuals/SeeDetails'
@@ -347,6 +352,14 @@ function WeeklySummaryCard({ weeklyScreen }: {
 // ---------------------------------------------------------------------------
 // Digital page root
 // ---------------------------------------------------------------------------
+const TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'sessions', label: 'Sessions' },
+  { key: 'focus', label: 'Focus mode' },
+  { key: 'charts', label: 'Charts' },
+] as const
+type DigitalTab = (typeof TABS)[number]['key']
+
 export default function Digital() {
   const screenGoal = useAppStore((s) => selectProgressiveGoals(s).goalScreenMinutes)
   const digital = useAppStore((s) => s.digital)
@@ -363,6 +376,7 @@ export default function Digital() {
   )
 
   const [open, setOpen] = useState(false)
+  const [tab, setTab] = useState<DigitalTab>('overview')
   const [category, setCategory] = useState<AppCategory>('Social')
   const [minutes, setMinutes] = useState('30')
 
@@ -379,6 +393,8 @@ export default function Digital() {
     return `${formatMinutesToHM(todayScreen)} today — you are ${formatMinutesToHM(todayScreen - screenGoal)} over your daily limit.`
   }, [todayScreen])
 
+  const overLimit = todayScreen > screenGoal
+  const categoryMin = (c: AppCategory) => digital.appUsageCategoriesMin.find((x) => x.category === c)?.minutes ?? 0
   const screenTrend = todayScreen <= 120 ? 'up' : todayScreen <= screenGoal ? 'flat' : 'down'
 
   const categoryColors: Record<AppCategory, string> = {
@@ -391,83 +407,74 @@ export default function Digital() {
     <div className="space-y-5">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
-        <div>
-          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Digital Usage</h1>
-          <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-lp-accent text-white text-sm font-semibold rounded-xl hover:bg-cyan-500 hover:shadow-lg hover:shadow-lp-accent/25 transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
-        >
-          <Plus size={15} />
-          Log session
-        </button>
-      </div>
+      <PageHeader icon={MonitorSmartphone} tint={HABIT.screen.rgb} title="Digital" subtitle={headline} />
 
       {/* App-only locked state */}
       <AppOnlyCard />
 
-      {/* Two-column layout */}
-      <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
-
-        {/* Left — main content */}
-        <div className="space-y-5 min-w-0">
-
-          {/* Today's stats */}
-          <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
-            <StatCard
-              label="Screen time"
-              value={todayScreen > 0 ? formatMinutesToHM(todayScreen) : '—'}
-              context={
-                todayScreen === 0 ? 'Log a session to start tracking' :
-                todayScreen <= 120 ? 'Well under the daily limit' :
-                todayScreen <= screenGoal ? `${formatMinutesToHM(screenGoal - todayScreen)} left before limit` :
-                `${formatMinutesToHM(todayScreen - screenGoal)} over daily limit`
-              }
-              icon={<MonitorSmartphone size={17} />}
-              color="#00BCD4"
-              goalValue={todayScreen}
-              goalMax={240}
-              invert
-              trend={screenTrend}
-            />
-            <StatCard
-              label="Social"
-              value={formatMinutesToHM(digital.appUsageCategoriesMin.find(c => c.category === 'Social')?.minutes ?? 0)}
-              context="Social media apps"
-              icon={<Smartphone size={17} />}
-              color="#FF6B6B"
-              trend="flat"
-            />
-            <StatCard
-              label="Productive"
-              value={formatMinutesToHM(digital.appUsageCategoriesMin.find(c => c.category === 'Productive')?.minutes ?? 0)}
-              context="Work and learning apps"
-              icon={<Timer size={17} />}
-              color="#4CAF50"
-              trend="flat"
-            />
-          </div>
-
-          {/* Focus mode */}
-          <FocusModeCard
-            enabled={digital.focusMode}
-            onToggle={() => {
-              toggleFocusMode()
-              toast.success(digital.focusMode ? 'Focus Mode disabled' : 'Focus Mode enabled')
-            }}
-          />
-
-          {/* Recent sessions */}
-          <div className="rounded-3xl p-5 lp-card">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="text-sm font-semibold text-black/80 dark:text-white/85">Recent sessions</div>
-                <div className="text-xs text-black/40 dark:text-white/35 mt-0.5">Manually logged screen sessions</div>
-              </div>
+      {/* Hero: today's screen time against the limit */}
+      <section className="lp-card rounded-3xl p-5 relative overflow-hidden" aria-label="Today's screen time">
+        <div className="pointer-events-none absolute -top-16 -left-16 w-48 h-48 rounded-full blur-3xl" style={{ background: `rgb(${HABIT.screen.rgb} / 0.12)` }} />
+        <div className="relative flex items-center gap-5">
+          <RingGauge value={todayScreen / screenGoal} color={overLimit ? '#FF6B6B' : HABIT.screen.hex} size={124} stroke={11}
+            label={`${formatMinutesToHM(todayScreen)} of a ${formatMinutesToHM(screenGoal)} limit`}>
+            <Smartphone size={30} style={{ color: overLimit ? '#FF6B6B' : HABIT.screen.hex }} />
+          </RingGauge>
+          <div className="min-w-0">
+            <div className="text-[12px] font-semibold text-ui-muted">Screen time today</div>
+            <div className="text-[28px] font-extrabold text-ui-ink leading-tight tabular-nums">{todayScreen > 0 ? formatMinutesToHM(todayScreen) : '0m'}</div>
+            <div className="text-[12px] font-semibold" style={{ color: overLimit ? '#FF6B6B' : HABIT.screen.hex }}>
+              {overLimit ? `${formatMinutesToHM(todayScreen - screenGoal)} over your limit` : `${formatMinutesToHM(screenGoal - todayScreen)} left of ${formatMinutesToHM(screenGoal)}`}
             </div>
+          </div>
+        </div>
+        <div className="relative mt-4 grid grid-cols-3 gap-2.5">
+          <MiniStat icon={Users} tint="255 107 107" value={formatMinutesToHM(categoryMin('Social'))} label="Social" />
+          <MiniStat icon={Timer} tint={HABIT.steps.rgb} value={formatMinutesToHM(categoryMin('Productive'))} label="Work & study" />
+          <MiniStat icon={Clapperboard} tint={HABIT.focus.rgb} value={formatMinutesToHM(categoryMin('Entertainment'))} label="Fun" />
+        </div>
+        <div className="relative mt-4 grid grid-cols-2 sm:flex gap-2">
+          <ActionButton icon={Plus} primary onClick={() => setOpen(true)}>Log session</ActionButton>
+          <ActionButton icon={Shield} onClick={() => setTab('focus')}>{digital.focusMode ? 'Focus is on' : 'Focus mode'}</ActionButton>
+        </div>
+      </section>
+
+      <PageTabs label="Digital sections" value={tab} onChange={setTab} tabs={TABS} />
+
+      {tab === 'overview' && (
+        <div className="grid lg:grid-cols-[1fr_300px] gap-4">
+          <div className="min-w-0">
+          {/* Your week on screens — the charts are one tap away */}
+          <div className="rounded-3xl p-5 lp-card">
+            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your week on screens</div>
+            <p className="text-[17px] font-bold text-ui-ink leading-snug mb-4">
+              {screenWeekSentence ?? 'Log your screen time and your week will show up here.'}
+            </p>
+            <div className="flex items-center gap-3 max-sm:flex-col max-sm:items-start">
+              <span className="text-sm text-black/60 dark:text-white/60 w-24 flex-shrink-0">Within limit</span>
+              <WeekDots values={digital.weeklyScreenTimeMin.map((x) => ({ day: x.day, value: x.minutes || null }))}
+                goal={screenGoal} today={day} color="#0EA5E9" lowerIsBetter format={(v) => `${v} min on screens`} />
+            </div>
+            {screenSplitSentence(digital.appUsageCategoriesMin) && (
+              <div className="mt-5">
+                <p className="text-sm text-black/60 dark:text-white/60 mb-2">{screenSplitSentence(digital.appUsageCategoriesMin)}</p>
+                <ScreenSplitBar parts={digital.appUsageCategoriesMin} />
+              </div>
+            )}
+          </div>
+          </div>
+          <div className="space-y-4">
+            <ScoreImpactCard screenMin={todayScreen} />
+            <CategoryBreakdownCard categories={digital.appUsageCategoriesMin} />
+          </div>
+        </div>
+      )}
+
+      {tab === 'sessions' && (
+        <div className="grid lg:grid-cols-[1fr_300px] gap-4">
+          <div className="rounded-3xl p-5 lp-card min-w-0">
+            <div className="text-[15px] font-bold text-ui-ink">Recent sessions</div>
+            <div className="text-xs text-ui-muted mt-0.5 mb-4">Screen time you logged</div>
             {recentSessions.length === 0 ? (
               <div className="py-8 text-center">
                 <div className="w-12 h-12 rounded-2xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mx-auto mb-3">
@@ -488,7 +495,7 @@ export default function Digital() {
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.05 }}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors duration-150"
+                      className="flex items-center gap-3 p-3 rounded-2xl bg-ui-raised"
                     >
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                         style={{ backgroundColor: color + '20' }}>
@@ -507,48 +514,36 @@ export default function Digital() {
               </div>
             )}
           </div>
-
-          {/* Your week on screens — the charts are one tap away */}
-          <div className="rounded-3xl p-5 lp-card">
-            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your week on screens</div>
-            <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug mb-4">
-              {screenWeekSentence ?? 'Log your screen time and your week will show up here.'}
-            </p>
-            <div className="flex items-center gap-3 max-sm:flex-col max-sm:items-start">
-              <span className="text-sm text-black/60 dark:text-white/60 w-24 flex-shrink-0">Within limit</span>
-              <WeekDots values={digital.weeklyScreenTimeMin.map((x) => ({ day: x.day, value: x.minutes || null }))}
-                goal={screenGoal} today={day} color="#0EA5E9" lowerIsBetter format={(v) => `${v} min on screens`} />
-            </div>
-            {screenSplitSentence(digital.appUsageCategoriesMin) && (
-              <div className="mt-5">
-                <p className="text-sm text-black/60 dark:text-white/60 mb-2">{screenSplitSentence(digital.appUsageCategoriesMin)}</p>
-                <ScreenSplitBar parts={digital.appUsageCategoriesMin} />
-              </div>
-            )}
-            <SeeDetails>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">App category split</div>
-                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Distribution by category</div>
-                  <div className="h-44"><AppUsagePieChart data={digital.appUsageCategoriesMin} /></div>
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Screen time trend</div>
-                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Minutes per day this week</div>
-                  <div className="h-44"><ScreenTimeLineChart data={digital.weeklyScreenTimeMin} /></div>
-                </div>
-              </div>
-            </SeeDetails>
-          </div>
-        </div>
-
-        {/* Right sidebar */}
-        <div className="space-y-4">
-          <ScoreImpactCard screenMin={todayScreen} />
-          <CategoryBreakdownCard categories={digital.appUsageCategoriesMin} />
           <WeeklySummaryCard weeklyScreen={digital.weeklyScreenTimeMin} />
         </div>
-      </div>
+      )}
+
+      {tab === 'focus' && (
+        <div className="max-w-xl">
+          <FocusModeCard
+            enabled={digital.focusMode}
+            onToggle={() => {
+              toggleFocusMode()
+              toast.success(digital.focusMode ? 'Focus Mode disabled' : 'Focus Mode enabled')
+            }}
+          />
+        </div>
+      )}
+
+      {tab === 'charts' && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="lp-card rounded-3xl p-5">
+            <div className="text-sm font-bold text-ui-ink">App category split</div>
+            <div className="text-xs text-ui-muted mt-0.5 mb-3">Distribution by category</div>
+            <div className="h-44"><AppUsagePieChart data={digital.appUsageCategoriesMin} /></div>
+          </div>
+          <div className="lp-card rounded-3xl p-5">
+            <div className="text-sm font-bold text-ui-ink">Screen time trend</div>
+            <div className="text-xs text-ui-muted mt-0.5 mb-3">Minutes per day this week</div>
+            <div className="h-44"><ScreenTimeLineChart data={digital.weeklyScreenTimeMin} /></div>
+          </div>
+        </div>
+      )}
 
       {/* Log session modal */}
       <Modal open={open} onClose={() => setOpen(false)} title="Log screen session">

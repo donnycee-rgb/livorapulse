@@ -16,7 +16,7 @@ export default function StepsJourney({ km }: { km: number }) {
 
   return (
     <div>
-      <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug">
+      <p className="text-[17px] font-bold text-ui-ink leading-snug">
         {km <= 0
           ? 'Start a walk to begin this week’s journey.'
           : reached

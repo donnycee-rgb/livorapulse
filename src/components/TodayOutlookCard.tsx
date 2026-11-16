@@ -24,7 +24,7 @@ export default function TodayOutlookCard({ model }: { model: MoodModel | null })
       </span>
       <div className="flex-1 min-w-0">
         <div className="text-xs text-black/40 dark:text-white/40">Today’s outlook</div>
-        <h2 className="font-serif text-xl text-black/85 dark:text-white/90 leading-tight mt-0.5">{title}</h2>
+        <h2 className="text-[17px] font-bold text-ui-ink leading-tight mt-0.5">{title}</h2>
         <p className="text-sm text-black/55 dark:text-white/55 mt-1 leading-relaxed">{body}</p>
         {model.forecast.usesSleep ? (
           <p className="mt-1 text-xs text-black/40 dark:text-white/40 flex items-center gap-1">

@@ -34,14 +34,14 @@ export default function WhatHelpsYou({ model }: { model: MoodModel | null }) {
           <Sparkles size={18} />
         </span>
         <div className="flex-1">
-          <h2 className="font-serif text-xl text-black/85 dark:text-white/90">What helps you</h2>
+          <h2 className="text-[17px] font-bold text-ui-ink">What helps you</h2>
           <p className="text-sm text-black/55 dark:text-white/55 mt-1 leading-relaxed max-w-xl">
             Log your mood on at least {model.minMoodDays} days, along with your sleep, steps or screen time, and
             LivoraPulse will start learning which habits go with your better days.
           </p>
         </div>
         <button type="button" onClick={() => navigate('/mood')}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white bg-[#2E7D32] hover:bg-[#276b2b] transition-colors flex-shrink-0">
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-lp-btn-ink bg-lp-btn hover:opacity-95 transition-colors flex-shrink-0">
           <Heart size={14} /> Log your mood
         </button>
       </section>
@@ -51,7 +51,7 @@ export default function WhatHelpsYou({ model }: { model: MoodModel | null }) {
   return (
     <section className="lp-card rounded-3xl p-6 max-sm:p-5">
       <div className="flex items-baseline justify-between gap-3 mb-4 max-sm:flex-col max-sm:gap-0.5">
-        <h2 className="font-serif text-xl text-black/85 dark:text-white/90">What helps you</h2>
+        <h2 className="text-[17px] font-bold text-ui-ink">What helps you</h2>
         <span className="text-xs text-black/40 dark:text-white/40">From your last {model.moodDays} mood days</span>
       </div>
       <ul className="grid md:grid-cols-2 gap-3">
