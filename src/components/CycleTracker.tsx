@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
-import { Calendar, Droplets, Heart, Info, Plus, Settings2, Trash2 } from 'lucide-react'
+import { Calendar, Droplet, Droplets, Heart, Info, Moon, Plus, Settings2, Sparkles, Sprout, Trash2 } from 'lucide-react'
 
 import { apiDel, apiGet, apiPost, apiPut } from '../api/client'
 import { scheduleScoreSync } from '../store/useAppStore'
@@ -36,22 +36,22 @@ interface CycleStatus extends CycleLog {
 
 const PHASE_CONFIG = {
   menstrual: {
-    label: 'Menstrual', color: '#FF6B6B', bg: '#FF6B6B12', icon: '🔴',
+    label: 'Menstrual', color: '#FF6B6B', bg: '#FF6B6B12', icon: Droplet,
     message: 'Rest is productive too — your body is working hard.',
     tip: 'Iron-rich foods like spinach, managu, beans and lentils can help with fatigue during your period.',
   },
   follicular: {
-    label: 'Follicular', color: '#4CAF50', bg: '#4CAF5012', icon: '🌱',
+    label: 'Follicular', color: '#4CAF50', bg: '#4CAF5012', icon: Sprout,
     message: 'Energy rising — great time for new goals and challenges.',
     tip: 'Your energy and focus tend to be higher in this phase. Great time for deep work.',
   },
   ovulation: {
-    label: 'Ovulation', color: '#FFA500', bg: '#FFA50012', icon: '✨',
+    label: 'Ovulation', color: '#FFA500', bg: '#FFA50012', icon: Sparkles,
     message: 'Peak energy — ideal for physical activity and social plans.',
     tip: 'You may feel more sociable and energetic today. Make the most of it.',
   },
   luteal: {
-    label: 'Luteal', color: '#6366F1', bg: '#6366F112', icon: '🌙',
+    label: 'Luteal', color: '#6366F1', bg: '#6366F112', icon: Moon,
     message: 'Wind-down phase — mood dips and low energy are completely normal.',
     tip: 'Magnesium-rich foods like groundnuts, dark chocolate and greens can ease PMS symptoms.',
   },
@@ -218,7 +218,7 @@ export default function CycleTracker() {
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{phase.icon}</span>
+                    <phase.icon size={24} style={{ color: phase.color }} aria-hidden />
                     <div>
                       <div className="text-xs font-bold uppercase tracking-wider" style={{ color: phase.color }}>
                         {phase.label} phase
@@ -355,7 +355,7 @@ export default function CycleTracker() {
             <div className="space-y-3">
               {Object.entries(PHASE_CONFIG).map(([key, p]) => (
                 <div key={key} className="flex items-start gap-2.5">
-                  <span className="text-base leading-none mt-0.5">{p.icon}</span>
+                  <p.icon size={16} className="mt-0.5 flex-shrink-0" style={{ color: p.color }} aria-hidden />
                   <div>
                     <div className="text-xs font-semibold" style={{ color: p.color }}>{p.label}</div>
                     <div className="text-[11px] text-black/40 dark:text-white/35 leading-relaxed mt-0.5">{p.message}</div>

@@ -22,6 +22,7 @@ import { apiGet } from '../api/client'
 import { saveLog } from '../offline/outbox'
 import { BRAND, HABIT } from '../theme/habits'
 import type { MoodEmoji } from '../data/types'
+import { MOOD_ICONS, MOOD_ORDER } from '../lib/moodIcons'
 import AssessmentReminder from '../components/AssessmentReminder'
 import CyclePhaseCard from '../components/CyclePhaseCard'
 import TopInsightCard from '../components/TopInsightCard'
@@ -41,13 +42,8 @@ const WATER_GOAL = 8
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
 const card = 'lp-card rounded-3xl'
 
-const MOODS: ReadonlyArray<{ emoji: MoodEmoji; label: string }> = [
-  { emoji: '😣', label: 'Rough' },
-  { emoji: '😕', label: 'Low' },
-  { emoji: '😐', label: 'Okay' },
-  { emoji: '🙂', label: 'Good' },
-  { emoji: '😄', label: 'Great' },
-]
+// Moods are stored as emoji values but always drawn as icons
+const MOODS = MOOD_ORDER.map((emoji) => ({ emoji, ...MOOD_ICONS[emoji] }))
 
 /** "1h", "1h 30m", "45m" — drops the "0m" the shared formatter keeps. */
 function hm(minutes: number) {
@@ -104,7 +100,7 @@ function QuickCheckIn({ water, onWater }: { water: number; onWater: () => void }
               aria-pressed={active} aria-label={m.label}
               className={clsx('flex flex-col items-center gap-1 rounded-2xl py-2.5 transition-all active:scale-95',
                 active ? 'bg-lp-primary/15 ring-2 ring-lp-primary lp-glow' : 'bg-ui-raised hover:bg-ui-line/[0.06]')}>
-              <span className="text-[26px] leading-none" aria-hidden>{m.emoji}</span>
+              <m.Icon size={26} strokeWidth={2} style={{ color: active ? m.color : undefined }} className={active ? undefined : 'text-ui-muted'} aria-hidden />
               <span className={clsx('text-[10.5px] font-semibold', active ? 'text-lp-primary' : 'text-ui-muted')}>{m.label}</span>
             </button>
           )
@@ -242,7 +238,7 @@ export default function Dashboard() {
       {/* ══ Greeting ══ */}
       <header className="px-0.5">
         <h1 className="text-[26px] max-sm:text-[23px] font-bold tracking-tight text-ui-ink leading-tight">
-          Good {timeOfDay}{firstName(user.name ?? '') ? `, ${firstName(user.name ?? '')}` : ''} <span aria-hidden>👋</span>
+          Good {timeOfDay}{firstName(user.name ?? '') ? `, ${firstName(user.name ?? '')}` : ''}
         </h1>
         <p className="mt-1 text-[14px] text-ui-muted line-clamp-2">
           {hasAnyData ? insight : 'Log a meal, a walk or how you feel, and your day fills in here.'}
@@ -315,7 +311,7 @@ export default function Dashboard() {
             note={screenMin > goals.goalScreenMinutes ? `${hm(screenMin - goals.goalScreenMinutes)} over` : `limit ${hm(goals.goalScreenMinutes)}`}
             progress={screenMin / goals.goalScreenMinutes} onClick={() => navigate('/digital')} />
           <StatTile icon={Heart} label="Mood" tint={HABIT.mood.rgb}
-            value={todayMood ?? '—'} note={todayMood ? 'Today' : 'Not yet'}
+            value={todayMood ? MOOD_ICONS[todayMood].label : '—'} note={todayMood ? 'Today' : 'Not yet'}
             onClick={() => navigate('/mood')} />
         </div>
       </section>

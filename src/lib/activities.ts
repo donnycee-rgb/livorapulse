@@ -5,22 +5,23 @@
 // MET values: Compendium of Physical Activities (Ainsworth et al., 2011).
 
 export const ACTIVITIES = {
-  gym:       { label: 'Gym / weights',          met: 5.0, emoji: '🏋️' },
-  running:   { label: 'Running',                met: 8.3, emoji: '🏃' },
-  cycling:   { label: 'Cycling',                met: 7.5, emoji: '🚴' },
-  football:  { label: 'Football',               met: 7.0, emoji: '⚽' },
-  basketball:{ label: 'Basketball',             met: 6.5, emoji: '🏀' },
-  swimming:  { label: 'Swimming',               met: 6.0, emoji: '🏊' },
-  hiking:    { label: 'Hiking',                 met: 6.0, emoji: '🥾' },
-  dancing:   { label: 'Dancing',                met: 5.0, emoji: '💃' },
-  skipping:  { label: 'Skipping rope',          met: 11.0, emoji: '🪢' },
-  aerobics:  { label: 'Aerobics / HIIT',        met: 7.3, emoji: '🤸' },
-  farming:   { label: 'Shamba work / digging',  met: 5.0, emoji: '🌱' },
-  housework: { label: 'Housework / cleaning',   met: 3.3, emoji: '🧹' },
-  yoga:      { label: 'Yoga / stretching',      met: 2.5, emoji: '🧘' },
+  gym:       { label: 'Gym / weights',          met: 5.0 },
+  running:   { label: 'Running',                met: 8.3 },
+  cycling:   { label: 'Cycling',                met: 7.5 },
+  football:  { label: 'Football',               met: 7.0 },
+  basketball:{ label: 'Basketball',             met: 6.5 },
+  swimming:  { label: 'Swimming',               met: 6.0 },
+  hiking:    { label: 'Hiking',                 met: 6.0 },
+  dancing:   { label: 'Dancing',                met: 5.0 },
+  skipping:  { label: 'Skipping rope',          met: 11.0 },
+  aerobics:  { label: 'Aerobics / HIIT',        met: 7.3 },
+  farming:   { label: 'Shamba work / digging',  met: 5.0 },
+  housework: { label: 'Housework / cleaning',   met: 3.3 },
+  yoga:      { label: 'Yoga / stretching',      met: 2.5 },
 } as const
 
 export type ActivityType = keyof typeof ACTIVITIES
+
 export const ACTIVITY_TYPES = Object.keys(ACTIVITIES) as ActivityType[]
 
 export const DEFAULT_WEIGHT_KG = 70

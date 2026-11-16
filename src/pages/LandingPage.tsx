@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
+import { CloudRain, Frown, Meh, Smile, SmilePlus } from 'lucide-react'
 import {
   ArrowRight, Activity, MonitorSmartphone, Timer, Heart, Leaf, UtensilsCrossed,
   Footprints, Search, Plus, Check, TrendingUp, Flame, Droplets, Sparkles,
@@ -349,15 +350,17 @@ function FocusScreen() {
 }
 
 function MoodScreen() {
-  const faces = ['😣', '😕', '😐', '🙂', '😄']
+  const faces = [CloudRain, Frown, Meh, Smile, SmilePlus]
   return (
     <div className="pb-2">
       <ScreenHeader sub="Mood & mindset" title="How are you feeling?" />
       <div className="mx-3 rounded-2xl p-3" style={{ background: C.paper }}>
         <div className="flex justify-between">
-          {faces.map((f, i) => (
-            <span key={f} className="w-8 h-8 rounded-full flex items-center justify-center text-base"
-              style={{ background: i === 3 ? C.mint : 'transparent', outline: i === 3 ? `1.5px solid ${C.green}` : 'none' }}>{f}</span>
+          {faces.map((Face, i) => (
+            <span key={i} className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: i === 3 ? C.mint : 'transparent', outline: i === 3 ? `1.5px solid ${C.green}` : 'none', color: i === 3 ? C.green : C.muted }}>
+              <Face size={17} aria-hidden />
+            </span>
           ))}
         </div>
       </div>

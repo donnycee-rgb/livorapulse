@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Eye, EyeOff, Droplets } from 'lucide-react'
+import { Eye, EyeOff, Droplet, Droplets, Moon, Sparkles, Sprout } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '../store/useAuthStore'
 import { apiGet } from '../api/client'
@@ -17,10 +17,10 @@ interface CycleData {
 }
 
 const PHASE_CONFIG = {
-  menstrual:  { label: 'Menstrual',  color: '#FF6B6B', icon: '🔴', message: 'Rest is productive too — your body is working hard.' },
-  follicular: { label: 'Follicular', color: '#4CAF50', icon: '🌱', message: 'Energy rising — great time for new goals.' },
-  ovulation:  { label: 'Ovulation',  color: '#FFA500', icon: '✨', message: 'Peak energy day — push your goals today.' },
-  luteal:     { label: 'Luteal',     color: '#6366F1', icon: '🌙', message: 'Wind-down phase — mood dips are normal.' },
+  menstrual:  { label: 'Menstrual',  color: '#FF6B6B', icon: Droplet, message: 'Rest is productive too — your body is working hard.' },
+  follicular: { label: 'Follicular', color: '#4CAF50', icon: Sprout, message: 'Energy rising — great time for new goals.' },
+  ovulation:  { label: 'Ovulation',  color: '#FFA500', icon: Sparkles, message: 'Peak energy day — push your goals today.' },
+  luteal:     { label: 'Luteal',     color: '#6366F1', icon: Moon, message: 'Wind-down phase — mood dips are normal.' },
 }
 
 export default function CyclePhaseCard() {
