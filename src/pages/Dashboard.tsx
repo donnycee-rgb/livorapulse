@@ -177,6 +177,9 @@ export default function Dashboard() {
     }
   }
 
+  // Distinct green habits ticked today
+  const greenToday = useAppStore((s) => new Set(s.environment.ecoActions.filter((a) =>
+    a.category === 'HABIT' && new Date(a.timestamp).toDateString() === new Date().toDateString()).map((a) => a.type)).size)
   const ecoActions = useAppStore((s) => s.environment.ecoActions.filter((a) =>
     new Date(a.timestamp).toDateString() === new Date().toDateString()).length)
 
@@ -220,7 +223,7 @@ export default function Dashboard() {
     { label: 'Take a walk or log activity', done: steps > 0, to: '/physical' },
     { label: 'Do a focus session', done: focusMin > 0, to: '/productivity' },
     { label: 'Log last night’s sleep', done: sleep > 0, to: '/physical' },
-    { label: 'One eco-friendly choice', done: ecoActions > 0, to: '/environment' },
+    { label: 'Tick a green habit', done: ecoActions > 0, to: '/environment' },
     { label: `Drink water · ${todayWater} of ${WATER_GOAL}`, done: todayWater >= WATER_GOAL, to: '/nutrition' },
   ]
   const doneCount = todos.filter((t) => t.done).length
@@ -315,6 +318,21 @@ export default function Dashboard() {
             onClick={() => navigate('/mood')} />
         </div>
       </section>
+
+      {/* Green habits: a slim way in (it isn't in the phone's bottom bar) */}
+      <button type="button" onClick={() => navigate('/environment')}
+        className="w-full lp-card rounded-2xl px-4 py-3 flex items-center gap-3 text-left hover:-translate-y-0.5 transition-transform">
+        <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `rgb(${HABIT.eco.rgb} / 0.16)`, color: HABIT.eco.hex }}>
+          <Leaf size={17} />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-[14px] font-semibold text-ui-ink">Green habits</span>
+          <span className="block text-[12px] text-ui-muted truncate">
+            {greenToday > 0 ? `${greenToday} of ${Math.min(7, goals.goalEcoActionsPerDay)} today` : 'Reusable bag, no charcoal, a walk instead of a ride…'}
+          </span>
+        </span>
+        <ChevronRight size={16} className="text-ui-muted flex-shrink-0" />
+      </button>
 
       {/* Running experiment and the top insight — each shows only when it has something to say */}
       <ExperimentCheckCard />

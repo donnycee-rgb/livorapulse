@@ -2,8 +2,9 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AppCategory, AppState, DayKey, MoodEmoji, ScoreDimension, ThemeMode, TransportMode, Units, UserGoals } from '../data/types'
 import { seedState } from '../data/seed'
-import { apiGet, apiPut } from '../api/client'
-import { saveLog } from '../offline/outbox'
+import { apiDel, apiGet, apiPut } from '../api/client'
+import { removeFromOutbox, saveLog, saveLogDetailed } from '../offline/outbox'
+import { tripAvoidedKg, type Habit, type TripMode } from '../lib/green'
 import { activityValue, type ActivityType } from '../lib/activities'
 import { useAuthStore } from './useAuthStore'
 import { elapsedAt, endedAtFor, remainingAt } from '../utils/focusTimer'
@@ -90,6 +91,7 @@ type EcoEntry = {
   category: string
   type: string
   impactKgCO2: number
+  distanceKm?: number | null
   timestamp: string
 }
 
@@ -296,11 +298,13 @@ function buildStressByDay(entries: MoodEntry[]): AppState['mood']['stressByDay']
 }
 
 function buildEcoActions(entries: EcoEntry[]): AppState['environment']['ecoActions'] {
-  return entries.slice(0, 20).map((e) => ({
+  return entries.map((e) => ({
     id: e.id,
     timestamp: new Date(e.timestamp).getTime(),
+    category: e.category,
     type: e.type,
     impactKgCO2: e.impactKgCO2,
+    distanceKm: e.distanceKm ?? null,
   }))
 }
 
@@ -397,6 +401,11 @@ export type AppActions = {
   addActivity: (input: { steps: number; distanceKm: number; caloriesKcal: number; note?: string; trail?: Array<{ lat: number; lng: number }>; durationSec?: number; startedAt?: string }) => Promise<void>
   updateSleepForToday: (hours: number) => Promise<void>
   addNap: (minutes: number) => Promise<void>
+  /** Green habits: tick (once a day) or untick */
+  toggleHabit: (habit: Habit) => Promise<void>
+  /** A trip: how and roughly how far; the server works out CO₂ */
+  addTrip: (mode: TripMode, distanceKm: number) => Promise<void>
+  removeEcoEntry: (id: string) => Promise<void>
   addWorkout: (input: { activityType: ActivityType; durationMin: number; note?: string }) => Promise<void>
   addScreenSession: (input: { category: AppCategory; minutes: number }) => Promise<void>
   toggleFocusMode: () => void
@@ -405,8 +414,6 @@ export type AppActions = {
   resumeFocusTimer: () => void
   tickFocusTimer: () => void
   endFocusTimer: (reason?: 'completed' | 'manual') => Promise<void>
-  addEcoAction: (input: { type: string; impactKgCO2: number; category?: string }) => Promise<void>
-  setTransportMode: (mode: TransportMode) => Promise<void>
   setMoodEmoji: (emoji: MoodEmoji) => Promise<void>
   setStressScore: (score: number) => Promise<void>
   setGoals: (goals: Partial<UserGoals>) => Promise<void>
@@ -787,80 +794,63 @@ export const useAppStore = create<AppStore>()(
         }
       },
 
-      // ── Environment ───────────────────────────────────────────────────────
-      addEcoAction: async ({ type, impactKgCO2, category = 'WASTE' }) => {
-        const day = getDayKey()
-        const newAction = { id: uid('eco'), timestamp: now(), type, impactKgCO2 }
+      // ── Environment: green habits and trips ───────────────────────────────
+      toggleHabit: async (habit) => {
+        const today = new Date().toDateString()
+        const done = get().environment.ecoActions.find((a) =>
+          a.category === 'HABIT' && a.type === habit && new Date(a.timestamp).toDateString() === today)
+        if (done) return get().removeEcoEntry(done.id)
 
+        const localId = uid('habit')
         set((s) => ({
-          environment: {
-            ...s.environment,
-            ecoActions: [newAction, ...s.environment.ecoActions],
-            recycledItemsByDay: category === 'WASTE'
-              ? incrementByDay(s.environment.recycledItemsByDay, day, 'items', 1)
-              : s.environment.recycledItemsByDay,
-            carbonKgByDay: impactKgCO2 > 0
-              ? incrementByDay(s.environment.carbonKgByDay, day, 'kg', impactKgCO2)
-              : s.environment.carbonKgByDay,
-          },
+          environment: { ...s.environment, ecoActions: [{ id: localId, timestamp: now(), category: 'HABIT', type: habit, impactKgCO2: 0 }, ...s.environment.ecoActions] },
           meta: { lastUpdatedAt: now() },
         }))
-
         try {
-          const result = await saveLog('/api/eco', { category, type, impactKgCO2, timestamp: new Date().toISOString() })
-          if (result === 'sent') {
-            scheduleScoreSync()
-            get().pushNotification({ title: 'Eco action saved', message: type })
-          }
-        } catch {
-          set((s) => ({
-            environment: {
-              ...s.environment,
-              ecoActions: s.environment.ecoActions.filter((a) => a.id !== newAction.id),
-              recycledItemsByDay: category === 'WASTE'
-                ? incrementByDay(s.environment.recycledItemsByDay, day, 'items', -1)
-                : s.environment.recycledItemsByDay,
-            },
-          }))
-          throw new Error('Failed to save eco action. Please try again.')
+          const saved = await saveLogDetailed('/api/eco', { kind: 'habit', habit, timestamp: new Date().toISOString() })
+          // Remember where it went, so it can be unticked: the server's id, or the waiting log's
+          const id = saved.result === 'sent'
+            ? ((saved.response as { data?: { id?: string } })?.data?.id ?? localId)
+            : `queued:${saved.queuedId}`
+          set((s) => ({ environment: { ...s.environment, ecoActions: s.environment.ecoActions.map((a) => (a.id === localId ? { ...a, id } : a)) } }))
+          if (saved.result === 'sent') scheduleScoreSync()
+        } catch (err) {
+          set((s) => ({ environment: { ...s.environment, ecoActions: s.environment.ecoActions.filter((a) => a.id !== localId) } }))
+          throw err instanceof Error ? err : new Error('Failed to save. Please try again.')
         }
       },
 
-      setTransportMode: async (mode) => {
-        const prev = get().environment.transportMode
+      addTrip: async (mode, distanceKm) => {
+        const localId = uid('trip')
+        const impactKgCO2 = tripAvoidedKg(mode, distanceKm)
         set((s) => ({
-          environment: {
-            ...s.environment,
-            transportMode: mode,
-            transportModeSplit: s.environment.transportModeSplit.map((m) =>
-              m.mode === mode ? { ...m, trips: m.trips + 1 } : m,
-            ),
-          },
+          environment: { ...s.environment, ecoActions: [{ id: localId, timestamp: now(), category: 'TRANSPORT', type: mode, impactKgCO2, distanceKm }, ...s.environment.ecoActions] },
           meta: { lastUpdatedAt: now() },
         }))
         try {
-          const modeMap: Record<TransportMode, string> = {
-            Walking: 'TRANSPORT',
-            Cycling: 'TRANSPORT',
-            Driving: 'TRANSPORT',
-          }
-          const result = await saveLog('/api/eco', {
-            category: modeMap[mode],
-            type: mode,
-            impactKgCO2: mode === 'Driving' ? 0 : 0.5,
-            timestamp: new Date().toISOString(),
-          })
-          if (result === 'sent') scheduleScoreSync()
+          const saved = await saveLogDetailed('/api/eco', { kind: 'trip', mode, distanceKm, timestamp: new Date().toISOString() })
+          const id = saved.result === 'sent'
+            ? ((saved.response as { data?: { id?: string } })?.data?.id ?? localId)
+            : `queued:${saved.queuedId}`
+          set((s) => ({ environment: { ...s.environment, ecoActions: s.environment.ecoActions.map((a) => (a.id === localId ? { ...a, id } : a)) } }))
+          if (saved.result === 'sent') scheduleScoreSync()
+        } catch (err) {
+          set((s) => ({ environment: { ...s.environment, ecoActions: s.environment.ecoActions.filter((a) => a.id !== localId) } }))
+          throw err instanceof Error ? err : new Error('Failed to save the trip. Please try again.')
+        }
+      },
+
+      removeEcoEntry: async (id) => {
+        const before = get().environment.ecoActions
+        set((s) => ({ environment: { ...s.environment, ecoActions: s.environment.ecoActions.filter((a) => a.id !== id) } }))
+        // Not uploaded yet: just take it off the phone
+        if (id.startsWith('queued:')) { removeFromOutbox(id.slice('queued:'.length)); return }
+        try {
+          await apiDel(`/api/eco/${encodeURIComponent(id)}`)
+          scheduleScoreSync()
         } catch {
-          set((s) => ({
-            environment: {
-              ...s.environment,
-              transportMode: prev,
-              transportModeSplit: s.environment.transportModeSplit.map((m) =>
-                m.mode === mode ? { ...m, trips: Math.max(0, m.trips - 1) } : m,
-              ),
-            },
-          }))
+          set((s) => ({ environment: { ...s.environment, ecoActions: before } }))
+          throw new Error("Couldn't remove it right now. Check your connection and try again.")
         }
       },
 

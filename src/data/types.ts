@@ -162,8 +162,13 @@ export type AppState = {
     ecoActions: Array<{
       id: string
       timestamp: number
+      /** 'HABIT' or 'TRANSPORT' (older entries may hold other categories) */
+      category?: string
+      /** The habit or the trip mode */
       type: string
+      /** Trips: CO₂ avoided compared with a car (worked out by the server) */
       impactKgCO2: number
+      distanceKm?: number | null
     }>
     recycledItemsByDay: Array<{ day: DayKey; items: number }>
     plasticUsageByDay: Array<{ day: DayKey; items: number }>

@@ -101,6 +101,17 @@ export type SaveResult = 'sent' | 'queued'
  * which retrying won't fix.
  */
 export async function saveLog(path: string, body: Record<string, unknown>): Promise<SaveResult> {
+  return (await saveLogDetailed(path, body)).result
+}
+
+/**
+ * saveLog, also telling the caller what was saved: the server's reply when
+ * sent, or the id of the waiting log when kept on the phone (so it can still
+ * be taken back with removeFromOutbox before it uploads).
+ */
+export async function saveLogDetailed(path: string, body: Record<string, unknown>): Promise<
+  { result: 'sent'; response: unknown } | { result: 'queued'; queuedId: string }
+> {
   const userId = useAuthStore.getState().user?.id
   const item: OutboxItem = { id: newId(), userId: userId ?? '', path, body, createdAt: new Date().toISOString() }
 
@@ -109,17 +120,17 @@ export async function saveLog(path: string, body: Record<string, unknown>): Prom
     write([...listOutbox(), item])
     void flushOutbox()
     notifyQueued()
-    return 'queued'
+    return { result: 'queued', queuedId: item.id }
   }
 
   try {
-    await send(item)
-    return 'sent'
+    const response = await send(item)
+    return { result: 'sent', response }
   } catch (err) {
     if (!userId || !isRetryable(err)) throw err
     write([...listOutbox(), item])
     notifyQueued()
-    return 'queued'
+    return { result: 'queued', queuedId: item.id }
   }
 }
 
