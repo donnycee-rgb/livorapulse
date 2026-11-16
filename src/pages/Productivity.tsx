@@ -294,22 +294,28 @@ export default function Productivity() {
       {/* Today: focus minutes as a ring, sessions beside it */}
       <section className="lp-card rounded-3xl p-5 relative overflow-hidden" aria-label="Focus today">
         <div className="pointer-events-none absolute -top-16 -left-16 w-48 h-48 rounded-full blur-3xl" style={{ background: `rgb(${HABIT.focus.rgb} / 0.14)` }} />
-        <div className="relative flex items-center gap-5">
-          <RingGauge value={todayFocus / focusGoal} color={HABIT.focus.hex} size={112} stroke={10}
-            label={`${todayFocus} of ${focusGoal} focus minutes`}>
-            <Briefcase size={28} style={{ color: HABIT.focus.hex }} />
-          </RingGauge>
-          <div className="min-w-0 flex-1">
-            <div className="text-[12px] font-semibold text-ui-muted">Focus today</div>
-            <div className="text-[28px] font-extrabold text-ui-ink leading-tight tabular-nums">{shortMin(todayFocus)}</div>
-            <div className="text-[12px] font-semibold" style={{ color: HABIT.focus.hex }}>
-              {todayFocus >= focusGoal ? 'Daily goal reached' : `${fmtGoal(focusGoal - todayFocus)} to your ${fmtGoal(focusGoal)} goal`}
+        {/* Phones: stacked. Wide screens: the ring and number on the left,
+            the stats and buttons on the right, so the row is filled. */}
+        <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:items-center lg:gap-8">
+          <div className="relative flex items-center gap-5">
+            <RingGauge value={todayFocus / focusGoal} color={HABIT.focus.hex} size={112} stroke={10}
+              label={`${todayFocus} of ${focusGoal} focus minutes`}>
+              <Briefcase size={28} style={{ color: HABIT.focus.hex }} />
+            </RingGauge>
+            <div className="min-w-0 flex-1">
+              <div className="text-[12px] font-semibold text-ui-muted">Focus today</div>
+              <div className="text-[28px] font-extrabold text-ui-ink leading-tight tabular-nums">{shortMin(todayFocus)}</div>
+              <div className="text-[12px] font-semibold" style={{ color: HABIT.focus.hex }}>
+                {todayFocus >= focusGoal ? 'Daily goal reached' : `${fmtGoal(focusGoal - todayFocus)} to your ${fmtGoal(focusGoal)} goal`}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="relative mt-4 grid grid-cols-2 gap-2.5">
-          <MiniStat icon={BookOpen} tint={HABIT.steps.rgb} value={String(todaySessions)} label={todaySessions === 1 ? 'Study session' : 'Study sessions'} />
-          <MiniStat icon={Target} tint={HABIT.focus.rgb} value={shortMin(focusGoal)} label={focusMode ? 'Goal · Focus Mode on' : 'Daily goal'} />
+          <div className="space-y-3">
+            <div className="relative grid grid-cols-2 gap-2.5">
+              <MiniStat icon={BookOpen} tint={HABIT.steps.rgb} value={String(todaySessions)} label={todaySessions === 1 ? 'Study session' : 'Study sessions'} />
+              <MiniStat icon={Target} tint={HABIT.focus.rgb} value={shortMin(focusGoal)} label={focusMode ? 'Goal · Focus Mode on' : 'Daily goal'} />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -326,6 +332,9 @@ export default function Productivity() {
                 : 'Session complete'}
             </div>
 
+            {/* Wide screens: the timer on the left, the controls on the right */}
+            <div className="grid lg:grid-cols-2 lg:items-center gap-6">
+            <div>
             {/* Circular timer */}
             <CircularTimer
               remaining={productivity.focusTimer.remainingSec}
@@ -340,9 +349,12 @@ export default function Productivity() {
               </div>
             )}
 
+            </div>
+
+            <div>
             {/* Label + duration — only when idle */}
             {status === 'idle' && (
-              <div className="mt-6 grid md:grid-cols-2 gap-4">
+              <div className="grid gap-4">
                 <div>
                   <div className="text-xs font-semibold text-black/50 dark:text-white/45 uppercase tracking-wider mb-2">Session label</div>
                   <input
@@ -377,7 +389,7 @@ export default function Productivity() {
             )}
 
             {/* Controls */}
-            <div className="mt-6 flex justify-center gap-3">
+            <div className="mt-6 flex justify-center lg:justify-start gap-3">
               {status === 'idle' && (
                 <button
                   type="button"
@@ -429,6 +441,8 @@ export default function Productivity() {
                 </>
               )}
             </div>
+            </div>
+            </div>
           </div>
 
       {todayFocus >= focusGoal && (
@@ -451,7 +465,7 @@ export default function Productivity() {
 
       {tab === 'overview' && (
         <div className="grid lg:grid-cols-[1fr_300px] gap-4">
-          <div className="min-w-0">
+          <div className="min-w-0 flex flex-col [&>*]:flex-1">
           {/* When you focus best — the charts are one tap away */}
           <div className="rounded-3xl p-5 lp-card">
             <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your best focus times</div>
@@ -475,7 +489,7 @@ export default function Productivity() {
 
       {tab === 'sessions' && (
         <div className="grid lg:grid-cols-[1fr_300px] gap-4">
-          <div className="min-w-0">
+          <div className="min-w-0 flex flex-col [&>*]:flex-1">
           {/* Recent sessions list */}
           <div className="rounded-3xl p-5 lp-card">
             <div className="text-sm font-semibold text-black/80 dark:text-white/85 mb-1">Recent focus sessions</div>

@@ -312,31 +312,37 @@ export default function Physical() {
       {/* Hero: today's steps as a ring, the other numbers beside it, and the ways to log */}
       <section className="lp-card rounded-3xl p-5 relative overflow-hidden" aria-label="Today's steps">
         <div className="pointer-events-none absolute -top-16 -left-16 w-48 h-48 rounded-full blur-3xl" style={{ background: `rgb(${HABIT.steps.rgb} / 0.12)` }} />
-        <div className="relative flex items-center gap-5">
-          <RingGauge value={todaySteps / stepGoal} color={HABIT.steps.hex} size={124} stroke={11}
-            label={`${formatNumber(todaySteps)} of ${formatNumber(stepGoal)} steps`}>
-            <Footprints size={30} style={{ color: HABIT.steps.hex }} />
-          </RingGauge>
-          <div className="min-w-0">
-            <div className="text-[12px] font-semibold text-ui-muted">Daily steps</div>
-            <div className="text-[28px] font-extrabold text-ui-ink leading-tight tabular-nums">
-              {formatNumber(todaySteps)} <span className="text-[14px] font-semibold text-ui-muted">/ {formatNumber(stepGoal)}</span>
+        {/* Phones: stacked. Wide screens: the ring and number on the left,
+            the stats and buttons on the right, so the row is filled. */}
+        <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:items-center lg:gap-8">
+          <div className="relative flex items-center gap-5">
+            <RingGauge value={todaySteps / stepGoal} color={HABIT.steps.hex} size={124} stroke={11}
+              label={`${formatNumber(todaySteps)} of ${formatNumber(stepGoal)} steps`}>
+              <Footprints size={30} style={{ color: HABIT.steps.hex }} />
+            </RingGauge>
+            <div className="min-w-0 flex flex-col [&>*]:flex-1">
+              <div className="text-[12px] font-semibold text-ui-muted">Daily steps</div>
+              <div className="text-[28px] font-extrabold text-ui-ink leading-tight tabular-nums">
+                {formatNumber(todaySteps)} <span className="text-[14px] font-semibold text-ui-muted">/ {formatNumber(stepGoal)}</span>
+              </div>
+              <div className="mt-2 h-2 rounded-full bg-ui-line/[0.08] overflow-hidden w-40 max-w-full">
+                <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${stepPct}%`, background: HABIT.steps.hex }} />
+              </div>
+              <div className="mt-1 text-[12px] font-semibold" style={{ color: HABIT.steps.hex }}>{stepPct}% of your goal</div>
             </div>
-            <div className="mt-2 h-2 rounded-full bg-ui-line/[0.08] overflow-hidden w-40 max-w-full">
-              <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${stepPct}%`, background: HABIT.steps.hex }} />
-            </div>
-            <div className="mt-1 text-[12px] font-semibold" style={{ color: HABIT.steps.hex }}>{stepPct}% of your goal</div>
           </div>
-        </div>
-        <div className="relative mt-4 grid grid-cols-3 gap-2.5">
-          <MiniStat icon={Flame} tint={HABIT.meals.rgb} value={`${todayCalories} kcal`} label="Burned" />
-          <MiniStat icon={Navigation} tint={HABIT.screen.rgb} value={formatDistance(todayDistance, units)} label="Distance" />
-          <MiniStat icon={Moon} tint={HABIT.sleep.rgb} value={todaySleep > 0 ? `${todaySleep}h` : '—'} label="Sleep" />
-        </div>
-        <div className="relative mt-4 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-          <div className="col-span-2 grid sm:block"><ActionButton icon={Navigation} primary onClick={() => setWalkOpen(true)}>Start walk</ActionButton></div>
-          <ActionButton icon={Footprints} onClick={() => { setPhoneStepsInput(''); setStepsOpen(true) }}>Enter steps</ActionButton>
-          <ActionButton icon={Plus} onClick={() => setOtherOpen(true)}>Other</ActionButton>
+          <div className="space-y-3">
+            <div className="relative grid grid-cols-3 gap-2.5">
+              <MiniStat icon={Flame} tint={HABIT.meals.rgb} value={`${todayCalories} kcal`} label="Burned" />
+              <MiniStat icon={Navigation} tint={HABIT.screen.rgb} value={formatDistance(todayDistance, units)} label="Distance" />
+              <MiniStat icon={Moon} tint={HABIT.sleep.rgb} value={todaySleep > 0 ? `${todaySleep}h` : '—'} label="Sleep" />
+            </div>
+            <div className="relative grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+              <div className="col-span-2 grid sm:block"><ActionButton icon={Navigation} primary onClick={() => setWalkOpen(true)}>Start walk</ActionButton></div>
+              <ActionButton icon={Footprints} onClick={() => { setPhoneStepsInput(''); setStepsOpen(true) }}>Enter steps</ActionButton>
+              <ActionButton icon={Plus} onClick={() => setOtherOpen(true)}>Other</ActionButton>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -367,15 +373,13 @@ export default function Physical() {
             </div>
             {stepsSentence && <p className="text-[13px] text-ui-muted mt-3">{stepsSentence}</p>}
           </div>
-          <div className="space-y-4">
-            <ScoreImpactCard steps={todaySteps} sleep={todaySleep} />
-            <WeeklySummaryCard weeklySteps={physical.weeklySteps} sleepHours={physical.sleepHours} />
-          </div>
+          <ScoreImpactCard steps={todaySteps} sleep={todaySleep} />
         </div>
       )}
 
       {tab === 'activity' && (
-        <div className="rounded-3xl p-5 lp-card">
+        <div className="grid lg:grid-cols-[1fr_300px] gap-4">
+        <div className="rounded-3xl p-5 lp-card min-w-0">
           <div className="text-[15px] font-bold text-ui-ink">Recent activity</div>
           <div className="text-xs text-ui-muted mt-0.5 mb-4">Your latest logged sessions</div>
           {recent.length === 0 ? (
@@ -408,6 +412,8 @@ export default function Physical() {
               ))}
             </div>
           )}
+        </div>
+        <WeeklySummaryCard weeklySteps={physical.weeklySteps} sleepHours={physical.sleepHours} />
         </div>
       )}
 

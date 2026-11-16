@@ -415,27 +415,33 @@ export default function Digital() {
       {/* Hero: today's screen time against the limit */}
       <section className="lp-card rounded-3xl p-5 relative overflow-hidden" aria-label="Today's screen time">
         <div className="pointer-events-none absolute -top-16 -left-16 w-48 h-48 rounded-full blur-3xl" style={{ background: `rgb(${HABIT.screen.rgb} / 0.12)` }} />
-        <div className="relative flex items-center gap-5">
-          <RingGauge value={todayScreen / screenGoal} color={overLimit ? '#FF6B6B' : HABIT.screen.hex} size={124} stroke={11}
-            label={`${formatMinutesToHM(todayScreen)} of a ${formatMinutesToHM(screenGoal)} limit`}>
-            <Smartphone size={30} style={{ color: overLimit ? '#FF6B6B' : HABIT.screen.hex }} />
-          </RingGauge>
-          <div className="min-w-0">
-            <div className="text-[12px] font-semibold text-ui-muted">Screen time today</div>
-            <div className="text-[28px] font-extrabold text-ui-ink leading-tight tabular-nums">{todayScreen > 0 ? formatMinutesToHM(todayScreen) : '0m'}</div>
-            <div className="text-[12px] font-semibold" style={{ color: overLimit ? '#FF6B6B' : HABIT.screen.hex }}>
-              {overLimit ? `${formatMinutesToHM(todayScreen - screenGoal)} over your limit` : `${formatMinutesToHM(screenGoal - todayScreen)} left of ${formatMinutesToHM(screenGoal)}`}
+        {/* Phones: stacked. Wide screens: the ring and number on the left,
+            the stats and buttons on the right, so the row is filled. */}
+        <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:items-center lg:gap-8">
+          <div className="relative flex items-center gap-5">
+            <RingGauge value={todayScreen / screenGoal} color={overLimit ? '#FF6B6B' : HABIT.screen.hex} size={124} stroke={11}
+              label={`${formatMinutesToHM(todayScreen)} of a ${formatMinutesToHM(screenGoal)} limit`}>
+              <Smartphone size={30} style={{ color: overLimit ? '#FF6B6B' : HABIT.screen.hex }} />
+            </RingGauge>
+            <div className="min-w-0 flex flex-col [&>*]:flex-1">
+              <div className="text-[12px] font-semibold text-ui-muted">Screen time today</div>
+              <div className="text-[28px] font-extrabold text-ui-ink leading-tight tabular-nums">{todayScreen > 0 ? formatMinutesToHM(todayScreen) : '0m'}</div>
+              <div className="text-[12px] font-semibold" style={{ color: overLimit ? '#FF6B6B' : HABIT.screen.hex }}>
+                {overLimit ? `${formatMinutesToHM(todayScreen - screenGoal)} over your limit` : `${formatMinutesToHM(screenGoal - todayScreen)} left of ${formatMinutesToHM(screenGoal)}`}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="relative mt-4 grid grid-cols-3 gap-2.5">
-          <MiniStat icon={Users} tint="255 107 107" value={formatMinutesToHM(categoryMin('Social'))} label="Social" />
-          <MiniStat icon={Timer} tint={HABIT.steps.rgb} value={formatMinutesToHM(categoryMin('Productive'))} label="Work & study" />
-          <MiniStat icon={Clapperboard} tint={HABIT.focus.rgb} value={formatMinutesToHM(categoryMin('Entertainment'))} label="Fun" />
-        </div>
-        <div className="relative mt-4 grid grid-cols-2 sm:flex gap-2">
-          <ActionButton icon={Plus} primary onClick={() => setOpen(true)}>Log session</ActionButton>
-          <ActionButton icon={Shield} onClick={() => setTab('focus')}>{digital.focusMode ? 'Focus is on' : 'Focus mode'}</ActionButton>
+          <div className="space-y-3">
+            <div className="relative grid grid-cols-3 gap-2.5">
+              <MiniStat icon={Users} tint="255 107 107" value={formatMinutesToHM(categoryMin('Social'))} label="Social" />
+              <MiniStat icon={Timer} tint={HABIT.steps.rgb} value={formatMinutesToHM(categoryMin('Productive'))} label="Work & study" />
+              <MiniStat icon={Clapperboard} tint={HABIT.focus.rgb} value={formatMinutesToHM(categoryMin('Entertainment'))} label="Fun" />
+            </div>
+            <div className="relative grid grid-cols-2 sm:flex gap-2">
+              <ActionButton icon={Plus} primary onClick={() => setOpen(true)}>Log session</ActionButton>
+              <ActionButton icon={Shield} onClick={() => setTab('focus')}>{digital.focusMode ? 'Focus is on' : 'Focus mode'}</ActionButton>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -443,7 +449,7 @@ export default function Digital() {
 
       {tab === 'overview' && (
         <div className="grid lg:grid-cols-[1fr_300px] gap-4">
-          <div className="min-w-0">
+          <div className="min-w-0 flex flex-col [&>*]:flex-1">
           {/* Your week on screens — the charts are one tap away */}
           <div className="rounded-3xl p-5 lp-card">
             <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your week on screens</div>

@@ -615,101 +615,101 @@ export default function Nutrition() {
       {/* Hero: today's calories as a ring, macros and water beside it */}
       <section className="lp-card rounded-3xl p-5 relative overflow-hidden" aria-label="Today's food">
         <div className="pointer-events-none absolute -top-16 -left-16 w-48 h-48 rounded-full blur-3xl" style={{ background: `rgb(${HABIT.meals.rgb} / 0.12)` }} />
-        <div className="relative flex items-center gap-5">
-          <RingGauge value={totals.calories / calorieGoal} color={calColor} size={124} stroke={11}
-            label={`${Math.round(totals.calories)} of ${calorieGoal} kcal`}>
-            <span className="text-[26px] font-extrabold leading-none text-ui-ink tabular-nums">{Math.round(totals.calories)}</span>
-            <span className="text-[11px] text-ui-muted mt-1">of {calorieGoal.toLocaleString()} kcal</span>
-          </RingGauge>
-          <div className="min-w-0">
-            <div className="text-[12px] font-semibold text-ui-muted">Calories today</div>
-            <div className="text-[28px] font-extrabold text-ui-ink leading-tight tabular-nums">{calPct}%</div>
-            <div className="text-[12px] font-semibold" style={{ color: calColor }}>
-              {totals.calories === 0 ? 'Nothing logged yet' : calPct > 110 ? 'Over your goal' : calPct >= 80 ? 'On track' : `${Math.max(0, calorieGoal - Math.round(totals.calories))} kcal left`}
+        {/* Phones: stacked. Wide screens: the ring and number on the left,
+            the stats and buttons on the right, so the row is filled. */}
+        <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:items-center lg:gap-8">
+          <div className="relative flex items-center gap-5">
+            <RingGauge value={totals.calories / calorieGoal} color={calColor} size={124} stroke={11}
+              label={`${Math.round(totals.calories)} of ${calorieGoal} kcal`}>
+              <span className="text-[26px] font-extrabold leading-none text-ui-ink tabular-nums">{Math.round(totals.calories)}</span>
+              <span className="text-[11px] text-ui-muted mt-1">of {calorieGoal.toLocaleString()} kcal</span>
+            </RingGauge>
+            <div className="min-w-0 flex flex-col [&>*]:flex-1">
+              <div className="text-[12px] font-semibold text-ui-muted">Calories today</div>
+              <div className="text-[28px] font-extrabold text-ui-ink leading-tight tabular-nums">{calPct}%</div>
+              <div className="text-[12px] font-semibold" style={{ color: calColor }}>
+                {totals.calories === 0 ? 'Nothing logged yet' : calPct > 110 ? 'Over your goal' : calPct >= 80 ? 'On track' : `${Math.max(0, calorieGoal - Math.round(totals.calories))} kcal left`}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="relative mt-4 grid grid-cols-4 gap-2">
-          <MiniStat icon={Beef} tint="236 72 153" value={`${Math.round(totals.proteinG)}g`} label="Protein" />
-          <MiniStat icon={Wheat} tint={HABIT.meals.rgb} value={`${Math.round(totals.carbsG)}g`} label="Carbs" />
-          <MiniStat icon={Droplet} tint="234 179 8" value={`${Math.round(totals.fatG)}g`} label="Fat" />
-          <MiniStat icon={GlassWater} tint={HABIT.water.rgb} value={`${glasses}/${waterGoal}`} label="Water" />
-        </div>
-        <div className="relative mt-4 grid grid-cols-2 sm:flex gap-2">
-          <ActionButton icon={Plus} primary onClick={() => setModalOpen(true)}>Log food</ActionButton>
-          <ActionButton icon={GlassWater} onClick={handleAddWater}>+1 glass</ActionButton>
+          <div className="space-y-3">
+            <div className="relative grid grid-cols-4 gap-2">
+              <MiniStat icon={Beef} tint="236 72 153" value={`${Math.round(totals.proteinG)}g`} label="Protein" />
+              <MiniStat icon={Wheat} tint={HABIT.meals.rgb} value={`${Math.round(totals.carbsG)}g`} label="Carbs" />
+              <MiniStat icon={Droplet} tint="234 179 8" value={`${Math.round(totals.fatG)}g`} label="Fat" />
+              <MiniStat icon={GlassWater} tint={HABIT.water.rgb} value={`${glasses}/${waterGoal}`} label="Water" />
+            </div>
+            <div className="relative grid grid-cols-2 sm:flex gap-2">
+              <ActionButton icon={Plus} primary onClick={() => setModalOpen(true)}>Log food</ActionButton>
+              <ActionButton icon={GlassWater} onClick={handleAddWater}>+1 glass</ActionButton>
+            </div>
+          </div>
         </div>
       </section>
 
       <PageTabs label="Nutrition sections" value={tab} onChange={setTab} tabs={TABS} />
 
       {tab === 'overview' && (
-        <div className="grid lg:grid-cols-[1fr_300px] gap-4">
-          <div className="space-y-4 min-w-0">
-            {/* Your plate: today's food as slices of a plate, with what's missing */}
-          {plate && (
-            <div className="rounded-3xl p-5 lp-card">
-              <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your plate today</div>
+        <div className="grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-4">
+          {/* Your plate: today's food as slices of a plate, with what's missing */}
+          {plate ? (
+            <div className="rounded-3xl p-5 lp-card min-w-0">
+              <div className="text-[12px] font-semibold text-ui-muted mb-1">Your plate today</div>
               <p className="text-[17px] font-bold text-ui-ink leading-snug mb-4">{plateSentence(plate)}</p>
               <YourPlate slices={plate} />
             </div>
+          ) : (
+            <div className="lp-card rounded-3xl p-6 flex flex-col items-center justify-center text-center min-w-0">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: `rgb(${HABIT.meals.rgb} / 0.14)`, color: HABIT.meals.hex }}>
+                <UtensilsCrossed size={22} />
+              </div>
+              <p className="text-sm font-bold text-ui-ink">Your plate fills in as you log meals</p>
+              <p className="text-xs text-ui-muted mt-1">See how today's food compares with a balanced plate</p>
+            </div>
           )}
 
-            {!plate && (
-              <div className="lp-card rounded-3xl p-6 text-center">
-                <p className="text-sm font-semibold text-ui-ink">Your plate fills in as you log meals</p>
-                <p className="text-xs text-ui-muted mt-1">See how today's food compares with a balanced plate</p>
+          {/* Today's meals at a glance; the full list is on the Meals tab */}
+          <div className="rounded-3xl p-5 lp-card min-w-0 flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-[15px] font-bold text-ui-ink">Today's meals</div>
+              {entries.length > 0 && <span className="text-[12px] font-semibold text-ui-muted rounded-full bg-ui-raised px-2.5 py-1">{entries.length}</span>}
+            </div>
+            {entries.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
+                <p className="text-sm font-semibold text-ui-ink">Nothing logged yet</p>
+                <p className="text-xs text-ui-muted mt-1 mb-4">Search a food or scan your plate</p>
+                <button type="button" onClick={() => setModalOpen(true)}
+                  className="h-10 px-4 rounded-2xl text-sm font-bold bg-lp-btn text-lp-btn-ink active:scale-[0.98] transition">
+                  Log your first meal
+                </button>
               </div>
+            ) : (
+              <>
+                <ul className="space-y-2">
+                  {[...entries].reverse().slice(0, 5).map((e) => {
+                    const meal = MEAL_TYPES.find((m) => m.value === e.mealType)
+                    return (
+                      <li key={e.id} className="flex items-center gap-3 rounded-2xl bg-ui-raised px-3 py-2.5">
+                        {meal && (
+                          <span className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: meal.color + '22' }}>
+                            <meal.Icon size={14} style={{ color: meal.color }} />
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold text-ui-ink truncate">{e.foodName}</div>
+                          <div className="text-[11px] text-ui-muted">{meal?.label ?? e.mealType}{e.id.startsWith('waiting-') ? ' · waiting to upload' : ''}</div>
+                        </div>
+                        <span className="text-sm font-bold text-ui-ink tabular-nums flex-shrink-0">{Math.round(e.calories)} kcal</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+                <button type="button" onClick={() => setTab('meals')}
+                  className="mt-auto pt-3 text-sm font-semibold text-lp-primary hover:underline self-start">
+                  {entries.length > 5 ? `See all ${entries.length} meals` : 'See all meals'}
+                </button>
+              </>
             )}
-          {totals.proteinG + totals.carbsG + totals.fatG > 0 && (
-            <MacrosCard protein={totals.proteinG} carbs={totals.carbsG} fat={totals.fatG} />
-          )}
-
-          </div>
-          <div className="space-y-4">
-          {/* Score impact */}
-          <div className="rounded-3xl p-4 lp-card">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-9 h-9 rounded-2xl bg-lp-primary/15 flex items-center justify-center">
-                <Target size={14} className="text-lp-primary" />
-              </div>
-              <span className="text-sm font-semibold text-black/70 dark:text-white/70">Score Impact</span>
-            </div>
-            <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-3xl font-black text-black/85 dark:text-white/90">{calPct}</span>
-              <span className="text-xs text-black/35 dark:text-white/30">% of calorie goal</span>
-            </div>
-            <p className="text-xs text-black/50 dark:text-white/45 leading-relaxed">
-              {totals.calories === 0
-                ? 'Log your meals to see your nutrition score impact.'
-                : calPct > 110 ? 'Over your calorie goal — this affects your nutrition score.'
-                : calPct >= 80 ? 'On track — hitting your goal keeps your score high.'
-                : 'Keep logging — reaching your goal improves your score.'}
-            </p>
-            <div className="mt-3 h-1.5 rounded-full bg-black/[0.06] dark:bg-white/[0.06] overflow-hidden">
-              <motion.div className="h-full rounded-full" style={{ backgroundColor: calColor }}
-                initial={{ width: 0 }} animate={{ width: `${Math.min(calPct, 100)}%` }}
-                transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }} />
-            </div>
-          </div>
-
-          {/* Summary */}
-          <div className="rounded-3xl p-4 lp-card">
-            <div className="text-xs font-bold text-black/30 dark:text-white/25 uppercase tracking-widest mb-3">Today</div>
-            <div className="space-y-2">
-              {[
-                { label: 'Meals logged', value: `${entries.length} entries` },
-                { label: 'Water',        value: `${glasses} / ${waterGoal} glasses` },
-                { label: 'Protein',      value: `${Math.round(totals.proteinG)}g` },
-                { label: 'Remaining',    value: `${Math.max(0, calorieGoal - Math.round(totals.calories))} kcal` },
-              ].map(s => (
-                <div key={s.label} className="flex items-center justify-between">
-                  <span className="text-xs text-black/45 dark:text-white/40">{s.label}</span>
-                  <span className="text-sm font-bold text-black/75 dark:text-white/70">{s.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
           </div>
         </div>
       )}

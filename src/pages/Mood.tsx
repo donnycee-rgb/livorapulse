@@ -316,11 +316,8 @@ function MoodTab() {
       {/* Header */}
       <PageHeader icon={Smile} tint={HABIT.mood.rgb} title="Mood" subtitle={headline} />
 
-      {/* Two-column layout */}
-      <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
-
-        {/* Left — main content */}
-        <div className="space-y-5 min-w-0">
+      {/* Today and the quick check-in, full width */}
+      <div className="space-y-4">
 
           {/* Today's stats */}
           <div className="grid grid-cols-2 gap-3">
@@ -349,6 +346,8 @@ function MoodTab() {
             </div>
           </div>
 
+          {/* Mood and stress side by side on wide screens */}
+          <div className="grid xl:grid-cols-2 gap-4">
           {/* Mood selector — icons only */}
           <div className="rounded-3xl p-5 lp-card">
             <div className="text-sm font-semibold text-black/80 dark:text-white/85 mb-1">How are you feeling right now?</div>
@@ -440,14 +439,13 @@ function MoodTab() {
               })}
             </div>
           </div>
-
-        </div>
+          </div>
       </div>
 
       <PageTabs label="Mood sections" value={tab} onChange={setTab} tabs={MOOD_TABS} />
 
       {tab === 'overview' && (
-        <div className="grid lg:grid-cols-[1fr_300px] gap-4">
+        <div className="space-y-4">
           <div className="min-w-0">
           {/* Your week as weather — the charts are one tap away */}
           <div className="rounded-3xl p-5 lp-card">
@@ -458,7 +456,7 @@ function MoodTab() {
             <MoodWeatherWeek byDay={mood.moodByDay} today={getDayKey()} />
           </div>
           </div>
-          <div className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4 [&>*]:h-full">
             <ScoreImpactCard emoji={mood.today.emoji} stressScore={stressScore} />
             <WellnessTipCard stressScore={stressScore} emoji={mood.today.emoji} />
           </div>
