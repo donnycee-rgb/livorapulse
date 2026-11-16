@@ -2,25 +2,35 @@
 <html lang="en">
   <head>
     <script>
-      // If the app's own files fail to load (an old or bad copy saved on this
-      // device), clear the saved app and reload once from the network.
-      // At most once every 30 seconds, so it can never loop.
+      // Safety net: if one of the app's own files fails to load (a stale or bad
+      // copy kept by this browser), fetch fresh copies of that file and of this
+      // page straight from the server (overwriting what the browser kept),
+      // clear the offline copy, and reload once. At most once every 30
+      // seconds, so it can never loop. See public/_headers for the history.
       (function () {
         var KEY = 'lp-recovered-at'
-        function recover() {
+        var FILES = ['/__LP_ASSETS__/', '/assets/']
+        function isAppFile(url) {
+          for (var i = 0; i < FILES.length; i++) if (url.indexOf(FILES[i]) !== -1) return true
+          return false
+        }
+        function recover(url) {
           try {
             if (Date.now() - Number(sessionStorage.getItem(KEY) || 0) < 30000) return
             sessionStorage.setItem(KEY, String(Date.now()))
           } catch (_) {}
           var jobs = []
-          if (navigator.serviceWorker) {
-            jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
-              return Promise.all(rs.map(function (r) { return r.unregister() }))
-            }))
-          }
+          // "reload" skips the browser's cache and replaces what it had
+          if (url) jobs.push(fetch(url, { cache: 'reload' }).catch(function () {}))
+          jobs.push(fetch('/', { cache: 'reload' }).catch(function () {}))
           if (window.caches) {
             jobs.push(caches.keys().then(function (ks) {
               return Promise.all(ks.filter(function (k) { return k !== 'lp-models' }).map(function (k) { return caches.delete(k) }))
+            }))
+          }
+          if (navigator.serviceWorker) {
+            jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+              return Promise.all(rs.map(function (r) { return r.unregister() }))
             }))
           }
           var reload = function () { location.reload() }
@@ -29,7 +39,8 @@
         window.addEventListener('error', function (e) {
           var t = e.target
           if (!t || (t.tagName !== 'SCRIPT' && t.tagName !== 'LINK')) return
-          if ((t.src || t.href || '').indexOf('/assets/') !== -1) recover()
+          var url = t.src || t.href || ''
+          if (isAppFile(url)) recover(url)
         }, true)
         // A page's code that fails to download after a new version went live
         window.addEventListener('vite:preloadError', function (e) { e.preventDefault(); recover() })

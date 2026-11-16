@@ -11,6 +11,12 @@
   Content-Type: application/manifest+json
   Cache-Control: no-cache
 
-# Built files have content hashes in their names, so they never change
-/assets/*
-  Cache-Control: public, max-age=31536000, immutable
+# NEVER give the app's files (/app/*) a long or "immutable" cache here.
+# A missing file under /app/ is answered with index.html (the single-page app
+# fallback), and these headers apply by path, not by content: an "immutable"
+# rule would make browsers keep that HTML under a JavaScript file's name for
+# a year, and the app shows a blank page until site data is cleared. That is
+# exactly what happened in November 2026. Cloudflare's default
+# (max-age=0, must-revalidate, with ETags) is cheap, and the service worker
+# keeps the files for speed and offline use.
+# src/offline/hosting.test.ts fails the build if such a rule comes back.

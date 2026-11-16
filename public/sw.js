@@ -1,20 +1,26 @@
 // ─── LivoraPulse service worker: open the app without a connection ──────────
-// The build (vite.config.ts) fills in VERSION and the list of app files below.
+// The build (vite.config.ts) fills in VERSION, the files folder (ASSETS) and
+// the list of app files below.
 // - Pages: from the network, or the saved app if there's no signal (or it's
 //   too slow), so the app always opens.
-// - App files (/assets, hashed names that never change): saved once, served
+// - App files (/app/..., hashed names that never change): saved once, served
 //   from the phone.
 // - Food scan model (/models): saved the first time someone scans.
 // - The API is never cached here: logs made offline wait in the app's own
 //   queue (src/offline/outbox.ts) and upload later.
 //
-// One rule above all: an app file is only saved if it really is that file.
-// A host answers an unknown path with the app's HTML page (single-page app
-// fallback), e.g. for a moment during a deploy. Saving that HTML under a
-// JavaScript file's name breaks the app until the cache is cleared, so
-// anything that comes back as HTML for /assets or /models is never saved.
+// One rule above all: an app file is only ever used if it really is that
+// file. The host answers a missing path with the app's HTML page (the
+// single-page app fallback), for example an old version's file after a
+// deploy. HTML under a JavaScript file's name gives a blank page, so:
+//   - it's never saved here,
+//   - the browser's own cache is never trusted blindly (files are fetched
+//     with "no-cache", so the browser checks with the server), and
+//   - if HTML still comes back, the file is fetched once more bypassing the
+//     browser cache entirely ("reload"), which also overwrites a bad copy.
 
 const VERSION = '__LP_VERSION__'
+const ASSETS = '/__LP_ASSETS__/'
 const PRECACHE = ['__LP_PRECACHE__']
 
 const SHELL = `lp-shell-${VERSION}`
@@ -28,6 +34,13 @@ function isRealFile(res) {
   return !type.includes('text/html')
 }
 
+/** Fetch an app file: checked with the server, and once more from scratch if HTML comes back */
+async function fetchFile(request) {
+  const res = await fetch(request, { cache: 'no-cache' })
+  if (isRealFile(res) || !res.ok) return res
+  return fetch(request, { cache: 'reload' })
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(SHELL)
@@ -35,7 +48,7 @@ self.addEventListener('install', (event) => {
     // be fetched cleanly now is simply fetched later when it's needed
     await Promise.all(PRECACHE.map(async (path) => {
       try {
-        const res = await fetch(path, { cache: 'no-cache' })
+        const res = path === '/' ? await fetch(path, { cache: 'no-cache' }) : await fetchFile(new Request(path))
         if (path === '/' ? res.ok : isRealFile(res)) await cache.put(path, res)
       } catch { /* offline or a bad response: skip */ }
     }))
@@ -63,7 +76,9 @@ function withTimeout(promise, ms) {
 async function page(request) {
   const cache = await caches.open(SHELL)
   try {
-    const res = await withTimeout(fetch(request), NAV_TIMEOUT_MS)
+    // Always the latest page from the server, never the browser's copy. (By
+    // URL: a navigation request can't be copied with new options.)
+    const res = await withTimeout(fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' }), NAV_TIMEOUT_MS)
     if (res.ok) cache.put('/', res.clone())
     return res
   } catch {
@@ -77,14 +92,14 @@ async function cacheFirst(request, cacheName) {
   const hit = await cache.match(request)
   if (isRealFile(hit)) return hit
   if (hit) await cache.delete(request) // a bad copy from before: drop it
-  const res = await fetch(request)
+  const res = await fetchFile(request)
   if (isRealFile(res)) {
     cache.put(request, res.clone())
     return res
   }
-  // The host sent its HTML page for a missing app file (an old version's
-  // file after a deploy). Don't pass HTML off as JavaScript: fail cleanly so
-  // the app reloads itself onto the current version.
+  // Still HTML: the file really is gone (an old version's file after a
+  // deploy). Don't pass HTML off as JavaScript: fail cleanly so the page's
+  // recovery script reloads onto the current version.
   return res.ok ? new Response('', { status: 404, statusText: 'Not Found' }) : res
 }
 
@@ -106,7 +121,7 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) return
 
   if (request.mode === 'navigate') event.respondWith(page(request))
-  else if (url.pathname.startsWith('/assets/')) event.respondWith(cacheFirst(request, SHELL))
+  else if (url.pathname.startsWith(ASSETS) || url.pathname.startsWith('/assets/')) event.respondWith(cacheFirst(request, SHELL))
   else if (url.pathname.startsWith('/models/')) event.respondWith(cacheFirst(request, MODELS))
   else event.respondWith(staleWhileRevalidate(request))
 })
