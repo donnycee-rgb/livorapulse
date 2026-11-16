@@ -1,4 +1,4 @@
-# LivoraPulse — https://livorapulse.netlify.app
+# LivoraPulse — https://livorapulse.pages.dev
 User-agent: *
 Allow: /
 Allow: /login
@@ -14,4 +14,4 @@ Disallow: /mood
 Disallow: /profile
 Disallow: /settings
 
-Sitemap: https://livorapulse.netlify.app/sitemap.xml
+Sitemap: https://livorapulse.pages.dev/sitemap.xml

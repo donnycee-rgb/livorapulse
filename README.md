@@ -6,11 +6,11 @@ digital usage, productivity, mood and eco habits — into one daily
 **LifePulse Score**, and shows people patterns in their own data that they can
 act on.
 
-Live: <https://livorapulse.netlify.app> ·
+Live: <https://livorapulse.pages.dev> ·
 Backend: [livorapulse_backend](https://github.com/donnycee-rgb/livorapulse_backend)
 
 **Stack:** React 18 · Vite · TypeScript · Tailwind CSS · Recharts ·
-Zustand · React Router · Framer Motion. Deployed on Netlify.
+Zustand · React Router · Framer Motion. Deployed on Cloudflare Pages.
 
 ---
 
@@ -80,14 +80,14 @@ src/
   data/, utils/    static data and helpers
   theme/, styles/  Tailwind theme and global styles
 public/
-  _redirects       SPA fallback for Netlify
+  _redirects       SPA fallback (Cloudflare Pages reads it as is)
   _headers         security headers (HSTS etc.)
   robots.txt, sitemap.xml, llms.txt
 ```
 
-## Deploying (Netlify)
+## Deploying (Cloudflare Pages)
 
-- Build command: `npm run build` · Publish directory: `dist`
-- Set `VITE_API_URL` to the backend's address.
-- On the backend, set `FRONTEND_URL` to the Netlify address so CORS and
-  emailed links work.
+- Build command: `npm run build` · Build output directory: `dist` · Root directory: empty
+- Environment variables: `VITE_API_URL` = the backend's address, `NODE_VERSION` = `22`
+- On the backend, set `FRONTEND_URL` to `https://livorapulse.pages.dev` (no trailing
+  slash) so CORS, Google sign-in and emailed links work.
