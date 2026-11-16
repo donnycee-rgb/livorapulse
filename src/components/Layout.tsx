@@ -2,6 +2,7 @@ import { Suspense, useEffect, useRef, type PropsWithChildren } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
 import AppHeader from './AppHeader'
+import OfflineStatus from './OfflineStatus'
 import BottomNav from './BottomNav'
 import SideNav from './SideNav'
 import PageSkeleton from './PageSkeleton'
@@ -45,6 +46,9 @@ export default function Layout({ children }: PropsWithChildren) {
 
       {/* Header — full width, never scrolls */}
       <AppHeader />
+
+      {/* Offline, or logs waiting to upload */}
+      <OfflineStatus />
 
       {/* Body — the scroll area spans the window (scrollbar at the edge); inside
           it the side nav and the page sit together in a centred column that
