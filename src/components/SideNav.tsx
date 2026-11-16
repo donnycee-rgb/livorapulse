@@ -23,7 +23,7 @@ const NAV_SECTIONS = [
       { to: '/nutrition',    label: 'Nutrition',    Icon: UtensilsCrossed   },
       { to: '/digital',      label: 'Digital',      Icon: MonitorSmartphone },
       { to: '/productivity', label: 'Productivity', Icon: BarChart3         },
-      { to: '/environment',  label: 'Environment',  Icon: Leaf              },
+      { to: '/environment',  label: 'Green habits', Icon: Leaf              },
       { to: '/mood',         label: 'Mood',         Icon: Heart             },
     ],
   },

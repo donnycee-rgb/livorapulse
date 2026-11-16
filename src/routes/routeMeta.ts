@@ -16,7 +16,7 @@ export const routes: RouteMeta[] = [
   { path: '/physical', title: 'Physical Activity', navLabel: 'Physical', Icon: Activity },
   { path: '/digital', title: 'Digital Usage', navLabel: 'Digital', Icon: MonitorSmartphone },
   { path: '/productivity', title: 'Productivity', navLabel: 'Productivity', Icon: BarChart3 },
-  { path: '/environment', title: 'Environment', navLabel: 'Environment', Icon: Leaf },
+  { path: '/environment', title: 'Green habits', navLabel: 'Green habits', Icon: Leaf },
   { path: '/mood', title: 'Mood & Mindset', navLabel: 'Mood', Icon: Smile },
   { path: '/profile', title: 'Profile', navLabel: 'Profile', Icon: User },
   { path: '/settings', title: 'Settings', navLabel: 'Settings', Icon: Settings },
@@ -41,7 +41,7 @@ export function getTitleForPath(pathname: string) {
   if (pathname.startsWith('/welcome')) return 'Set up your profile'
   if (pathname.startsWith('/digital')) return 'Digital Usage'
   if (pathname.startsWith('/productivity')) return 'Productivity'
-  if (pathname.startsWith('/environment')) return 'Environment'
+  if (pathname.startsWith('/environment')) return 'Green habits'
   if (pathname.startsWith('/mood')) return 'Mood & Mindset'
   if (pathname.startsWith('/insights')) return 'Insights'
   if (pathname.startsWith('/summary')) return 'Health summary'
