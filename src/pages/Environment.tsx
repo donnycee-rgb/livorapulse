@@ -464,7 +464,7 @@ export default function Environment() {
                 <div>
                   <div className="text-sm font-semibold text-black/80 dark:text-white/85">Transport split</div>
                   <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Trips by mode this week</div>
-                  <div className="h-44"><TransportModeChart data={env.transportModeSplit} /></div>
+                  <TransportModeChart data={env.transportModeSplit} />
                 </div>
                 <div className="md:col-span-2">
                   <div className="text-sm font-semibold text-black/80 dark:text-white/85">Carbon impact</div>

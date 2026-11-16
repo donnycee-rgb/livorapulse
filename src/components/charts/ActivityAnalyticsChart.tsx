@@ -1,62 +1,45 @@
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+// Built on the shared chart kit (./kit.tsx): one look and animation for every chart
+import { AreaTrend, Legend } from './kit'
+import { CHART } from '../../theme/chartColors'
+import { fmtMin } from './format'
 
-import { useChartTheme } from '../../theme/useChartTheme'
+// Steps, focus and screen time have very different scales (thousands vs
+// tens), so each is drawn as a % of its own daily goal on one shared axis:
+// the dashed line at 100% is "goal reached". The tooltip shows the real
+// numbers. (Two scales on one chart would squash the smaller ones flat.)
+type Row = { day: string; steps: number; screenMin: number; focusMin: number }
 
-type Props = {
-  data: Array<{
-    day: string
-    steps: number
-    screenMin: number
-    focusMin: number
-  }>
-}
+const LEGEND = [
+  { label: 'Steps', color: CHART.green },
+  { label: 'Focus', color: CHART.violet },
+  { label: 'Screen (of limit)', color: CHART.sky },
+]
 
-export default function ActivityAnalyticsChart({ data }: Props) {
-  const t = useChartTheme()
-
+export default function ActivityAnalyticsChart({ data, goals }: {
+  data: Row[]
+  goals: { steps: number; focusMin: number; screenMin: number }
+}) {
+  const pct = (v: number, g: number) => (g > 0 && v > 0 ? Math.round((v / g) * 100) : null)
+  const rows = data.map((d) => ({
+    ...d,
+    stepsPct: pct(d.steps, goals.steps),
+    focusPct: pct(d.focusMin, goals.focusMin),
+    screenPct: pct(d.screenMin, goals.screenMin),
+  }))
+  const top = Math.max(100, ...rows.flatMap((r) => [r.stepsPct ?? 0, r.focusPct ?? 0, r.screenPct ?? 0]))
+  const max = Math.ceil(top / 50) * 50
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart
-        data={data}
-        margin={{ left: 6, right: 6, top: 8, bottom: 0 }}
-        barCategoryGap="22%"
-        barGap={4}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke={t.grid} strokeOpacity={0.55} />
-        <XAxis dataKey="day" tick={{ fill: t.axis, fontSize: 11 }} tickLine={false} axisLine={{ stroke: t.grid }} />
-        <YAxis tick={{ fill: t.axis, fontSize: 11 }} tickLine={false} axisLine={false} width={34} />
-        <Tooltip
-          cursor={{ fill: t.cursor }}
-          labelFormatter={(label) => `Day: ${label}`}
-          formatter={(value, name) => {
-            const key = String(name)
-            if (key === 'steps') return [value, 'Steps']
-            if (key === 'screenMin') return [value, 'Screen (min)']
-            if (key === 'focusMin') return [value, 'Focus (min)']
-            return [value, key]
-          }}
-          contentStyle={{
-            borderRadius: 14,
-            border: `1px solid ${t.tooltipBorder}`,
-            background: t.tooltipBg,
-            padding: 10,
-          }}
-          itemStyle={{ fontSize: 12 }}
-          labelStyle={{ fontSize: 12, fontWeight: 700, color: t.axis }}
-        />
-
-        <Bar dataKey="steps" fill="#4CAF50" radius={[10, 10, 10, 10]} barSize={10} />
-        <Bar dataKey="screenMin" fill="#00BCD4" radius={[10, 10, 10, 10]} barSize={10} />
-        <Bar dataKey="focusMin" fill="#1E3A8A" radius={[10, 10, 10, 10]} barSize={10} />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="flex flex-col h-full gap-2">
+      <Legend items={LEGEND} />
+      <div className="flex-1 min-h-0">
+        <AreaTrend data={rows} goal={100} goalLabel="Goal"
+          domain={[0, max]} yTicks={Array.from({ length: max / 50 + 1 }, (_, i) => i * 50)} yFormat={(v) => `${v}%`}
+          series={[
+            { key: 'stepsPct', label: 'Steps', color: CHART.green, text: (r) => (r.steps ? `${r.steps.toLocaleString()} (${r.stepsPct}%)` : null) },
+            { key: 'focusPct', label: 'Focus', color: CHART.violet, text: (r) => (r.focusMin ? `${fmtMin(r.focusMin)} (${r.focusPct}%)` : null) },
+            { key: 'screenPct', label: 'Screen', color: CHART.sky, text: (r) => (r.screenMin ? `${fmtMin(r.screenMin)} (${r.screenPct}% of limit)` : null) },
+          ]} />
+      </div>
+    </div>
   )
 }

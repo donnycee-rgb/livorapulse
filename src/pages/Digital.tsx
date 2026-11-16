@@ -541,7 +541,7 @@ export default function Digital() {
           <div className="lp-card rounded-3xl p-5">
             <div className="text-sm font-bold text-ui-ink">App category split</div>
             <div className="text-xs text-ui-muted mt-0.5 mb-3">Distribution by category</div>
-            <div className="h-44"><AppUsagePieChart data={digital.appUsageCategoriesMin} /></div>
+            <AppUsagePieChart data={digital.appUsageCategoriesMin} />
           </div>
           <div className="lp-card rounded-3xl p-5">
             <div className="text-sm font-bold text-ui-ink">Screen time trend</div>

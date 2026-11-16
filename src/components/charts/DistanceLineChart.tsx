@@ -1,36 +1,12 @@
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import { useChartTheme } from '../../theme/useChartTheme'
+// Built on the shared chart kit (./kit.tsx): one look and animation for every chart
+import { AreaTrend } from './kit'
+import { CHART } from '../../theme/chartColors'
 
-type Props = {
-  data: Array<{ day: string; km: number }>
-}
+type Row = { day: string; km: number }
 
-export default function DistanceLineChart({ data }: Props) {
-  const t = useChartTheme()
-
+export default function DistanceLineChart({ data }: { data: Row[] }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={{ left: 6, right: 6, top: 8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={t.grid} />
-        <XAxis dataKey="day" tick={{ fill: t.axis, fontSize: 12 }} />
-        <YAxis tick={{ fill: t.axis, fontSize: 12 }} width={36} />
-        <Tooltip
-          contentStyle={{
-            borderRadius: 12,
-            border: `1px solid ${t.tooltipBorder}`,
-            background: t.tooltipBg,
-          }}
-        />
-        <Line type="monotone" dataKey="km" stroke="#1E3A8A" strokeWidth={3} dot={{ r: 3 }} />
-      </LineChart>
-    </ResponsiveContainer>
+    <AreaTrend data={data}
+      series={[{ key: 'km', label: 'Distance', color: CHART.sky, text: (r) => `${r.km.toFixed(1)} km` }]} />
   )
 }

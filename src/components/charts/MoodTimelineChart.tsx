@@ -1,53 +1,24 @@
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import { useChartTheme } from '../../theme/useChartTheme'
+// Built on the shared chart kit (./kit.tsx): one look and animation for every chart
+import { BarTrend } from './kit'
+import { CHART, type Duo } from '../../theme/chartColors'
+import { MOOD_ICONS } from '../../lib/moodIcons'
+import type { MoodEmoji } from '../../data/types'
+import { getDayKey } from '../../utils/date'
 
-type Props = {
-  data: Array<{ day: string; emoji: string | null }>
-}
+// Moods drawn as a 1-5 bar (stored as emoji values, shown as words)
+const SCORE: Record<MoodEmoji, number> = { '😄': 5, '🙂': 4, '😐': 3, '😕': 2, '😣': 1 }
+const COLOR: Record<number, Duo> = { 5: CHART.green, 4: CHART.sky, 3: CHART.violet, 2: CHART.orange, 1: CHART.rose }
 
-// Recharts needs a numeric value to draw bars.
-// We map emojis to a scale for visualization and show emoji in tooltip.
-const emojiScore: Record<string, number> = {
-  '😄': 5,
-  '🙂': 4,
-  '😐': 3,
-  '😕': 2,
-  '😣': 1,
-}
-
-export default function MoodTimelineChart({ data }: Props) {
-  const t = useChartTheme()
+export default function MoodTimelineChart({ data }: { data: Array<{ day: string; emoji: string | null }> }) {
   // Days without a check-in get no bar (not a "neutral" one)
-  const mapped = data.map((d) => ({ ...d, score: d.emoji ? emojiScore[d.emoji] ?? 3 : 0 }))
-
+  const rows = data.map((d) => {
+    const emoji = d.emoji && d.emoji in SCORE ? (d.emoji as MoodEmoji) : null
+    return { day: d.day, emoji, score: emoji ? SCORE[emoji] : 0 }
+  })
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={mapped} margin={{ left: 6, right: 6, top: 8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={t.grid} />
-        <XAxis dataKey="day" tick={{ fill: t.axis, fontSize: 12 }} />
-        <YAxis hide domain={[0, 5]} />
-        <Tooltip
-          // Keep runtime behavior the same; this is typed loosely to satisfy Recharts' generics.
-          formatter={((_: any, __: any, p: any) => {
-            const payload = p?.payload
-            return [payload?.emoji ?? 'Not logged', 'Mood']
-          }) as any}
-          contentStyle={{
-            borderRadius: 12,
-            border: `1px solid ${t.tooltipBorder}`,
-            background: t.tooltipBg,
-          }}
-        />
-        <Bar dataKey="score" fill="#00BCD4" radius={[10, 10, 10, 10]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <BarTrend data={rows} dataKey="score" label="Mood" color={CHART.pink} domain={[0, 5]} highlight={getDayKey()}
+      barColor={(r) => COLOR[r.score] ?? CHART.pink}
+      yTicks={[1, 2, 3, 4, 5]}
+      text={(r) => (r.emoji ? MOOD_ICONS[r.emoji].label : 'No check-in')} />
   )
 }

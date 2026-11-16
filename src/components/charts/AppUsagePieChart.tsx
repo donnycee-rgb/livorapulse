@@ -1,38 +1,14 @@
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
-import { useChartTheme } from '../../theme/useChartTheme'
+// Built on the shared chart kit (./kit.tsx): one look and animation for every chart
+import { Donut } from './kit'
+import { CHART, type Duo } from '../../theme/chartColors'
+import { fmtMin } from './format'
 
-type Props = {
-  data: Array<{ category: string; minutes: number }>
-}
+const COLOR: Record<string, Duo> = { Social: CHART.rose, Productive: CHART.sky, Entertainment: CHART.violetSoft }
+const LABEL: Record<string, string> = { Social: 'Social', Productive: 'Work & study', Entertainment: 'Fun' }
 
-const COLORS = ['#1E3A8A', '#4CAF50', '#00BCD4']
-
-export default function AppUsagePieChart({ data }: Props) {
-  const t = useChartTheme()
-
+export default function AppUsagePieChart({ data }: { data: Array<{ category: string; minutes: number }> }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
-        <Tooltip
-          contentStyle={{
-            borderRadius: 12,
-            border: `1px solid ${t.tooltipBorder}`,
-            background: t.tooltipBg,
-          }}
-        />
-        <Pie
-          data={data}
-          dataKey="minutes"
-          nameKey="category"
-          innerRadius={55}
-          outerRadius={85}
-          paddingAngle={3}
-        >
-          {data.map((_, idx) => (
-            <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-          ))}
-        </Pie>
-      </PieChart>
-    </ResponsiveContainer>
+    <Donut format={fmtMin}
+      data={data.map((d) => ({ label: LABEL[d.category] ?? d.category, value: d.minutes, color: COLOR[d.category] ?? CHART.indigo }))} />
   )
 }
