@@ -101,7 +101,7 @@ export default function Insights() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Insights</h1>
+        <h1 className="text-[24px] max-sm:text-[22px] font-bold leading-tight tracking-tight text-ui-ink">Insights</h1>
         <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">
           Patterns found in your own data across sleep, mood, activity, screen time and more. Each one shows the numbers behind it.
         </p>

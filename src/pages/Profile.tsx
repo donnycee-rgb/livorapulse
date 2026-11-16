@@ -207,7 +207,7 @@ export default function Profile() {
     <div className="space-y-5">
 
       {/* Header */}
-      <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Profile</h1>
+      <h1 className="text-[24px] max-sm:text-[22px] font-bold leading-tight tracking-tight text-ui-ink">Profile</h1>
 
       {/* Two-column layout */}
       <div className="grid lg:grid-cols-[1fr_320px] gap-5 max-sm:grid-cols-1">

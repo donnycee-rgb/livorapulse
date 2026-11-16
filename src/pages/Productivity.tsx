@@ -1,5 +1,10 @@
 import { Pause, Play, Square, Timer, BarChart3, Target, TrendingUp, Zap, Award } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { BookOpen, Briefcase } from 'lucide-react'
+import RingGauge from '../components/ui/RingGauge'
+import PageTabs from '../components/ui/PageTabs'
+import { MiniStat, PageHeader } from '../components/ui/PageHeader'
+import { HABIT } from '../theme/habits'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
@@ -181,6 +186,12 @@ function WeeklySummaryCard({ focusByDay, studyByDay }: {
 // Tips sidebar card
 // ---------------------------------------------------------------------------
 /** 90 → "1h 30m", 120 → "2 hours", 45 → "45 minutes" */
+/** "45m", "1h", "1h 30m" for the big numbers */
+function shortMin(min: number) {
+  if (min < 60) return `${min}m`
+  return min % 60 === 0 ? `${min / 60}h` : `${Math.floor(min / 60)}h ${min % 60}m`
+}
+
 function fmtGoal(min: number) {
   if (min < 60) return `${min} minutes`
   if (min % 60 === 0) return `${min / 60} hour${min === 60 ? '' : 's'}`
@@ -213,6 +224,13 @@ function ProductivityTipCard({ focusMin }: { focusMin: number }) {
 // ---------------------------------------------------------------------------
 // Productivity page
 // ---------------------------------------------------------------------------
+const TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'sessions', label: 'Sessions' },
+  { key: 'charts', label: 'Charts' },
+] as const
+type WorkTab = (typeof TABS)[number]['key']
+
 export default function Productivity() {
   const productivity = useAppStore((s) => s.productivity)
   const focusMode = useAppStore((s) => s.digital.focusMode)
@@ -222,6 +240,7 @@ export default function Productivity() {
   const endFocusTimer = useAppStore((s) => s.endFocusTimer)
 
   const [durationMin, setDurationMin] = useState(25)
+  const [tab, setTab] = useState<WorkTab>('overview')
   const [label, setLabel] = useState('Deep work')
 
   const day = getDayKey()
@@ -270,67 +289,31 @@ export default function Productivity() {
     <div className="space-y-5">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
-        <div>
-          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Productivity</h1>
-          <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
-        </div>
-      </div>
+      <PageHeader icon={BarChart3} tint={HABIT.focus.rgb} title="Work" subtitle={headline} />
 
-      {/* Two-column layout */}
-      <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
-
-        {/* Left — main content */}
-        <div className="space-y-5 min-w-0">
-
-          {/* Today's stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-3xl p-4 lp-card">
-              <div className="w-9 h-9 rounded-xl bg-[#6366F1]/15 flex items-center justify-center mb-3">
-                <Timer size={17} className="text-[#6366F1]" />
-              </div>
-              <div className="text-[10px] font-bold text-black/35 dark:text-white/30 uppercase tracking-wider">Focus today</div>
-              <div className="mt-1 text-2xl font-black text-black/85 dark:text-white/90 leading-none">
-                {todayFocus >= 60 ? `${Math.floor(todayFocus / 60)}h ${todayFocus % 60}m` : `${todayFocus}m`}
-              </div>
-              <div className="mt-1 text-xs text-black/45 dark:text-white/40">
-                {todayFocus >= focusGoal ? 'Daily goal reached' : `${focusGoal - todayFocus}m to your ${focusGoal}m goal`}
-              </div>
-              <div className="mt-3 space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-black/40 dark:text-white/35">Goal progress</span>
-                  <span className="font-semibold text-[#6366F1]">{Math.min(Math.round((todayFocus / focusGoal) * 100), 100)}%</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-black/[0.06] dark:bg-white/[0.06] overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full bg-[#6366F1]"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min((todayFocus / focusGoal) * 100, 100)}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl p-4 lp-card">
-              <div className="w-9 h-9 rounded-xl bg-lp-primary/15 flex items-center justify-center mb-3">
-                <BarChart3 size={17} className="text-lp-primary" />
-              </div>
-              <div className="text-[10px] font-bold text-black/35 dark:text-white/30 uppercase tracking-wider">Study sessions</div>
-              <div className="mt-1 text-2xl font-black text-black/85 dark:text-white/90 leading-none">{todaySessions}</div>
-              <div className="mt-1 text-xs text-black/45 dark:text-white/40">
-                {todaySessions === 0 ? 'None logged today' : todaySessions === 1 ? '1 session today' : `${todaySessions} sessions today`}
-              </div>
-              {focusMode && (
-                <div className="mt-3 flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-lp-primary" />
-                  <span className="text-[10px] font-semibold text-lp-primary">Focus Mode active</span>
-                </div>
-              )}
+      {/* Today: focus minutes as a ring, sessions beside it */}
+      <section className="lp-card rounded-3xl p-5 relative overflow-hidden" aria-label="Focus today">
+        <div className="pointer-events-none absolute -top-16 -left-16 w-48 h-48 rounded-full blur-3xl" style={{ background: `rgb(${HABIT.focus.rgb} / 0.14)` }} />
+        <div className="relative flex items-center gap-5">
+          <RingGauge value={todayFocus / focusGoal} color={HABIT.focus.hex} size={112} stroke={10}
+            label={`${todayFocus} of ${focusGoal} focus minutes`}>
+            <Briefcase size={28} style={{ color: HABIT.focus.hex }} />
+          </RingGauge>
+          <div className="min-w-0 flex-1">
+            <div className="text-[12px] font-semibold text-ui-muted">Focus today</div>
+            <div className="text-[28px] font-extrabold text-ui-ink leading-tight tabular-nums">{shortMin(todayFocus)}</div>
+            <div className="text-[12px] font-semibold" style={{ color: HABIT.focus.hex }}>
+              {todayFocus >= focusGoal ? 'Daily goal reached' : `${fmtGoal(focusGoal - todayFocus)} to your ${fmtGoal(focusGoal)} goal`}
             </div>
           </div>
+        </div>
+        <div className="relative mt-4 grid grid-cols-2 gap-2.5">
+          <MiniStat icon={BookOpen} tint={HABIT.steps.rgb} value={String(todaySessions)} label={todaySessions === 1 ? 'Study session' : 'Study sessions'} />
+          <MiniStat icon={Target} tint={HABIT.focus.rgb} value={shortMin(focusGoal)} label={focusMode ? 'Goal · Focus Mode on' : 'Daily goal'} />
+        </div>
+      </section>
 
-          {/* Focus timer */}
+      {/* Focus timer */}
           <div className="rounded-3xl p-6 lp-card">
             <div className="text-sm font-semibold text-black/80 dark:text-white/85 mb-1">Focus Timer</div>
             <div className="text-xs text-black/40 dark:text-white/35 mb-6">
@@ -448,6 +431,51 @@ export default function Productivity() {
             </div>
           </div>
 
+      {todayFocus >= focusGoal && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-[#6366F1]/[0.08] border border-[#6366F1]/20 rounded-2xl p-4 flex items-center gap-3"
+            >
+              <div className="w-9 h-9 rounded-xl bg-[#6366F1]/20 flex items-center justify-center flex-shrink-0">
+                <Award size={16} className="text-[#6366F1]" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-black/75 dark:text-white/75">Focus goal reached</div>
+                <div className="text-xs text-black/45 dark:text-white/40 mt-0.5">{fmtGoal(focusGoal)} of focus today</div>
+              </div>
+            </motion.div>
+          )}
+
+      <PageTabs label="Work sections" value={tab} onChange={setTab} tabs={TABS} />
+
+      {tab === 'overview' && (
+        <div className="grid lg:grid-cols-[1fr_300px] gap-4">
+          <div className="min-w-0">
+          {/* When you focus best — the charts are one tap away */}
+          <div className="rounded-3xl p-5 lp-card">
+            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your best focus times</div>
+            <p className="text-[17px] font-bold text-ui-ink leading-snug mb-4">
+              {focusSentence(focusTimes) ?? 'Finish a few focus sessions and you’ll see when you focus best.'}
+            </p>
+            <FocusTimesGrid grid={focusTimes} today={day} />
+            <div className="mt-4 flex items-center gap-3 max-sm:flex-col max-sm:items-start">
+              <span className="text-sm text-black/60 dark:text-white/60 w-24 flex-shrink-0">Focus goal</span>
+              <WeekDots values={productivity.focusMinutesByDay.map((x) => ({ day: x.day, value: x.minutes || null }))}
+                goal={focusGoal} today={day} color="#8B5CF6" format={(v) => `${v} min of focus`} />
+            </div>
+          </div>
+          </div>
+          <div className="space-y-4">
+            <ScoreImpactCard focusMin={todayFocus} />
+            <ProductivityTipCard focusMin={todayFocus} />
+          </div>
+        </div>
+      )}
+
+      {tab === 'sessions' && (
+        <div className="grid lg:grid-cols-[1fr_300px] gap-4">
+          <div className="min-w-0">
           {/* Recent sessions list */}
           <div className="rounded-3xl p-5 lp-card">
             <div className="text-sm font-semibold text-black/80 dark:text-white/85 mb-1">Recent focus sessions</div>
@@ -471,7 +499,7 @@ export default function Productivity() {
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.05 }}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors duration-150"
+                      className="flex items-center gap-3 p-3 rounded-2xl bg-ui-raised"
                     >
                       <div className="w-9 h-9 rounded-xl bg-[#6366F1]/15 flex items-center justify-center flex-shrink-0">
                         <Timer size={14} className="text-[#6366F1]" />
@@ -493,60 +521,25 @@ export default function Productivity() {
             )}
           </div>
 
-          {/* When you focus best — the charts are one tap away */}
-          <div className="rounded-3xl p-5 lp-card">
-            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your best focus times</div>
-            <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug mb-4">
-              {focusSentence(focusTimes) ?? 'Finish a few focus sessions and you’ll see when you focus best.'}
-            </p>
-            <FocusTimesGrid grid={focusTimes} today={day} />
-            <div className="mt-4 flex items-center gap-3 max-sm:flex-col max-sm:items-start">
-              <span className="text-sm text-black/60 dark:text-white/60 w-24 flex-shrink-0">Focus goal</span>
-              <WeekDots values={productivity.focusMinutesByDay.map((x) => ({ day: x.day, value: x.minutes || null }))}
-                goal={focusGoal} today={day} color="#8B5CF6" format={(v) => `${v} min of focus`} />
-            </div>
-            <SeeDetails>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Focus minutes</div>
-                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Weekly total per day</div>
-                  <div className="h-44"><FocusMinutesBarChart data={productivity.focusMinutesByDay} /></div>
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Study sessions</div>
-                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Sessions per day</div>
-                  <div className="h-44"><StudySessionsBarChart data={productivity.studySessionsByDay} /></div>
-                </div>
-              </div>
-            </SeeDetails>
+          </div>
+          <WeeklySummaryCard focusByDay={productivity.focusMinutesByDay} studyByDay={productivity.studySessionsByDay} />
+        </div>
+      )}
+
+      {tab === 'charts' && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="lp-card rounded-3xl p-5">
+            <div className="text-sm font-bold text-ui-ink">Focus minutes</div>
+            <div className="text-xs text-ui-muted mt-0.5 mb-3">Weekly total per day</div>
+            <div className="h-44"><FocusMinutesBarChart data={productivity.focusMinutesByDay} /></div>
+          </div>
+          <div className="lp-card rounded-3xl p-5">
+            <div className="text-sm font-bold text-ui-ink">Study sessions</div>
+            <div className="text-xs text-ui-muted mt-0.5 mb-3">Sessions per day</div>
+            <div className="h-44"><StudySessionsBarChart data={productivity.studySessionsByDay} /></div>
           </div>
         </div>
-
-        {/* Right sidebar */}
-        <div className="space-y-4">
-          <ScoreImpactCard focusMin={todayFocus} />
-          <WeeklySummaryCard
-            focusByDay={productivity.focusMinutesByDay}
-            studyByDay={productivity.studySessionsByDay}
-          />
-          <ProductivityTipCard focusMin={todayFocus} />
-          {todayFocus >= focusGoal && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-[#6366F1]/[0.08] border border-[#6366F1]/20 rounded-2xl p-4 flex items-center gap-3"
-            >
-              <div className="w-9 h-9 rounded-xl bg-[#6366F1]/20 flex items-center justify-center flex-shrink-0">
-                <Award size={16} className="text-[#6366F1]" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-black/75 dark:text-white/75">Focus goal reached</div>
-                <div className="text-xs text-black/45 dark:text-white/40 mt-0.5">{fmtGoal(focusGoal)} of focus today</div>
-              </div>
-            </motion.div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   )
 }

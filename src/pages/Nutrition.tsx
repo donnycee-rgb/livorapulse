@@ -16,6 +16,11 @@ import { useAuthStore } from '../store/useAuthStore'
 import FoodScanner, { type FoodScannerHandle } from '../components/FoodScanner'
 import { perServing } from '../ml/portion'
 import YourPlate from '../components/visuals/YourPlate'
+import RingGauge from '../components/ui/RingGauge'
+import PageTabs from '../components/ui/PageTabs'
+import { ActionButton, MiniStat, PageHeader } from '../components/ui/PageHeader'
+import { HABIT } from '../theme/habits'
+import { Beef, Droplet, GlassWater, Wheat } from 'lucide-react'
 import { plateSentence, plateSlices } from '../lib/visualStories'
 import { dismissInterrupted, interruptedThisLoad } from '../ml/scanRecovery'
 
@@ -81,6 +86,13 @@ async function searchFoods(query: string): Promise<FoodSearchResult[]> {
 // ---------------------------------------------------------------------------
 // Water tracker
 // ---------------------------------------------------------------------------
+const TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'meals', label: 'Meals' },
+  { key: 'water', label: 'Water' },
+] as const
+type NutritionTab = (typeof TABS)[number]['key']
+
 function WaterTracker({ glasses, goal, onAdd }: {
   glasses: number; goal: number; onAdd: () => void
 }) {
@@ -581,9 +593,10 @@ export default function Nutrition() {
     } catch { toast.error('Failed to log water') }
   }
 
+  const [tab, setTab] = useState<NutritionTab>('overview')
   const calPct = Math.min(Math.round((totals.calories / calorieGoal) * 100), 100)
   const plate = plateSlices(totals)
-  const calColor = calPct > 110 ? '#FF6B6B' : calPct >= 80 ? '#4CAF50' : '#FFA500'
+  const calColor = calPct > 110 ? '#FF6B6B' : calPct >= 80 ? HABIT.steps.hex : HABIT.meals.hex
 
   const groupedEntries = MEAL_TYPES.map(m => ({
     ...m,
@@ -594,125 +607,66 @@ export default function Nutrition() {
     <div className="space-y-5">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
-        <div>
-          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Nutrition</h1>
-          <p className="text-sm text-black/45 dark:text-white/40 mt-0.5">
-            {totals.calories === 0
-              ? 'Log your meals to track daily nutrition'
-              : `${Math.round(totals.calories)} kcal logged · ${calPct >= 100 ? 'Goal reached!' : `${calorieGoal - Math.round(totals.calories)} kcal remaining`}`}
-          </p>
-        </div>
-        <button type="button" onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-full bg-[#2E7D32] hover:bg-[#276b2b] transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3">
-          <Plus size={15} /> Log Food
-        </button>
-      </div>
+      <PageHeader icon={UtensilsCrossed} tint={HABIT.meals.rgb} title="Nutrition"
+        subtitle={totals.calories === 0
+          ? 'Log your meals to track today'
+          : `${Math.round(totals.calories)} kcal so far · ${calPct >= 100 ? 'goal reached' : `${calorieGoal - Math.round(totals.calories)} kcal to go`}`} />
 
-      <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
-        <div className="space-y-5 min-w-0">
-
-          {/* Calorie progress */}
-          <div className="rounded-3xl p-5 lp-card">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: calColor + '18' }}>
-                  <Flame size={16} style={{ color: calColor }} />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Calories today</div>
-                  <div className="text-xs text-black/40 dark:text-white/35">Goal: {calorieGoal.toLocaleString()} kcal</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-black" style={{ color: calColor }}>{Math.round(totals.calories)}</div>
-                <div className="text-xs text-black/35 dark:text-white/30">kcal</div>
-              </div>
-            </div>
-            <div className="h-3 rounded-full bg-black/[0.06] dark:bg-white/[0.06] overflow-hidden">
-              <motion.div className="h-full rounded-full" style={{ backgroundColor: calColor }}
-                initial={{ width: 0 }} animate={{ width: `${calPct}%` }}
-                transition={{ duration: 0.8, ease: 'easeOut' }} />
-            </div>
-            <div className="flex justify-between text-xs text-black/35 dark:text-white/30 mt-1.5">
-              <span>0</span>
-              <span className="font-semibold" style={{ color: calColor }}>{calPct}%</span>
-              <span>{calorieGoal.toLocaleString()}</span>
+      {/* Hero: today's calories as a ring, macros and water beside it */}
+      <section className="lp-card rounded-3xl p-5 relative overflow-hidden" aria-label="Today's food">
+        <div className="pointer-events-none absolute -top-16 -left-16 w-48 h-48 rounded-full blur-3xl" style={{ background: `rgb(${HABIT.meals.rgb} / 0.12)` }} />
+        <div className="relative flex items-center gap-5">
+          <RingGauge value={totals.calories / calorieGoal} color={calColor} size={124} stroke={11}
+            label={`${Math.round(totals.calories)} of ${calorieGoal} kcal`}>
+            <span className="text-[26px] font-extrabold leading-none text-ui-ink tabular-nums">{Math.round(totals.calories)}</span>
+            <span className="text-[11px] text-ui-muted mt-1">of {calorieGoal.toLocaleString()} kcal</span>
+          </RingGauge>
+          <div className="min-w-0">
+            <div className="text-[12px] font-semibold text-ui-muted">Calories today</div>
+            <div className="text-[28px] font-extrabold text-ui-ink leading-tight tabular-nums">{calPct}%</div>
+            <div className="text-[12px] font-semibold" style={{ color: calColor }}>
+              {totals.calories === 0 ? 'Nothing logged yet' : calPct > 110 ? 'Over your goal' : calPct >= 80 ? 'On track' : `${Math.max(0, calorieGoal - Math.round(totals.calories))} kcal left`}
             </div>
           </div>
+        </div>
+        <div className="relative mt-4 grid grid-cols-4 gap-2">
+          <MiniStat icon={Beef} tint="236 72 153" value={`${Math.round(totals.proteinG)}g`} label="Protein" />
+          <MiniStat icon={Wheat} tint={HABIT.meals.rgb} value={`${Math.round(totals.carbsG)}g`} label="Carbs" />
+          <MiniStat icon={Droplet} tint="234 179 8" value={`${Math.round(totals.fatG)}g`} label="Fat" />
+          <MiniStat icon={GlassWater} tint={HABIT.water.rgb} value={`${glasses}/${waterGoal}`} label="Water" />
+        </div>
+        <div className="relative mt-4 grid grid-cols-2 sm:flex gap-2">
+          <ActionButton icon={Plus} primary onClick={() => setModalOpen(true)}>Log food</ActionButton>
+          <ActionButton icon={GlassWater} onClick={handleAddWater}>+1 glass</ActionButton>
+        </div>
+      </section>
 
-          {/* Your plate: today's food as slices of a plate, with what's missing */}
+      <PageTabs label="Nutrition sections" value={tab} onChange={setTab} tabs={TABS} />
+
+      {tab === 'overview' && (
+        <div className="grid lg:grid-cols-[1fr_300px] gap-4">
+          <div className="space-y-4 min-w-0">
+            {/* Your plate: today's food as slices of a plate, with what's missing */}
           {plate && (
             <div className="rounded-3xl p-5 lp-card">
               <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your plate today</div>
-              <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug mb-4">{plateSentence(plate)}</p>
+              <p className="text-[17px] font-bold text-ui-ink leading-snug mb-4">{plateSentence(plate)}</p>
               <YourPlate slices={plate} />
             </div>
           )}
 
-          {/* Meals */}
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="w-6 h-6 rounded-full border-2 border-t-lp-primary border-black/10 animate-spin" />
-            </div>
-          ) : groupedEntries.length === 0 ? (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-black/[0.10] dark:border-white/[0.10] p-10 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-lp-primary/10 flex items-center justify-center mx-auto mb-3">
-                <UtensilsCrossed size={24} className="text-lp-primary/60" />
+            {!plate && (
+              <div className="lp-card rounded-3xl p-6 text-center">
+                <p className="text-sm font-semibold text-ui-ink">Your plate fills in as you log meals</p>
+                <p className="text-xs text-ui-muted mt-1">See how today's food compares with a balanced plate</p>
               </div>
-              <p className="text-sm font-semibold text-black/50 dark:text-white/45">No meals logged yet</p>
-              <p className="text-xs text-black/30 dark:text-white/25 mt-1 mb-4">Tap Log Food to add your first meal</p>
-              <button type="button" onClick={() => setModalOpen(true)}
-                className="px-4 py-2 bg-lp-primary text-white text-xs font-semibold rounded-xl hover:bg-green-500 transition-all">
-                Log your first meal
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {groupedEntries.map(meal => (
-                <div key={meal.value} className="rounded-3xl p-4 lp-card">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ backgroundColor: meal.color + '18' }}>
-                      <meal.Icon size={14} style={{ color: meal.color }} />
-                    </div>
-                    <div className="text-sm font-semibold text-black/75 dark:text-white/75">{meal.label}</div>
-                    <div className="ml-auto text-xs font-semibold" style={{ color: meal.color }}>
-                      {Math.round(meal.entries.reduce((s, e) => s + e.calories, 0))} kcal
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    {meal.entries.map(entry => (
-                      <motion.div key={entry.id}
-                        initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-3 px-3 py-2 rounded-2xl transition-colors group" style={{ background: '#FF6B6B06', border: '1px solid #FF6B6B12' }}>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-black/75 dark:text-white/70 truncate">{entry.foodName}</div>
-                          <div className="text-xs text-black/35 dark:text-white/30 mt-0.5">
-                            {entry.quantity} × {entry.unit}
-                            {entry.proteinG > 0 && ` · P: ${Math.round(entry.proteinG)}g`}
-                            {entry.carbsG > 0 && ` · C: ${Math.round(entry.carbsG)}g`}
-                            {entry.fatG > 0 && ` · F: ${Math.round(entry.fatG)}g`}
-                            {entry.id.startsWith('waiting-') && ' · waiting to upload'}
-                          </div>
-                        </div>
-                        <div className="text-sm font-bold text-black/65 dark:text-white/60 flex-shrink-0">
-                          {Math.round(entry.calories)} kcal
-                        </div>
-                        <button type="button" onClick={() => handleDelete(entry.id)}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center text-black/20 dark:text-white/20 hover:text-lp-alert hover:bg-lp-alert/10 transition-all opacity-0 group-hover:opacity-100">
-                          <Trash2 size={12} />
-                        </button>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            )}
+          {totals.proteinG + totals.carbsG + totals.fatG > 0 && (
+            <MacrosCard protein={totals.proteinG} carbs={totals.carbsG} fat={totals.fatG} />
           )}
-        </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
+          </div>
+          <div className="space-y-4">
           {/* Score impact */}
           <div className="rounded-3xl p-4 lp-card">
             <div className="flex items-center gap-2 mb-3">
@@ -739,12 +693,6 @@ export default function Nutrition() {
             </div>
           </div>
 
-          <WaterTracker glasses={glasses} goal={waterGoal} onAdd={handleAddWater} />
-
-          {totals.proteinG + totals.carbsG + totals.fatG > 0 && (
-            <MacrosCard protein={totals.proteinG} carbs={totals.carbsG} fat={totals.fatG} />
-          )}
-
           {/* Summary */}
           <div className="rounded-3xl p-4 lp-card">
             <div className="text-xs font-bold text-black/30 dark:text-white/25 uppercase tracking-widest mb-3">Today</div>
@@ -762,8 +710,79 @@ export default function Nutrition() {
               ))}
             </div>
           </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {tab === 'meals' && (
+        <div className="space-y-4">
+          {/* Meals */}
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 rounded-full border-2 border-t-lp-primary border-black/10 animate-spin" />
+            </div>
+          ) : groupedEntries.length === 0 ? (
+            <div className="lp-card rounded-3xl border-dashed p-10 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-lp-primary/10 flex items-center justify-center mx-auto mb-3">
+                <UtensilsCrossed size={24} className="text-lp-primary/60" />
+              </div>
+              <p className="text-sm font-semibold text-black/50 dark:text-white/45">No meals logged yet</p>
+              <p className="text-xs text-black/30 dark:text-white/25 mt-1 mb-4">Tap Log Food to add your first meal</p>
+              <button type="button" onClick={() => setModalOpen(true)}
+                className="px-4 h-10 bg-lp-btn text-lp-btn-ink text-sm font-bold rounded-2xl active:scale-[0.98] transition">
+                Log your first meal
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {groupedEntries.map(meal => (
+                <div key={meal.value} className="rounded-3xl p-4 lp-card">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ backgroundColor: meal.color + '18' }}>
+                      <meal.Icon size={14} style={{ color: meal.color }} />
+                    </div>
+                    <div className="text-sm font-semibold text-black/75 dark:text-white/75">{meal.label}</div>
+                    <div className="ml-auto text-xs font-semibold" style={{ color: meal.color }}>
+                      {Math.round(meal.entries.reduce((s, e) => s + e.calories, 0))} kcal
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {meal.entries.map(entry => (
+                      <motion.div key={entry.id}
+                        initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-ui-raised transition-colors group">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-black/75 dark:text-white/70 truncate">{entry.foodName}</div>
+                          <div className="text-xs text-black/35 dark:text-white/30 mt-0.5">
+                            {entry.quantity} × {entry.unit}
+                            {entry.proteinG > 0 && ` · P: ${Math.round(entry.proteinG)}g`}
+                            {entry.carbsG > 0 && ` · C: ${Math.round(entry.carbsG)}g`}
+                            {entry.fatG > 0 && ` · F: ${Math.round(entry.fatG)}g`}
+                            {entry.id.startsWith('waiting-') && ' · waiting to upload'}
+                          </div>
+                        </div>
+                        <div className="text-sm font-bold text-black/65 dark:text-white/60 flex-shrink-0">
+                          {Math.round(entry.calories)} kcal
+                        </div>
+                        <button type="button" onClick={() => handleDelete(entry.id)}
+                          aria-label={`Remove ${entry.foodName}`} className="w-8 h-8 rounded-lg flex items-center justify-center text-ui-muted hover:text-lp-alert hover:bg-lp-alert/10 transition-all sm:opacity-0 sm:group-hover:opacity-100">
+                          <Trash2 size={12} />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'water' && (
+        <div className="max-w-md">
+          <WaterTracker glasses={glasses} goal={waterGoal} onAdd={handleAddWater} />
+        </div>
+      )}
 
       <AnimatePresence>
         {modalOpen && (

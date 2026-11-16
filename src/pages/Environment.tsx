@@ -289,13 +289,13 @@ export default function Environment() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
-          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Environment</h1>
+          <h1 className="text-[24px] max-sm:text-[22px] font-bold leading-tight tracking-tight text-ui-ink">Environment</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
         </div>
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-full bg-[#2E7D32] hover:bg-[#276b2b] transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
+          className="flex items-center gap-2 px-4 py-2.5 text-lp-btn-ink text-sm font-bold rounded-full bg-lp-btn hover:opacity-95 transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
         >
           <Plus size={15} />
           Log eco action
@@ -448,7 +448,7 @@ export default function Environment() {
               <GrowingPlant leaves={weekActions} />
               <div className="flex-1">
                 <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your eco plant this week</div>
-                <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug">
+                <p className="text-[17px] font-bold text-ui-ink leading-snug">
                   {ecoSentence(weekActions, weekKgSaved) ?? 'Log an eco action, like walking instead of driving or recycling a bottle, and your plant will grow its first leaf.'}
                 </p>
                 <p className="text-sm text-black/50 dark:text-white/50 mt-2">Each eco action adds a leaf. It starts again every Monday.</p>

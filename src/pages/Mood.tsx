@@ -4,6 +4,9 @@ import {
   Minus, Zap, Wind,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import PageTabs from '../components/ui/PageTabs'
+import { PageHeader } from '../components/ui/PageHeader'
+import { HABIT } from '../theme/habits'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
@@ -269,6 +272,13 @@ function WellnessTipCard({ stressScore, emoji }: {
 // ---------------------------------------------------------------------------
 // Mood page root
 // ---------------------------------------------------------------------------
+const MOOD_TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'week', label: 'Week' },
+  { key: 'charts', label: 'Charts' },
+] as const
+type MoodSection = (typeof MOOD_TABS)[number]['key']
+
 function MoodTab() {
   const mood = useAppStore((s) => s.mood)
   const setMoodEmoji = useAppStore((s) => s.setMoodEmoji)
@@ -276,6 +286,7 @@ function MoodTab() {
 
   const currentLevel = MOOD_LEVELS.find(m => m.emoji === mood.today.emoji) ?? MOOD_LEVELS[2]
   const stressScore = mood.today.stressScore
+  const [tab, setTab] = useState<MoodSection>('overview')
 
   const headline = useMemo(() => {
     const level = MOOD_LEVELS.find(m => m.emoji === mood.today.emoji)
@@ -303,10 +314,7 @@ function MoodTab() {
     <div className="space-y-5">
 
       {/* Header */}
-      <div>
-        <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Mood & Mindset</h1>
-        <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
-      </div>
+      <PageHeader icon={Smile} tint={HABIT.mood.rgb} title="Mood" subtitle={headline} />
 
       {/* Two-column layout */}
       <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
@@ -316,7 +324,7 @@ function MoodTab() {
 
           {/* Today's stats */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-3xl p-4 lp-card">
+            <div className="rounded-3xl p-4 lp-tile" style={{ ['--tint' as string]: HABIT.mood.rgb }}>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
                 style={{ backgroundColor: currentLevel.bg }}>
                 <currentLevel.Icon size={17} style={{ color: currentLevel.color }} />
@@ -328,7 +336,7 @@ function MoodTab() {
               <div className="mt-1 text-xs text-black/45 dark:text-white/40">{currentLevel.description}</div>
             </div>
 
-            <div className="rounded-3xl p-4 lp-card">
+            <div className="rounded-3xl p-4 lp-tile" style={{ ['--tint' as string]: HABIT.stress.rgb }}>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
                 style={{ backgroundColor: (currentStress?.color ?? '#FFA500') + '18' }}>
                 <Wind size={17} style={{ color: currentStress?.color ?? '#FFA500' }} />
@@ -362,7 +370,7 @@ function MoodTab() {
                       'relative flex flex-col items-center gap-2 py-4 rounded-2xl border transition-all duration-200 group',
                       active
                         ? 'border-transparent'
-                        : 'border-black/[0.06] dark:border-white/[0.06] hover:border-black/[0.12] dark:hover:border-white/[0.12]',
+                        : 'border-transparent bg-ui-raised hover:bg-ui-line/[0.06]',
                     )}
                     style={active ? { backgroundColor: level.bg, borderColor: level.color + '30' } : undefined}
                   >
@@ -414,7 +422,7 @@ function MoodTab() {
                       'relative flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all duration-150 group',
                       active
                         ? 'border-transparent text-white'
-                        : 'border-black/[0.06] dark:border-white/[0.06] text-black/55 dark:text-white/50 hover:border-black/[0.12] dark:hover:border-white/[0.12]',
+                        : 'border-transparent bg-ui-raised text-ui-muted hover:text-ui-ink',
                     )}
                     style={active ? { backgroundColor: s.color, borderColor: s.color } : undefined}
                   >
@@ -433,40 +441,50 @@ function MoodTab() {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      <PageTabs label="Mood sections" value={tab} onChange={setTab} tabs={MOOD_TABS} />
+
+      {tab === 'overview' && (
+        <div className="grid lg:grid-cols-[1fr_300px] gap-4">
+          <div className="min-w-0">
           {/* Your week as weather — the charts are one tap away */}
           <div className="rounded-3xl p-5 lp-card">
-            <h2 className="font-serif text-xl text-black/85 dark:text-white/90">Your mood forecast</h2>
+            <h2 className="text-[17px] font-bold text-ui-ink">Your mood forecast</h2>
             <p className="text-sm text-black/55 dark:text-white/55 mt-1 mb-4 leading-relaxed">
               {moodForecastSentence(mood.moodByDay, getDayKey()) ?? 'Log how you feel each day and your week will show up here as weather.'}
             </p>
             <MoodWeatherWeek byDay={mood.moodByDay} today={getDayKey()} />
-            <SeeDetails>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Mood this week</div>
-                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Daily mood level</div>
-                  <div className="h-44"><MoodTimelineChart data={mood.moodByDay} /></div>
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Stress trend</div>
-                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Daily stress score</div>
-                  <div className="h-44"><StressLineChart data={mood.stressByDay} /></div>
-                </div>
-              </div>
-            </SeeDetails>
+          </div>
+          </div>
+          <div className="space-y-4">
+            <ScoreImpactCard emoji={mood.today.emoji} stressScore={stressScore} />
+            <WellnessTipCard stressScore={stressScore} emoji={mood.today.emoji} />
           </div>
         </div>
+      )}
 
-        {/* Right sidebar */}
-        <div className="space-y-4">
-          <ScoreImpactCard emoji={mood.today.emoji} stressScore={stressScore} />
-          <WeeklySummaryCard
-            moodByDay={mood.moodByDay}
-            stressByDay={mood.stressByDay}
-          />
-          <WellnessTipCard stressScore={stressScore} emoji={mood.today.emoji} />
+      {tab === 'week' && (
+        <div className="max-w-xl">
+          <WeeklySummaryCard moodByDay={mood.moodByDay} stressByDay={mood.stressByDay} />
         </div>
-      </div>
+      )}
+
+      {tab === 'charts' && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="lp-card rounded-3xl p-5">
+            <div className="text-sm font-bold text-ui-ink">Mood this week</div>
+            <div className="text-xs text-ui-muted mt-0.5 mb-3">Daily mood level</div>
+            <div className="h-44"><MoodTimelineChart data={mood.moodByDay} /></div>
+          </div>
+          <div className="lp-card rounded-3xl p-5">
+            <div className="text-sm font-bold text-ui-ink">Stress trend</div>
+            <div className="text-xs text-ui-muted mt-0.5 mb-3">Daily stress score</div>
+            <div className="h-44"><StressLineChart data={mood.stressByDay} /></div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -484,25 +502,8 @@ export default function Mood() {
   return (
     <div className="space-y-5">
       {isFemale && (
-        <div role="tablist" aria-label="Mood sections" className="flex gap-1 bg-black/[0.04] dark:bg-white/[0.05] rounded-xl p-1 w-fit">
-          {([
-            { key: 'mood', label: 'Mood & Stress' },
-            { key: 'cycle', label: 'Cycle Tracker' },
-          ] as const).map((t) => (
-            <button key={t.key} type="button" role="tab" aria-selected={tab === t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={clsx(
-                'px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
-                tab === t.key
-                  ? t.key === 'cycle'
-                    ? 'bg-[#FF6B6B] text-white shadow-sm'
-                    : 'bg-white dark:bg-slate-800 text-black/80 dark:text-white/80 shadow-sm'
-                  : 'text-black/45 dark:text-white/40 hover:text-black/65 dark:hover:text-white/60',
-              )}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <PageTabs label="Mood or cycle" value={tab} onChange={setActiveTab}
+          tabs={[{ key: 'mood', label: 'Mood & stress' }, { key: 'cycle', label: 'Cycle tracker' }] as const} />
       )}
 
       <AnimatePresence mode="wait">

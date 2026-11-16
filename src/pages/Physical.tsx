@@ -11,7 +11,10 @@ import StepsBarChart from '../components/charts/StepsBarChart'
 import StepsJourney from '../components/visuals/StepsJourney'
 import SleepNightSky from '../components/visuals/SleepNightSky'
 import WeekDots from '../components/visuals/WeekDots'
-import SeeDetails from '../components/visuals/SeeDetails'
+import RingGauge from '../components/ui/RingGauge'
+import PageTabs from '../components/ui/PageTabs'
+import { ActionButton, MiniStat, PageHeader } from '../components/ui/PageHeader'
+import { HABIT } from '../theme/habits'
 import { weekSentence } from '../lib/weekStory'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
@@ -248,6 +251,14 @@ function SleepLogger({ value, onChange }: { value: number; onChange: (v: number)
   )
 }
 
+const TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'activity', label: 'Activity' },
+  { key: 'sleep', label: 'Sleep' },
+  { key: 'charts', label: 'Charts' },
+] as const
+type PhysicalTab = (typeof TABS)[number]['key']
+
 // ---------------------------------------------------------------------------
 // Physical page root
 // ---------------------------------------------------------------------------
@@ -271,12 +282,14 @@ export default function Physical() {
   const todaySleep = physical.sleepHours.find((x) => x.day === day)?.hours ?? 0
 
   const [walkOpen, setWalkOpen] = useState(false)
+  const [tab, setTab] = useState<PhysicalTab>('overview')
   const [otherOpen, setOtherOpen] = useState(false)
   const [stepsOpen, setStepsOpen] = useState(false)
   const [phoneStepsInput, setPhoneStepsInput] = useState('')
   const [caloriesInput, setCaloriesInput] = useState('100')
   const [noteInput, setNoteInput] = useState('')
 
+  const stepPct = Math.min(100, Math.round((todaySteps / stepGoal) * 100))
   const recent = useMemo(() => physical.activityLog.slice(0, 5), [physical.activityLog])
 
   const headline = useMemo(() => {
@@ -294,201 +307,139 @@ export default function Physical() {
       <PendingWalksCard />
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
-        <div>
-          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Physical Activity</h1>
-          <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0 max-sm:w-full max-sm:grid max-sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => setWalkOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-full bg-lp-btn text-lp-btn-ink hover:opacity-95 transition-all duration-200 max-sm:col-span-2 max-sm:justify-center max-sm:py-3"
-          >
-            <Navigation size={15} />
-            Start Walk
-          </button>
-          <button
-            type="button"
-            onClick={() => setOtherOpen(true)}
-            className="flex items-center gap-2 px-3 py-2.5 bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 text-sm font-semibold rounded-xl hover:bg-black/[0.09] dark:hover:bg-white/[0.10] transition-all duration-200 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
-          >
-            <Plus size={15} />
-            Other
-          </button>
-          <button
-            type="button"
-            onClick={() => { setPhoneStepsInput(''); setStepsOpen(true) }}
-            className="flex items-center gap-2 px-3 py-2.5 bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 text-sm font-semibold rounded-xl hover:bg-black/[0.09] dark:hover:bg-white/[0.10] transition-all duration-200 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
-          >
-            <Footprints size={15} />
-            Enter steps
-          </button>
-        </div>
-      </div>
+      <PageHeader icon={Activity} tint={HABIT.steps.rgb} title="Physical" subtitle={headline} />
 
-      {/* Two-column layout */}
-      <div className="grid lg:grid-cols-[1fr_280px] gap-5 max-sm:grid-cols-1">
-
-        {/* Left — main content */}
-        <div className="space-y-5 min-w-0">
-
-          {/* Today's stats */}
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-            <StatCard
-              label="Steps"
-              value={formatNumber(todaySteps)}
-              context={todaySteps >= stepGoal ? 'Daily goal reached' : `${formatNumber(Math.max(0, stepGoal - todaySteps))} to reach ${formatNumber(stepGoal)}`}
-              icon={<Footprints size={17} />}
-              color="#4CAF50"
-              goalValue={todaySteps}
-              goalMax={8000}
-              trend={todaySteps >= stepGoal ? 'up' : todaySteps >= stepGoal / 2 ? 'flat' : 'down'}
-            />
-            <StatCard
-              label="Distance"
-              value={formatDistance(todayDistance, units)}
-              context={todayDistance >= 5 ? 'Great distance today' : todayDistance > 0 ? `${(5 - todayDistance).toFixed(1)} km to 5 km goal` : 'No distance yet'}
-              icon={<Navigation size={17} />}
-              color="#00BCD4"
-              goalValue={todayDistance}
-              goalMax={5}
-              trend={todayDistance >= 5 ? 'up' : todayDistance > 0 ? 'flat' : 'down'}
-            />
-            <StatCard
-              label="Calories"
-              value={`${todayCalories} kcal`}
-              context={todayCalories >= 300 ? 'Active calorie burn' : todayCalories > 0 ? 'Keep moving to burn more' : 'Start a walk to burn calories'}
-              icon={<Flame size={17} />}
-              color="#FFA500"
-              goalValue={todayCalories}
-              goalMax={300}
-              trend={todayCalories >= 300 ? 'up' : todayCalories > 0 ? 'flat' : 'down'}
-            />
-            <StatCard
-              label="Sleep"
-              value={todaySleep > 0 ? `${todaySleep}h` : 'Not logged'}
-              context={todaySleep >= 8 ? 'Excellent rest' : todaySleep >= 7 ? 'Good sleep' : todaySleep >= 6 ? 'Slightly below ideal' : todaySleep > 0 ? 'Low sleep affects your score' : "Log last night's sleep"}
-              icon={<Moon size={17} />}
-              color="#6366F1"
-              goalValue={todaySleep}
-              goalMax={8}
-              trend={todaySleep >= 7.5 ? 'up' : todaySleep >= 6 ? 'flat' : todaySleep > 0 ? 'down' : undefined}
-            />
-          </div>
-
-          {/* Recent activity */}
-          <div className="rounded-3xl p-5 lp-card">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="text-sm font-semibold text-black/80 dark:text-white/85">Recent activity</div>
-                <div className="text-xs text-black/40 dark:text-white/35 mt-0.5">Your latest logged sessions</div>
-              </div>
+      {/* Hero: today's steps as a ring, the other numbers beside it, and the ways to log */}
+      <section className="lp-card rounded-3xl p-5 relative overflow-hidden" aria-label="Today's steps">
+        <div className="pointer-events-none absolute -top-16 -left-16 w-48 h-48 rounded-full blur-3xl" style={{ background: `rgb(${HABIT.steps.rgb} / 0.12)` }} />
+        <div className="relative flex items-center gap-5">
+          <RingGauge value={todaySteps / stepGoal} color={HABIT.steps.hex} size={124} stroke={11}
+            label={`${formatNumber(todaySteps)} of ${formatNumber(stepGoal)} steps`}>
+            <Footprints size={30} style={{ color: HABIT.steps.hex }} />
+          </RingGauge>
+          <div className="min-w-0">
+            <div className="text-[12px] font-semibold text-ui-muted">Daily steps</div>
+            <div className="text-[28px] font-extrabold text-ui-ink leading-tight tabular-nums">
+              {formatNumber(todaySteps)} <span className="text-[14px] font-semibold text-ui-muted">/ {formatNumber(stepGoal)}</span>
             </div>
-            {recent.length === 0 ? (
-              <div className="py-8 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center mx-auto mb-3">
-                  <Navigation size={20} className="text-black/20 dark:text-white/20" />
-                </div>
-                <p className="text-sm font-medium text-black/40 dark:text-white/35">No activity logged yet</p>
-                <p className="text-xs text-black/30 dark:text-white/25 mt-1">
-                  Tap <span className="font-semibold text-lp-primary">Start Walk</span> to track your first walk
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {recent.map((a, i) => (
-                  <motion.div
-                    key={a.id}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors duration-150"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-lp-primary/10 flex items-center justify-center flex-shrink-0">
-                      {a.note?.includes('Walk') ? <Navigation size={14} className="text-lp-primary" /> : <Activity size={14} className="text-lp-primary" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-black/75 dark:text-white/75 truncate">{a.note?.trim() || 'Activity'}</div>
-                      <div className="text-xs text-black/35 dark:text-white/30 mt-0.5">
-                        {new Date(a.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-sm font-semibold text-black/70 dark:text-white/65">{formatNumber(a.steps)} steps</div>
-                      <div className="text-xs text-black/35 dark:text-white/30">{formatDistance(a.distanceKm, units)} · {a.caloriesKcal} kcal</div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
+            <div className="mt-2 h-2 rounded-full bg-ui-line/[0.08] overflow-hidden w-40 max-w-full">
+              <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${stepPct}%`, background: HABIT.steps.hex }} />
+            </div>
+            <div className="mt-1 text-[12px] font-semibold" style={{ color: HABIT.steps.hex }}>{stepPct}% of your goal</div>
           </div>
+        </div>
+        <div className="relative mt-4 grid grid-cols-3 gap-2.5">
+          <MiniStat icon={Flame} tint={HABIT.meals.rgb} value={`${todayCalories} kcal`} label="Burned" />
+          <MiniStat icon={Navigation} tint={HABIT.screen.rgb} value={formatDistance(todayDistance, units)} label="Distance" />
+          <MiniStat icon={Moon} tint={HABIT.sleep.rgb} value={todaySleep > 0 ? `${todaySleep}h` : '—'} label="Sleep" />
+        </div>
+        <div className="relative mt-4 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+          <div className="col-span-2 grid sm:block"><ActionButton icon={Navigation} primary onClick={() => setWalkOpen(true)}>Start walk</ActionButton></div>
+          <ActionButton icon={Footprints} onClick={() => { setPhoneStepsInput(''); setStepsOpen(true) }}>Enter steps</ActionButton>
+          <ActionButton icon={Plus} onClick={() => setOtherOpen(true)}>Other</ActionButton>
+        </div>
+      </section>
 
-          {/* Your week as a journey and a night sky — the charts are one tap away */}
-          <div className="rounded-3xl p-5 lp-card">
-            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your walking journey</div>
+      {todaySteps >= stepGoal && (
+        <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
+          className="rounded-2xl p-4 flex items-center gap-3 bg-lp-primary/[0.08] border border-lp-primary/20">
+          <span className="w-9 h-9 rounded-xl bg-lp-primary/20 flex items-center justify-center flex-shrink-0">
+            <Award size={16} className="text-lp-primary" />
+          </span>
+          <div>
+            <div className="text-sm font-bold text-ui-ink">Daily goal reached</div>
+            <div className="text-xs text-ui-muted mt-0.5">You hit {formatNumber(stepGoal)} steps today</div>
+          </div>
+        </motion.div>
+      )}
+
+      <PageTabs label="Physical sections" value={tab} onChange={setTab} tabs={TABS} />
+
+      {tab === 'overview' && (
+        <div className="grid lg:grid-cols-[1fr_300px] gap-4">
+          <div className="lp-card rounded-3xl p-5 min-w-0">
+            <div className="text-[13px] font-bold text-ui-ink mb-1">Your walking journey</div>
             <StepsJourney km={weekKm} />
             <div className="mt-1 flex items-center gap-3 max-sm:flex-col max-sm:items-start">
-              <span className="text-sm text-black/60 dark:text-white/60 w-24 flex-shrink-0">Step goal</span>
+              <span className="text-[13px] font-semibold text-ui-muted w-24 flex-shrink-0">Step goal</span>
               <WeekDots values={physical.weeklySteps.map((x) => ({ day: x.day, value: x.steps || null }))} goal={stepGoal}
-                today={day} color="#22C55E" format={(v) => `${formatNumber(v)} steps`} />
+                today={day} color={HABIT.steps.hex} format={(v) => `${formatNumber(v)} steps`} />
             </div>
-            {stepsSentence && <p className="text-sm text-black/55 dark:text-white/55 mt-3">{stepsSentence}</p>}
+            {stepsSentence && <p className="text-[13px] text-ui-muted mt-3">{stepsSentence}</p>}
           </div>
+          <div className="space-y-4">
+            <ScoreImpactCard steps={todaySteps} sleep={todaySleep} />
+            <WeeklySummaryCard weeklySteps={physical.weeklySteps} sleepHours={physical.sleepHours} />
+          </div>
+        </div>
+      )}
 
-          <div className="rounded-3xl p-5 lp-card">
-            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your nights</div>
-            <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug mb-4">
-              {sleepSentence ?? 'Log your sleep each morning and your week of nights will appear here.'}
+      {tab === 'activity' && (
+        <div className="rounded-3xl p-5 lp-card">
+          <div className="text-[15px] font-bold text-ui-ink">Recent activity</div>
+          <div className="text-xs text-ui-muted mt-0.5 mb-4">Your latest logged sessions</div>
+          {recent.length === 0 ? (
+            <div className="py-8 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-ui-raised flex items-center justify-center mx-auto mb-3">
+                <Navigation size={20} className="text-ui-muted" />
+              </div>
+              <p className="text-sm font-semibold text-ui-ink">No activity logged yet</p>
+              <p className="text-xs text-ui-muted mt-1">Tap <span className="font-semibold text-lp-primary">Start walk</span> to track your first walk</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recent.map((a, i) => (
+                <motion.div key={a.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                  className="flex items-center gap-3 p-3 rounded-2xl bg-ui-raised">
+                  <div className="w-9 h-9 rounded-xl bg-lp-primary/10 flex items-center justify-center flex-shrink-0">
+                    {a.note?.includes('Walk') ? <Navigation size={14} className="text-lp-primary" /> : <Activity size={14} className="text-lp-primary" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-ui-ink truncate">{a.note?.trim() || 'Activity'}</div>
+                    <div className="text-xs text-ui-muted mt-0.5">
+                      {new Date(a.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-sm font-bold text-ui-ink">{formatNumber(a.steps)} steps</div>
+                    <div className="text-xs text-ui-muted">{formatDistance(a.distanceKm, units)} · {a.caloriesKcal} kcal</div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'sleep' && (
+        <div className="grid lg:grid-cols-[300px_1fr] gap-4">
+          <SleepLogger value={todaySleep} onChange={(h) => { updateSleepForToday(h); toast.success(`Sleep logged: ${h}h`) }} />
+          <div className="rounded-3xl p-5 lp-card min-w-0">
+            <div className="text-[13px] font-bold text-ui-ink mb-1">Your nights</div>
+            <p className="text-[15px] text-ui-muted leading-snug mb-4">
+              {sleepSentence ?? 'Log your sleep each morning and your week of nights appears here.'}
             </p>
             <SleepNightSky nights={physical.sleepHours} goalHours={goals.goalSleepHours} today={day} />
           </div>
-
-          <div className="rounded-3xl px-5 py-3 lp-card">
-            <SeeDetails label="See detailed charts">
-              <div className="grid md:grid-cols-2 gap-4">
-                {[
-                  { title: 'Steps this week', sub: 'Daily step count', chart: <StepsBarChart data={physical.weeklySteps} /> },
-                  { title: 'Distance this week', sub: 'Kilometres walked', chart: <DistanceLineChart data={physical.weeklyDistanceKm} /> },
-                  { title: 'Calories burned', sub: 'Daily calorie burn', chart: <CaloriesLineChart data={physical.weeklyCaloriesKcal} /> },
-                  { title: 'Sleep pattern', sub: 'Hours per night', chart: <SleepAreaChart data={physical.sleepHours} /> },
-                ].map(({ title, sub, chart }) => (
-                  <div key={title}>
-                    <div className="text-sm font-semibold text-black/80 dark:text-white/85">{title}</div>
-                    <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">{sub}</div>
-                    <div className="h-44">{chart}</div>
-                  </div>
-                ))}
-              </div>
-            </SeeDetails>
-          </div>
         </div>
+      )}
 
-        {/* Right sidebar */}
-        <div className="space-y-4">
-          <ScoreImpactCard steps={todaySteps} sleep={todaySleep} />
-          <SleepLogger
-            value={todaySleep}
-            onChange={(h) => { updateSleepForToday(h); toast.success(`Sleep logged: ${h}h`) }}
-          />
-          <WeeklySummaryCard weeklySteps={physical.weeklySteps} sleepHours={physical.sleepHours} />
-          {todaySteps >= stepGoal && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-lp-primary/[0.08] border border-lp-primary/20 rounded-2xl p-4 flex items-center gap-3"
-            >
-              <div className="w-9 h-9 rounded-xl bg-lp-primary/20 flex items-center justify-center flex-shrink-0">
-                <Award size={16} className="text-lp-primary" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-black/75 dark:text-white/75">Daily goal reached</div>
-                <div className="text-xs text-black/45 dark:text-white/40 mt-0.5">You hit 8,000 steps today</div>
-              </div>
-            </motion.div>
-          )}
+      {tab === 'charts' && (
+        <div className="grid md:grid-cols-2 gap-4">
+          {[
+            { title: 'Steps this week', sub: 'Daily step count', chart: <StepsBarChart data={physical.weeklySteps} /> },
+            { title: 'Distance this week', sub: 'Kilometres walked', chart: <DistanceLineChart data={physical.weeklyDistanceKm} /> },
+            { title: 'Calories burned', sub: 'Daily calorie burn', chart: <CaloriesLineChart data={physical.weeklyCaloriesKcal} /> },
+            { title: 'Sleep pattern', sub: 'Hours per night', chart: <SleepAreaChart data={physical.sleepHours} /> },
+          ].map(({ title, sub, chart }) => (
+            <div key={title} className="lp-card rounded-3xl p-5">
+              <div className="text-sm font-bold text-ui-ink">{title}</div>
+              <div className="text-xs text-ui-muted mt-0.5 mb-3">{sub}</div>
+              <div className="h-44">{chart}</div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
 
       {/* Walk Tracker overlay */}
       <WalkTracker open={walkOpen} onClose={() => setWalkOpen(false)} />

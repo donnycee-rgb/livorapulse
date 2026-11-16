@@ -196,7 +196,7 @@ const FoodScanner = forwardRef<FoodScannerHandle, {
         <button type="button" onClick={openGallery}
           className={clsx('w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all',
             showInterrupted
-              ? 'bg-[#2E7D32] text-white hover:bg-[#276b2b]'
+              ? 'bg-lp-btn text-lp-btn-ink hover:opacity-95'
               : 'bg-black/[0.05] dark:bg-white/[0.06] text-black/65 dark:text-white/65 hover:bg-black/[0.08]')}>
           <ImagePlus size={15} /> Choose from gallery
         </button>
