@@ -1,31 +1,12 @@
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
-import { useChartTheme } from '../../theme/useChartTheme'
+// Built on the shared chart kit (./kit.tsx): one look and animation for every chart
+import { Donut } from './kit'
+import { CHART, type Duo } from '../../theme/chartColors'
 
-type Props = {
-  data: Array<{ mode: string; trips: number }>
-}
+const COLOR: Record<string, Duo> = { Walking: CHART.green, Cycling: CHART.sky, Driving: CHART.orange }
 
-const COLORS = ['#4CAF50', '#00BCD4', '#1E3A8A']
-
-export default function TransportModeChart({ data }: Props) {
-  const t = useChartTheme()
-
+export default function TransportModeChart({ data }: { data: Array<{ mode: string; trips: number }> }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
-        <Tooltip
-          contentStyle={{
-            borderRadius: 12,
-            border: `1px solid ${t.tooltipBorder}`,
-            background: t.tooltipBg,
-          }}
-        />
-        <Pie data={data} dataKey="trips" nameKey="mode" innerRadius={55} outerRadius={85} paddingAngle={3}>
-          {data.map((_, idx) => (
-            <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-          ))}
-        </Pie>
-      </PieChart>
-    </ResponsiveContainer>
+    <Donut format={(v) => `${v} ${v === 1 ? 'trip' : 'trips'}`}
+      data={data.map((d) => ({ label: d.mode, value: d.trips, color: COLOR[d.mode] ?? CHART.indigo }))} />
   )
 }

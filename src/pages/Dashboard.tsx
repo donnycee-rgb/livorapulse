@@ -371,15 +371,9 @@ export default function Dashboard() {
             ))}
           </div>
           <SeeDetails>
-            <div className="flex items-center gap-3 text-xs text-ui-muted mb-2">
-              {[['Steps', '#4CAF50'], ['Screen', '#00BCD4'], ['Focus', '#6366F1']].map(([label, color]) => (
-                <span key={label} className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full" style={{ background: color }} /> {label}
-                </span>
-              ))}
-            </div>
-            <div className="h-60 max-sm:h-48">
-              <ActivityAnalyticsChart data={chartData} />
+            <div className="h-72 max-sm:h-64">
+              <ActivityAnalyticsChart data={chartData}
+                goals={{ steps: goals.goalStepsPerDay, focusMin: goals.goalFocusMinutes, screenMin: goals.goalScreenMinutes }} />
             </div>
           </SeeDetails>
         </section>

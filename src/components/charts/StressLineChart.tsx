@@ -1,36 +1,13 @@
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import { useChartTheme } from '../../theme/useChartTheme'
+// Built on the shared chart kit (./kit.tsx): one look and animation for every chart
+import { AreaTrend } from './kit'
+import { CHART } from '../../theme/chartColors'
 
-type Props = {
-  data: Array<{ day: string; score: number | null }> // null = no check-in (shown as a gap)
-}
+const WORD = ['', 'Very low', 'Low', 'Moderate', 'High', 'Very high']
 
-export default function StressLineChart({ data }: Props) {
-  const t = useChartTheme()
-
+// null = no check-in that day (drawn as a gap, not as 0)
+export default function StressLineChart({ data }: { data: Array<{ day: string; score: number | null }> }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={{ left: 6, right: 6, top: 8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={t.grid} />
-        <XAxis dataKey="day" tick={{ fill: t.axis, fontSize: 12 }} />
-        <YAxis domain={[1, 5]} tick={{ fill: t.axis, fontSize: 12 }} width={36} allowDecimals={false} />
-        <Tooltip
-          contentStyle={{
-            borderRadius: 12,
-            border: `1px solid ${t.tooltipBorder}`,
-            background: t.tooltipBg,
-          }}
-        />
-        <Line type="monotone" dataKey="score" stroke="#FF6B6B" strokeWidth={3} dot={{ r: 3 }} />
-      </LineChart>
-    </ResponsiveContainer>
+    <AreaTrend data={data} domain={[1, 5]} yTicks={[1, 2, 3, 4, 5]}
+      series={[{ key: 'score', label: 'Stress', color: CHART.violetSoft, text: (r) => (r.score ? `${r.score}/5 · ${WORD[r.score]}` : null) }]} />
   )
 }

@@ -1,37 +1,13 @@
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import { useChartTheme } from '../../theme/useChartTheme'
+// Built on the shared chart kit (./kit.tsx): one look and animation for every chart
+import { BarTrend } from './kit'
+import { CHART } from '../../theme/chartColors'
+import { getDayKey } from '../../utils/date'
 
-type Props = {
-  data: Array<{ day: string; steps: number }>
-}
+type Row = { day: string; steps: number }
 
-export default function StepsBarChart({ data }: Props) {
-  const t = useChartTheme()
-
+export default function StepsBarChart({ data }: { data: Row[] }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} margin={{ left: 6, right: 6, top: 8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={t.grid} />
-        <XAxis dataKey="day" tick={{ fill: t.axis, fontSize: 12 }} />
-        <YAxis tick={{ fill: t.axis, fontSize: 12 }} width={36} />
-        <Tooltip
-          cursor={{ fill: t.cursor }}
-          contentStyle={{
-            borderRadius: 12,
-            border: `1px solid ${t.tooltipBorder}`,
-            background: t.tooltipBg,
-          }}
-        />
-        <Bar dataKey="steps" fill="#4CAF50" radius={[10, 10, 10, 10]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <BarTrend data={data} dataKey="steps" label="Steps" color={CHART.green} highlight={getDayKey()}
+      text={(r) => r.steps.toLocaleString()} />
   )
 }

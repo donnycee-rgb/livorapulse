@@ -1,36 +1,13 @@
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import { useChartTheme } from '../../theme/useChartTheme'
+// Built on the shared chart kit (./kit.tsx): one look and animation for every chart
+import { BarTrend } from './kit'
+import { CHART } from '../../theme/chartColors'
+import { getDayKey } from '../../utils/date'
 
-type Props = {
-  data: Array<{ day: string; sessions: number }>
-}
+type Row = { day: string; sessions: number }
 
-export default function StudySessionsBarChart({ data }: Props) {
-  const t = useChartTheme()
-
+export default function StudySessionsBarChart({ data }: { data: Row[] }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} margin={{ left: 6, right: 6, top: 8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={t.grid} />
-        <XAxis dataKey="day" tick={{ fill: t.axis, fontSize: 12 }} />
-        <YAxis tick={{ fill: t.axis, fontSize: 12 }} width={36} allowDecimals={false} />
-        <Tooltip
-          contentStyle={{
-            borderRadius: 12,
-            border: `1px solid ${t.tooltipBorder}`,
-            background: t.tooltipBg,
-          }}
-        />
-        <Bar dataKey="sessions" fill="#00BCD4" radius={[10, 10, 10, 10]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <BarTrend data={data} dataKey="sessions" label="Study sessions" color={CHART.sky} highlight={getDayKey()}
+      text={(r) => `${r.sessions} ${r.sessions === 1 ? 'session' : 'sessions'}`} />
   )
 }

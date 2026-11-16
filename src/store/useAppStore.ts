@@ -962,14 +962,28 @@ export const useAppStore = create<AppStore>()(
           const clean = buildEmptyState()
 
           set((s) => {
+            // A section whose request fails (offline, weak signal, server
+            // down) keeps what's already on this phone instead of going blank.
+            // Only data saved in an earlier week is dropped, so last week's
+            // numbers never show as this week's. (Signing out clears the
+            // saved app data, so this is always the same person's data.)
+            const savedThisWeek = (s.meta?.lastUpdatedAt ?? 0) >= startOfThisWeek()
+            const keep = <K extends 'physical' | 'digital' | 'mood' | 'environment'>(k: K) => (savedThisWeek ? s[k] : clean[k])
             const next = {
               ...clean,
               // Preserve preferences and notifications from current session
               preferences: s.preferences,
               notifications: s.notifications,
+              user: s.user,
+              goals: s.goals,
+              onboarding: s.onboarding,
+              physical: keep('physical'),
+              digital: keep('digital'),
+              mood: keep('mood'),
+              environment: keep('environment'),
               // A focus session in progress lives only on this device: keep it even
               // if the productivity request below fails (e.g. a weak connection)
-              productivity: { ...clean.productivity, focusTimer: s.productivity.focusTimer },
+              productivity: savedThisWeek ? s.productivity : { ...clean.productivity, focusTimer: s.productivity.focusTimer },
             }
 
             if (physicalRes.status === 'fulfilled' && physicalRes.value.data) {
