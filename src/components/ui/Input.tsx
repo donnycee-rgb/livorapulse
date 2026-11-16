@@ -13,7 +13,7 @@ export default function Input({ label, helperText, className, ...props }: Props)
       <input
         {...props}
         className={clsx(
-          'w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-slate-900 ' +
+          'w-full rounded-xl border border-black/10 dark:border-white/10 bg-ui-card ' +
             'px-3 py-2 text-sm text-black/90 dark:text-white/90 outline-none ' +
             'focus:ring-2 focus:ring-lp-accent/40',
           className,

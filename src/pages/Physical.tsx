@@ -299,11 +299,11 @@ export default function Physical() {
           <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Physical Activity</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0 max-sm:w-full">
+        <div className="flex items-center gap-2 flex-shrink-0 max-sm:w-full max-sm:grid max-sm:grid-cols-2">
           <button
             type="button"
             onClick={() => setWalkOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-full bg-[#2E7D32] hover:bg-[#276b2b] transition-all duration-200 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-full bg-lp-btn text-lp-btn-ink hover:opacity-95 transition-all duration-200 max-sm:col-span-2 max-sm:justify-center max-sm:py-3"
           >
             <Navigation size={15} />
             Start Walk

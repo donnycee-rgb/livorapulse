@@ -21,7 +21,7 @@ export default function App() {
   return (
     // Only public lazy pages reach this fallback; signed-in pages load inside
     // the Layout, which shows a page skeleton instead
-    <Suspense fallback={<div className="min-h-dvh bg-[#F5F5F5] dark:bg-[#050b18]" />}>
+    <Suspense fallback={<div className="min-h-dvh bg-ui-bg" />}>
       <Seo />
       <Routes>
         {/* Public routes */}

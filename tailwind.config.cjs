@@ -9,8 +9,19 @@ module.exports = {
         serif: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
       },
       colors: {
+        // Theme colours from src/styles/globals.css (light and dark values)
+        ui: {
+          bg: 'rgb(var(--ui-bg) / <alpha-value>)',
+          card: 'rgb(var(--ui-card) / <alpha-value>)',
+          raised: 'rgb(var(--ui-raised) / <alpha-value>)',
+          ink: 'rgb(var(--ui-ink) / <alpha-value>)',
+          muted: 'rgb(var(--ui-muted) / <alpha-value>)',
+          line: 'rgb(var(--ui-line) / <alpha-value>)',
+        },
         lp: {
-          primary: '#4CAF50',
+          primary: 'rgb(var(--lp-primary) / <alpha-value>)',
+          btn: 'rgb(var(--lp-btn) / <alpha-value>)',
+          'btn-ink': 'rgb(var(--lp-btn-ink) / <alpha-value>)',
           secondary: '#1E3A8A',
           accent: '#00BCD4',
           alert: '#FF6B6B',

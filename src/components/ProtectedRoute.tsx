@@ -46,7 +46,7 @@ export default function ProtectedRoute({ children, requireSetup = true, allowUnv
 
 function SigningIn() {
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center gap-4 bg-[#F5F5F5] dark:bg-[#050b18]" role="status">
+    <div className="min-h-dvh flex flex-col items-center justify-center gap-4 bg-ui-bg" role="status">
       <svg className="animate-spin h-8 w-8 text-[#3D9A41]" viewBox="0 0 24 24" fill="none" aria-hidden>
         <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
         <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />

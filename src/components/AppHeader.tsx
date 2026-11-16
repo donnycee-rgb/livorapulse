@@ -113,7 +113,7 @@ function NotificationDropdown() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="absolute right-0 top-11 w-80 bg-white dark:bg-slate-900 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl overflow-hidden z-50"
+            className="absolute right-0 top-11 w-80 bg-ui-card rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl overflow-hidden z-50"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06]">
               <div className="flex items-center gap-2">
@@ -212,7 +212,7 @@ function ProfileDropdown() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="absolute right-0 top-11 w-56 bg-white dark:bg-slate-900 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl overflow-hidden z-50"
+            className="absolute right-0 top-11 w-56 bg-ui-card rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl overflow-hidden z-50"
           >
             {/* User info header */}
             <div className="px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06] flex items-center gap-3">
@@ -279,7 +279,7 @@ export default function AppHeader() {
   const onDashboard = useLocation().pathname === '/dashboard'
 
   return (
-    <header className="h-16 flex-shrink-0 flex items-center border-b border-black/[0.06] dark:border-white/[0.06] bg-white/95 dark:bg-[#0a0f1a]/95 backdrop-blur-md z-30">
+    <header className="h-16 flex-shrink-0 flex items-center border-b border-ui-line/[0.06] bg-ui-bg/85 backdrop-blur-md z-30">
       <div className="w-full max-w-[1400px] mx-auto px-4 flex items-center justify-between gap-4">
 
         {/* Left — logo + wordmark */}

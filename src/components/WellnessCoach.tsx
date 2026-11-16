@@ -194,7 +194,7 @@ export default function WellnessCoach({ open, onClose }: WellnessCoachProps) {
             transition={{ duration: 0.25, ease: 'easeOut' }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-900 border-b border-black/[0.06] dark:border-white/[0.06] flex-shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 bg-ui-card border-b border-black/[0.06] dark:border-white/[0.06] flex-shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-[#6366F1]/15 flex items-center justify-center">
                   <Sparkles size={15} className="text-[#6366F1]" />
@@ -236,7 +236,7 @@ export default function WellnessCoach({ open, onClose }: WellnessCoachProps) {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-slate-50 dark:bg-[#0d1320]">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-ui-bg">
               {isEmpty && (
                 <div className="flex flex-col items-center justify-center h-full gap-4 pb-4">
                   <div className="w-12 h-12 rounded-2xl bg-[#6366F1]/15 flex items-center justify-center">
@@ -281,7 +281,7 @@ export default function WellnessCoach({ open, onClose }: WellnessCoachProps) {
             </div>
 
             {/* Input */}
-            <div className="flex-shrink-0 px-3 py-3 bg-white dark:bg-slate-900 border-t border-black/[0.06] dark:border-white/[0.06]">
+            <div className="flex-shrink-0 px-3 py-3 bg-ui-card border-t border-black/[0.06] dark:border-white/[0.06]">
               <div className="flex items-end gap-2">
                 <textarea
                   ref={inputRef}
