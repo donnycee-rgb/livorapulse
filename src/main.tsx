@@ -6,7 +6,9 @@ import App from './App'
 import AppToaster from './components/ui/Toaster'
 import { useThemeSync } from './hooks/useThemeSync'
 import { useAuthStore } from './store/useAuthStore'
+import { readGoogleReturn } from './auth/googleReturn'
 import { useAppStore } from './store/useAppStore'
+import { usePendingWalkSync } from './hooks/usePendingWalkSync'
 import './styles/globals.css'
 
 function Root() {
@@ -16,13 +18,10 @@ function Root() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const hydrateFromApi = useAppStore((s) => s.hydrateFromApi)
   const syncDashboardScore = useAppStore((s) => s.syncDashboardScore)
-  const handleGoogleCallback = useAuthStore((s) => s.handleGoogleCallback)
   const [authReady, setAuthReady] = useState(false)
 
-  // Handle Google OAuth redirect (?token= in URL)
-  useEffect(() => {
-    handleGoogleCallback()
-  }, [])
+  // Upload walks that were saved on this phone while offline or signed out
+  usePendingWalkSync()
 
   // Wait for auth store hydration
   useEffect(() => {
@@ -50,6 +49,23 @@ function Root() {
       <AppToaster />
     </>
   )
+}
+
+// An address like "https://site//dashboard?code=..." (a link built from a URL
+// ending in "/") matches no route and shows "Page not found". Repair it before
+// the router reads it, keeping the query (e.g. Google sign-in's ?code=).
+if (window.location.pathname.startsWith('//')) {
+  const { pathname, search, hash } = window.location
+  window.history.replaceState(window.history.state, '', pathname.replace(/^\/+/, '/') + search + hash)
+}
+
+// Back from Google sign-in: take the one-time code now, before the router and
+// the dashboard's sign-in guard run (the guard would redirect to /login and
+// drop it). Pages show "Signing you in" until the exchange finishes.
+const googleCode = readGoogleReturn(window.location)
+if (googleCode) {
+  window.history.replaceState(null, '', '/dashboard') // keep the code out of the address bar and history
+  void useAuthStore.getState().completeGoogleSignIn(googleCode)
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

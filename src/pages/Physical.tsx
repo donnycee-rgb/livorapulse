@@ -8,10 +8,16 @@ import CaloriesLineChart from '../components/charts/CaloriesLineChart'
 import DistanceLineChart from '../components/charts/DistanceLineChart'
 import SleepAreaChart from '../components/charts/SleepAreaChart'
 import StepsBarChart from '../components/charts/StepsBarChart'
+import StepsJourney from '../components/visuals/StepsJourney'
+import SleepNightSky from '../components/visuals/SleepNightSky'
+import WeekDots from '../components/visuals/WeekDots'
+import SeeDetails from '../components/visuals/SeeDetails'
+import { weekSentence } from '../lib/weekStory'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import WalkTracker from '../components/WalkTracker'
+import PendingWalksCard from '../components/PendingWalksCard'
 
 import { useAppStore } from '../store/useAppStore'
 import { selectDimensionScores, selectLifePulseScore, selectProgressiveGoals } from '../store/selectors'
@@ -61,7 +67,7 @@ function StatCard({ label, value, context, icon, color, goalValue, goalMax, tren
   const trendColor = trend === 'up' ? '#4CAF50' : trend === 'down' ? '#FF6B6B' : '#94a3b8'
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #4CAF500A 0%, #4CAF5005 100%)`, border: `1px solid #4CAF5020` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: color + '18' }}>
           <div style={{ color }}>{icon}</div>
@@ -96,7 +102,7 @@ function ScoreImpactCard({ steps, sleep }: { steps: number; sleep: number }) {
   )
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #4CAF500A 0%, #4CAF5005 100%)`, border: `1px solid #4CAF5020` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-primary/15 flex items-center justify-center">
           <Target size={14} className="text-lp-primary" />
@@ -148,7 +154,7 @@ function WeeklySummaryCard({ weeklySteps, sleepHours }: {
     : 0
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #4CAF500A 0%, #4CAF5005 100%)`, border: `1px solid #4CAF5020` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-accent/15 flex items-center justify-center">
           <TrendingUp size={14} className="text-lp-accent" />
@@ -200,10 +206,10 @@ function WeeklySummaryCard({ weeklySteps, sleepHours }: {
 function SleepLogger({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const levels = [5, 6, 6.5, 7, 7.5, 8, 8.5, 9]
   const getColor = (h: number) => h >= 8 ? '#4CAF50' : h >= 7 ? '#00BCD4' : h >= 6 ? '#FFA500' : '#FF6B6B'
-  const getLabel = (h: number) => h >= 8 ? 'Great' : h >= 7 ? 'Good' : h >= 6 ? 'Fair' : 'Low'
+  const getLabel = (h: number) => h >= 8 ? 'Great' : h >= 7 ? 'Good' : h >= 6 ? 'Fair' : 'Short'
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #4CAF500A 0%, #4CAF5005 100%)`, border: `1px solid #4CAF5020` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-[#6366F1]/15 flex items-center justify-center">
           <Moon size={14} className="text-[#6366F1]" />
@@ -253,6 +259,12 @@ export default function Physical() {
   const updateSleepForToday = useAppStore((s) => s.updateSleepForToday)
 
   const day = getDayKey()
+  const goals = useAppStore(selectProgressiveGoals)
+  // Distance from walks; where only steps were logged, about 0.75 m per step
+  const weekKm = physical.weeklyDistanceKm.reduce((sum, d) => sum + (d.km || 0), 0) ||
+    physical.weeklySteps.reduce((sum, d) => sum + d.steps, 0) * 0.00075
+  const stepsSentence = weekSentence({ values: physical.weeklySteps.map((x) => ({ day: x.day, value: x.steps || null })), today: day, goal: stepGoal, noun: 'step goal' })
+  const sleepSentence = weekSentence({ values: physical.sleepHours.map((x) => ({ day: x.day, value: x.hours || null })), today: day, goal: goals.goalSleepHours, noun: 'sleep goal' })
   const todaySteps = physical.weeklySteps.find((x) => x.day === day)?.steps ?? 0
   const todayDistance = physical.weeklyDistanceKm.find((x) => x.day === day)?.km ?? 0
   const todayCalories = physical.weeklyCaloriesKcal.find((x) => x.day === day)?.kcal ?? 0
@@ -276,17 +288,20 @@ export default function Physical() {
   return (
     <div className="space-y-5">
 
+      {/* Walks saved on this phone that haven't uploaded yet */}
+      <PendingWalksCard />
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
-          <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Physical Activity</h1>
+          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Physical Activity</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 max-sm:w-full">
           <button
             type="button"
             onClick={() => setWalkOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all duration-200 max-sm:flex-1 max-sm:justify-center max-sm:py-3" style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}
+            className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-full bg-[#2E7D32] hover:bg-[#276b2b] transition-all duration-200 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
           >
             <Navigation size={15} />
             Start Walk
@@ -353,7 +368,7 @@ export default function Physical() {
           </div>
 
           {/* Recent activity */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #4CAF500A 0%, #4CAF5005 100%)`, border: `1px solid #4CAF5020` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-sm font-semibold text-black/80 dark:text-white/85">Recent activity</div>
@@ -399,20 +414,43 @@ export default function Physical() {
             )}
           </div>
 
-          {/* Charts 2x2 grid */}
-          <div className="grid md:grid-cols-2 gap-4">
-            {[
-              { title: 'Steps this week', sub: 'Daily step count', chart: <StepsBarChart data={physical.weeklySteps} /> },
-              { title: 'Distance this week', sub: 'Kilometres walked', chart: <DistanceLineChart data={physical.weeklyDistanceKm} /> },
-              { title: 'Calories burned', sub: 'Daily calorie burn', chart: <CaloriesLineChart data={physical.weeklyCaloriesKcal} /> },
-              { title: 'Sleep pattern', sub: 'Hours per night', chart: <SleepAreaChart data={physical.sleepHours} /> },
-            ].map(({ title, sub, chart }) => (
-              <div key={title} className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #4CAF500A 0%, #4CAF5005 100%)`, border: `1px solid #4CAF5020` }}>
-                <div className="text-sm font-semibold text-black/80 dark:text-white/85">{title}</div>
-                <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">{sub}</div>
-                <div className="h-44">{chart}</div>
+          {/* Your week as a journey and a night sky — the charts are one tap away */}
+          <div className="rounded-3xl p-5 lp-card">
+            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your walking journey</div>
+            <StepsJourney km={weekKm} />
+            <div className="mt-1 flex items-center gap-3 max-sm:flex-col max-sm:items-start">
+              <span className="text-sm text-black/60 dark:text-white/60 w-24 flex-shrink-0">Step goal</span>
+              <WeekDots values={physical.weeklySteps.map((x) => ({ day: x.day, value: x.steps || null }))} goal={stepGoal}
+                today={day} color="#22C55E" format={(v) => `${formatNumber(v)} steps`} />
+            </div>
+            {stepsSentence && <p className="text-sm text-black/55 dark:text-white/55 mt-3">{stepsSentence}</p>}
+          </div>
+
+          <div className="rounded-3xl p-5 lp-card">
+            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your nights</div>
+            <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug mb-4">
+              {sleepSentence ?? 'Log your sleep each morning and your week of nights will appear here.'}
+            </p>
+            <SleepNightSky nights={physical.sleepHours} goalHours={goals.goalSleepHours} today={day} />
+          </div>
+
+          <div className="rounded-3xl px-5 py-3 lp-card">
+            <SeeDetails label="See detailed charts">
+              <div className="grid md:grid-cols-2 gap-4">
+                {[
+                  { title: 'Steps this week', sub: 'Daily step count', chart: <StepsBarChart data={physical.weeklySteps} /> },
+                  { title: 'Distance this week', sub: 'Kilometres walked', chart: <DistanceLineChart data={physical.weeklyDistanceKm} /> },
+                  { title: 'Calories burned', sub: 'Daily calorie burn', chart: <CaloriesLineChart data={physical.weeklyCaloriesKcal} /> },
+                  { title: 'Sleep pattern', sub: 'Hours per night', chart: <SleepAreaChart data={physical.sleepHours} /> },
+                ].map(({ title, sub, chart }) => (
+                  <div key={title}>
+                    <div className="text-sm font-semibold text-black/80 dark:text-white/85">{title}</div>
+                    <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">{sub}</div>
+                    <div className="h-44">{chart}</div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </SeeDetails>
           </div>
         </div>
 

@@ -9,9 +9,10 @@
       content="LivoraPulse is a free wellness tracker built for Kenya and Africa. Track activity, Kenyan food and nutrition, screen time, focus, mood and eco habits in one LifePulse Score."
     />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://livorapulse.netlify.app/" />
+    <link rel="canonical" href="https://livorapulse.pages.dev/" />
     <meta name="theme-color" content="#4CAF50" />
     <link rel="icon" type="image/svg+xml" href="/logos/1.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <!-- Social sharing previews -->
     <meta property="og:type" content="website" />
@@ -22,10 +23,17 @@
       property="og:description"
       content="Track activity, Kenyan food and nutrition, screen time, focus, mood and eco habits in one LifePulse Score."
     />
-    <meta property="og:url" content="https://livorapulse.netlify.app/" />
+    <meta property="og:url" content="https://livorapulse.pages.dev/" />
+    <!-- Hosted on this site (not a third-party URL) so WhatsApp, Facebook etc. can
+         fetch it. Built by scripts/og-image.mjs; bump ?v= when the picture changes. -->
+    <meta property="og:image" content="https://livorapulse.pages.dev/og-image.jpg?v=1" />
+    <meta property="og:image:secure_url" content="https://livorapulse.pages.dev/og-image.jpg?v=1" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta
-      property="og:image"
-      content="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&h=630&fit=crop&q=80"
+      property="og:image:alt"
+      content="LivoraPulse: wellness that fits your life, with a daily LifePulse Score across activity, Kenyan food, focus, mood and eco habits."
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="LivoraPulse — Wellness Tracker Built for Kenya &amp; Africa" />
@@ -33,9 +41,10 @@
       name="twitter:description"
       content="Track activity, Kenyan food and nutrition, screen time, focus, mood and eco habits in one LifePulse Score."
     />
+    <meta name="twitter:image" content="https://livorapulse.pages.dev/og-image.jpg?v=1" />
     <meta
-      name="twitter:image"
-      content="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&h=630&fit=crop&q=80"
+      name="twitter:image:alt"
+      content="LivoraPulse: wellness that fits your life, with a daily LifePulse Score across activity, Kenyan food, focus, mood and eco habits."
     />
 
     <!-- Structured data (schema.org) -->
@@ -45,28 +54,28 @@
         "@graph": [
           {
             "@type": "WebSite",
-            "@id": "https://livorapulse.netlify.app/#website",
-            "url": "https://livorapulse.netlify.app/",
+            "@id": "https://livorapulse.pages.dev/#website",
+            "url": "https://livorapulse.pages.dev/",
             "name": "LivoraPulse",
             "inLanguage": "en"
           },
           {
             "@type": "Organization",
-            "@id": "https://livorapulse.netlify.app/#organization",
+            "@id": "https://livorapulse.pages.dev/#organization",
             "name": "LivoraPulse",
-            "url": "https://livorapulse.netlify.app/",
-            "logo": "https://livorapulse.netlify.app/logos/1.svg",
+            "url": "https://livorapulse.pages.dev/",
+            "logo": "https://livorapulse.pages.dev/logos/1.svg",
             "areaServed": ["Kenya", "Africa"]
           },
           {
             "@type": "WebApplication",
             "name": "LivoraPulse",
-            "url": "https://livorapulse.netlify.app/",
+            "url": "https://livorapulse.pages.dev/",
             "applicationCategory": "HealthApplication",
             "operatingSystem": "Web",
             "description": "A wellness tracker built for Kenya and Africa that combines physical activity, Kenyan food and nutrition, digital usage, productivity, mood and eco habits into one LifePulse Score.",
             "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KES" },
-            "publisher": { "@id": "https://livorapulse.netlify.app/#organization" }
+            "publisher": { "@id": "https://livorapulse.pages.dev/#organization" }
           }
         ]
       }

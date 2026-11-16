@@ -61,8 +61,13 @@ export type FocusTimerStatus = 'idle' | 'running' | 'paused'
 export type FocusTimerState = {
   status: FocusTimerStatus
   durationSec: number
+  /** Seconds left; exact while paused, refreshed from endsAt while running */
   remainingSec: number
   startedAt: number | null
+  /** When a running timer reaches zero (ms). Null while idle or paused. */
+  endsAt?: number | null
+  /** What the user is working on, saved with the session */
+  label?: string
 }
 
 export type FocusSession = {
@@ -98,9 +103,14 @@ export type AppState = {
   onboarding: UserOnboardingProfile
 
 
-  // Today's LifePulse Score, calculated by the server (the single source of truth)
+  // The LifePulse Score, calculated by the server (the single source of truth):
+  // the last 7 days, today counting most, so it doesn't reset at midnight
   dashboard: {
     score: number
+    /** False until anything has been logged in the last 7 days (score is then 0 and shown as "—") */
+    scoreReady?: boolean
+    /** Each area's 7-day value behind the score; null = not tracked this week */
+    rolling?: Record<ScoreDimension, number | null>
     insight: string
     loading: boolean
     components?: Record<ScoreDimension, number>

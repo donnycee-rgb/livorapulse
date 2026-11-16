@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { AppCategory, AppState, DayKey, MoodEmoji, ScoreDimension, ThemeMode, TransportMode, Units, UserGoals } from '../data/types'
 import { seedState } from '../data/seed'
 import { apiGet, apiPost, apiPut } from '../api/client'
+import { elapsedAt, endedAtFor, remainingAt } from '../utils/focusTimer'
 
 // Same defaults as the server (GoalService.DEFAULT_GOALS)
 const DEFAULT_GOALS: Required<UserGoals> = {
@@ -87,7 +88,9 @@ type EcoEntry = {
 
 type ScoreResponse = {
   date: string
-  score: number
+  /** Rolling 7 days; null until anything has been logged this week */
+  score: number | null
+  rolling?: Record<ScoreDimension, number | null>
   insight: string
   components: Record<ScoreDimension, number>
   logged: Record<ScoreDimension, boolean>
@@ -368,7 +371,8 @@ export type AppActions = {
   pushNotification: (n: Omit<AppState['notifications'][number], 'id' | 'timestamp' | 'read'>) => void
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
-  addActivity: (input: { steps: number; distanceKm: number; caloriesKcal: number; note?: string; trail?: Array<{ lat: number; lng: number }>; durationSec?: number }) => Promise<void>
+  /** `startedAt` (ISO) files the activity under the day it happened, even if it's saved later */
+  addActivity: (input: { steps: number; distanceKm: number; caloriesKcal: number; note?: string; trail?: Array<{ lat: number; lng: number }>; durationSec?: number; startedAt?: string }) => Promise<void>
   updateSleepForToday: (hours: number) => Promise<void>
   addScreenSession: (input: { category: AppCategory; minutes: number }) => Promise<void>
   toggleFocusMode: () => void
@@ -377,7 +381,6 @@ export type AppActions = {
   resumeFocusTimer: () => void
   tickFocusTimer: () => void
   endFocusTimer: (reason?: 'completed' | 'manual') => Promise<void>
-  addStudySession: () => Promise<void>
   addEcoAction: (input: { type: string; impactKgCO2: number; category?: string }) => Promise<void>
   setTransportMode: (mode: TransportMode) => Promise<void>
   setMoodEmoji: (emoji: MoodEmoji) => Promise<void>
@@ -446,7 +449,7 @@ export const useAppStore = create<AppStore>()(
       // ── Physical ──────────────────────────────────────────────────────────
       // FIX: Now async — waits for API confirmation before showing success
       // FIX: Activity and sleep are separate API calls — no more sleepMinutes: 0
-      addActivity: async ({ steps, distanceKm, caloriesKcal, note, trail, durationSec }) => {
+      addActivity: async ({ steps, distanceKm, caloriesKcal, note, trail, durationSec, startedAt }) => {
         const day = getDayKey()
         // Optimistic update
         set((s) => ({
@@ -471,6 +474,7 @@ export const useAppStore = create<AppStore>()(
             sleepMinutes: 0,
             note: note ?? '',
             trail: trail ?? [],
+            ...(startedAt ? { timestamp: startedAt } : {}),
           })
           scheduleScoreSync()
           get().pushNotification({
@@ -488,7 +492,8 @@ export const useAppStore = create<AppStore>()(
               activityLog: s.physical.activityLog.filter((a) => a.steps !== steps),
             },
           }))
-          throw new Error('Failed to save activity. Please check your connection and try again.')
+          // Pass the real reason on (offline, signed out, server error) instead of guessing
+          throw err instanceof Error ? err : new Error('Failed to save activity. Please try again.')
         }
       },
 
@@ -574,66 +579,82 @@ export const useAppStore = create<AppStore>()(
       },
 
       // ── Productivity ──────────────────────────────────────────────────────
+      // The timer runs off the clock (endsAt), so it stays right across pages,
+      // locked phones and reloads. FocusTimerTicker (in the Layout) calls
+      // tickFocusTimer every second on every page.
       startFocusTimer: (minutes, label = 'Focus session') => {
         const durationSec = Math.max(5 * 60, Math.round(minutes * 60))
-        set((s) => ({
-          productivity: {
-            ...s.productivity,
-            focusTimer: { status: 'running', durationSec, remainingSec: durationSec, startedAt: now() },
-          },
-          meta: { lastUpdatedAt: now() },
-        }))
-        get().pushNotification({ title: 'Focus started', message: label })
-      },
-      pauseFocusTimer: () => {
-        set((s) => ({
-          productivity: { ...s.productivity, focusTimer: { ...s.productivity.focusTimer, status: 'paused' } },
-          meta: { lastUpdatedAt: now() },
-        }))
-      },
-      resumeFocusTimer: () => {
-        set((s) => ({
-          productivity: { ...s.productivity, focusTimer: { ...s.productivity.focusTimer, status: 'running' } },
-          meta: { lastUpdatedAt: now() },
-        }))
-      },
-      tickFocusTimer: () => {
-        const t = get().productivity.focusTimer
-        if (t.status !== 'running' || t.remainingSec <= 0) return
+        const start = now()
+        const cleanLabel = label.trim() || 'Focus session'
         set((s) => ({
           productivity: {
             ...s.productivity,
             focusTimer: {
-              ...s.productivity.focusTimer,
-              remainingSec: Math.max(0, s.productivity.focusTimer.remainingSec - 1),
+              status: 'running', durationSec, remainingSec: durationSec,
+              startedAt: start, endsAt: start + durationSec * 1000, label: cleanLabel,
             },
           },
+          meta: { lastUpdatedAt: now() },
         }))
-        if (get().productivity.focusTimer.remainingSec === 0) get().endFocusTimer('completed')
+        get().pushNotification({ title: 'Focus started', message: cleanLabel })
+      },
+      pauseFocusTimer: () => {
+        set((s) => {
+          const t = s.productivity.focusTimer
+          if (t.status !== 'running') return {}
+          return {
+            productivity: { ...s.productivity, focusTimer: { ...t, status: 'paused', remainingSec: remainingAt(t, now()), endsAt: null } },
+            meta: { lastUpdatedAt: now() },
+          }
+        })
+      },
+      resumeFocusTimer: () => {
+        set((s) => {
+          const t = s.productivity.focusTimer
+          if (t.status !== 'paused') return {}
+          return {
+            productivity: { ...s.productivity, focusTimer: { ...t, status: 'running', endsAt: now() + t.remainingSec * 1000 } },
+            meta: { lastUpdatedAt: now() },
+          }
+        })
+      },
+      tickFocusTimer: () => {
+        const t = get().productivity.focusTimer
+        if (t.status !== 'running') return
+        // A timer saved by an older version has no end time yet: give it one
+        if (t.endsAt == null) {
+          set((s) => ({ productivity: { ...s.productivity, focusTimer: { ...t, endsAt: now() + t.remainingSec * 1000 } } }))
+          return
+        }
+        const remainingSec = remainingAt(t, now())
+        if (remainingSec !== t.remainingSec) {
+          set((s) => ({ productivity: { ...s.productivity, focusTimer: { ...s.productivity.focusTimer, remainingSec } } }))
+        }
+        if (remainingSec === 0) void get().endFocusTimer('completed').catch(() => null)
       },
 
       // FIX: Now async — waits for API before showing success
       endFocusTimer: async (reason = 'manual') => {
         const t = get().productivity.focusTimer
-        const idleTimer = { status: 'idle' as const, durationSec: 1500, remainingSec: 1500, startedAt: null }
+        const idleTimer = { status: 'idle' as const, durationSec: 1500, remainingSec: 1500, startedAt: null, endsAt: null }
 
         if (!t.startedAt) {
           set((s) => ({ productivity: { ...s.productivity, focusTimer: idleTimer }, meta: { lastUpdatedAt: now() } }))
           return
         }
 
-        const elapsed = t.durationSec - t.remainingSec
+        const elapsed = elapsedAt(t, now())
         // Don't save sessions under 1 minute — prevents accidental tiny saves
         if (elapsed < 60) {
           set((s) => ({ productivity: { ...s.productivity, focusTimer: idleTimer }, meta: { lastUpdatedAt: now() } }))
           return
         }
 
-        const endedAt = now()
+        const endedAt = endedAtFor(t, now())
         const minutes = Math.max(1, Math.round(elapsed / 60))
         const day = getDayKey()
         const startedAt = t.startedAt
-        const sessionLabel = reason === 'completed' ? 'Completed focus' : 'Focus session'
+        const sessionLabel = t.label?.trim() || (reason === 'completed' ? 'Completed focus' : 'Focus session')
 
         // Optimistic update
         set((s) => ({
@@ -669,40 +690,6 @@ export const useAppStore = create<AppStore>()(
             },
           }))
           throw new Error('Failed to save focus session. Please try again.')
-        }
-      },
-
-      // FIX: Now async — waits for API
-      addStudySession: async () => {
-        const day = getDayKey()
-        const startedAt = new Date()
-        const endedAt = new Date(startedAt.getTime() + 30 * 60 * 1000)
-
-        set((s) => ({
-          productivity: {
-            ...s.productivity,
-            studySessionsByDay: incrementByDay(s.productivity.studySessionsByDay, day, 'sessions', 1),
-          },
-          meta: { lastUpdatedAt: now() },
-        }))
-
-        try {
-          await apiPost('/api/productivity/session', {
-            kind: 'STUDY',
-            label: 'Study session',
-            startedAt: startedAt.toISOString(),
-            endedAt: endedAt.toISOString(),
-            durationSec: 1800,
-          })
-          scheduleScoreSync()
-        } catch {
-          set((s) => ({
-            productivity: {
-              ...s.productivity,
-              studySessionsByDay: incrementByDay(s.productivity.studySessionsByDay, day, 'sessions', -1),
-            },
-          }))
-          throw new Error('Failed to save study session. Please try again.')
         }
       },
 
@@ -883,6 +870,9 @@ export const useAppStore = create<AppStore>()(
               // Preserve preferences and notifications from current session
               preferences: s.preferences,
               notifications: s.notifications,
+              // A focus session in progress lives only on this device: keep it even
+              // if the productivity request below fails (e.g. a weak connection)
+              productivity: { ...clean.productivity, focusTimer: s.productivity.focusTimer },
             }
 
             if (physicalRes.status === 'fulfilled' && physicalRes.value.data) {
@@ -1021,7 +1011,9 @@ export const useAppStore = create<AppStore>()(
           set((s) => ({
             dashboard: {
               ...s.dashboard,
-              score: res.score,
+              score: res.score ?? 0,
+              scoreReady: res.score !== null,
+              rolling: res.rolling,
               insight: res.insight ?? s.dashboard.insight,
               loading: false,
               components: res.components,
@@ -1048,12 +1040,9 @@ export const useAppStore = create<AppStore>()(
         digital: s.digital,
         productivity: {
           ...s.productivity,
-          focusTimer: {
-            ...s.productivity.focusTimer,
-            // Don't persist running state — pause it on reload
-            status: s.productivity.focusTimer.status === 'running' ? 'paused' : s.productivity.focusTimer.status,
-            startedAt: null,
-          },
+          // Kept as is (including startedAt and endsAt), so a session in
+          // progress carries on after a reload instead of being lost
+          focusTimer: s.productivity.focusTimer,
         },
         environment: s.environment,
         mood: s.mood,

@@ -1,17 +1,18 @@
 import {
-  Activity, MonitorSmartphone, Timer, Heart,
-  TrendingUp, TrendingDown, Minus, Zap,
-  Flame, BarChart3, Leaf, Moon,
-  ArrowRight, CheckCircle2, UtensilsCrossed, Droplets,
+  Activity, MonitorSmartphone, Timer, Heart, Moon, Flame,
+  ArrowRight, Check, UtensilsCrossed, Droplets, Leaf, Sparkles,
 } from 'lucide-react'
 import { useMemo, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import clsx from 'clsx'
 
 import ActivityAnalyticsChart from '../components/charts/ActivityAnalyticsChart'
+import HabitWeekDots from '../components/visuals/WeekDots'
+import SeeDetails from '../components/visuals/SeeDetails'
+import { weekSentence } from '../lib/weekStory'
 import { useAppStore } from '../store/useAppStore'
-import { useAuthStore } from '../store/useAuthStore'
-import { selectDailyInsight, selectDimensionScores, selectLifePulseScore, selectProgressiveGoals, selectStreak } from '../store/selectors'
+import { selectDailyInsight, selectLifePulseScore, selectProgressiveGoals, selectRollingScores, selectScoreReady, selectStreak } from '../store/selectors'
 import { formatMinutesToHM, formatNumber } from '../utils/format'
 import { getDayKey } from '../utils/date'
 import { apiGet } from '../api/client'
@@ -20,165 +21,112 @@ import CyclePhaseCard from '../components/CyclePhaseCard'
 import TopInsightCard from '../components/TopInsightCard'
 import HealthFlags from '../components/HealthFlags'
 import ExperimentCheckCard from '../components/ExperimentCheckCard'
+import TodayOutlookCard from '../components/TodayOutlookCard'
+import { useMoodModel } from '../components/WhatHelpsYou'
 
 // ---------------------------------------------------------------------------
-// Helpers — unchanged
+// The dashboard is a calm "Today" page in the landing page's style: white
+// cards, one green accent, a serif headline, and progress shown as
+// "x of your goal" rather than red "Low" badges. Each number appears once.
 // ---------------------------------------------------------------------------
+
+const ACCENT = '#3D9A41' // --lp-accent on the landing page
+const WATER_GOAL = 8
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
+
+/** Shared card look: white, soft shadow, hairline border — like the landing page. */
+const card = 'lp-card rounded-3xl'
+
+/** "1h", "1h 30m", "45m" — drops the "0m" the shared formatter keeps. */
+function hm(minutes: number) {
+  const t = formatMinutesToHM(Math.round(minutes))
+  return t.endsWith(' 0m') ? t.slice(0, -3) : t
+}
+
 function firstName(full: string) {
   return full.trim().split(/\s+/)[0] ?? full
 }
-function getScoreColor(score: number) {
-  if (score >= 80) return '#4CAF50'
-  if (score >= 60) return '#FFA500'
-  if (score >= 40) return '#00BCD4'
-  return '#FF6B6B'
+
+/** Kind words for the score — encouraging at every level. */
+function scoreWords(score: number, ready: boolean) {
+  if (!ready) return 'getting started'
+  if (score >= 80) return 'thriving'
+  if (score >= 60) return 'doing well'
+  if (score >= 40) return 'finding your rhythm'
+  return 'building momentum'
 }
-function getScoreLabel(score: number) {
-  if (score >= 80) return 'Excellent'
-  if (score >= 60) return 'Good'
-  if (score >= 40) return 'Fair'
-  return 'Needs work'
-}
-function getStreakLabel(streak: number) {
-  if (streak >= 30) return 'On fire'
-  if (streak >= 14) return 'Consistent'
-  if (streak >= 7) return 'Building'
-  if (streak >= 3) return 'Getting started'
-  return 'Day one'
+
+function moodWord(stress: number) {
+  return ['Very calm', 'Calm', 'Okay', 'A bit tense', 'Stressed'][Math.min(Math.max(stress, 1), 5) - 1]
 }
 
 // ---------------------------------------------------------------------------
-// Sparkline — tiny inline SVG trend line
+// Score ring — one calm green, counts up once
 // ---------------------------------------------------------------------------
-function Sparkline({ values, color }: { values: number[]; color: string }) {
-  if (!values.length) return null
-  const max = Math.max(...values, 1)
-  const w = 64; const h = 24
-  const pts = values.map((v, i) => {
-    const x = (i / (values.length - 1)) * w
-    const y = h - (v / max) * (h - 4) - 2
-    return `${x},${y}`
-  }).join(' ')
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="opacity-70">
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8"
-        strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Score ring — gradient version
-// ---------------------------------------------------------------------------
-function ScoreRing({ score }: { score: number }) {
-  const r = 54
+function ScoreRing({ score, ready }: { score: number; ready: boolean }) {
+  const r = 52
   const circ = 2 * Math.PI * r
-  const [displayed, setDisplayed] = useState(0)
-  const color = getScoreColor(score)
+  const [shown, setShown] = useState(0)
 
   useEffect(() => {
     let start: number | null = null
+    let raf = 0
     const step = (ts: number) => {
-      if (!start) start = ts
+      if (start === null) start = ts
       const p = Math.min((ts - start) / 900, 1)
-      setDisplayed(Math.round(score * (1 - Math.pow(1 - p, 3))))
-      if (p < 1) requestAnimationFrame(step)
+      setShown(Math.round(score * (1 - Math.pow(1 - p, 3))))
+      if (p < 1) raf = requestAnimationFrame(step)
     }
-    requestAnimationFrame(step)
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
   }, [score])
 
-  const gradId = `scoreGrad-${score}`
-
   return (
-    <div className="relative w-36 h-36 max-sm:w-[104px] max-sm:h-[104px] flex-shrink-0">
-      {/* Outer glow */}
-      <div className="absolute inset-2 rounded-full blur-xl opacity-30"
-        style={{ background: color }} />
-      <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90 relative z-10">
-        <defs>
-          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={color} stopOpacity="0.4" />
-            <stop offset="100%" stopColor={color} />
-          </linearGradient>
-        </defs>
-        {/* Track */}
-        <circle cx="60" cy="60" r={r} fill="none"
-          stroke="currentColor" strokeWidth="10"
-          className="text-black/[0.06] dark:text-white/[0.07]" />
-        {/* Progress */}
-        <circle cx="60" cy="60" r={r} fill="none"
-          stroke={`url(#${gradId})`} strokeWidth="10"
-          strokeLinecap="round" strokeDasharray={circ}
-          strokeDashoffset={circ * (1 - displayed / 100)}
-          style={{ transition: 'stroke-dashoffset 0.03s linear' }} />
+    <div className="relative w-[136px] h-[136px] max-sm:w-[112px] max-sm:h-[112px] flex-shrink-0">
+      <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+        <circle cx="60" cy="60" r={r} fill="none" strokeWidth="9"
+          className="stroke-[#E8F5E9] dark:stroke-white/[0.07]" />
+        {ready && (
+          <circle cx="60" cy="60" r={r} fill="none" stroke={ACCENT} strokeWidth="9"
+            strokeLinecap="round" strokeDasharray={circ}
+            strokeDashoffset={circ * (1 - shown / 100)} />
+        )}
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-        <span className="text-3xl max-sm:text-[26px] font-black leading-none" style={{ color }}>{displayed}</span>
-        <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5"
-          style={{ color, opacity: 0.6 }}>score</span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-[34px] max-sm:text-[28px] font-bold leading-none text-black/85 dark:text-white/90 tabular-nums">
+          {ready ? shown : '–'}
+        </span>
+        <span className="text-[11px] text-black/40 dark:text-white/40 mt-1">of 100</span>
       </div>
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Streak bars — unchanged logic, new style
+// This week — seven quiet dots, filled on active days
 // ---------------------------------------------------------------------------
-function StreakDisplay({ streak }: { streak: number }) {
-  const bars = Array.from({ length: 7 }, (_, i) => i < Math.min(streak, 7))
-  return (
-    <div className="flex items-end gap-1.5">
-      {bars.map((active, i) => (
-        <motion.div key={i}
-          initial={{ scaleY: 0 }} animate={{ scaleY: 1 }}
-          transition={{ delay: i * 0.06, duration: 0.4, ease: 'easeOut' }}
-          className="w-3 rounded-sm origin-bottom"
-          style={{
-            height: active ? `${Math.min(10 + i * 4, 30)}px` : '8px',
-            background: active
-              ? `linear-gradient(to top, #4CAF50, #81C784)`
-              : 'rgba(0,0,0,0.08)',
-          }} />
-      ))}
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Week heatmap — unchanged logic, new style
-// ---------------------------------------------------------------------------
-function WeekHeatmap() {
+function WeekDots() {
   const weeklySteps = useAppStore((s) => s.physical.weeklySteps)
   const weeklyFocus = useAppStore((s) => s.productivity.focusMinutesByDay)
   const goals = useAppStore(selectProgressiveGoals)
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
   const today = getDayKey()
-  const todayIdx = days.indexOf(today)
+  const todayIdx = DAYS.indexOf(today)
 
   return (
-    <div className="flex items-center gap-1.5">
-      {days.map((day, i) => {
-        const steps = weeklySteps.find(x => x.day === day)?.steps ?? 0
-        const focus = weeklyFocus.find(x => x.day === day)?.minutes ?? 0
-        const activity = (Math.min(steps / goals.goalStepsPerDay, 1) + Math.min(focus / goals.goalFocusMinutes, 1)) / 2
-        const isFuture = i > todayIdx
-        const isToday = day === today
-        const opacity = isFuture ? 0 : activity
-
+    <div className="flex items-center gap-2" aria-label="Activity this week">
+      {DAYS.map((day, i) => {
+        const steps = weeklySteps.find((x) => x.day === day)?.steps ?? 0
+        const focus = weeklyFocus.find((x) => x.day === day)?.minutes ?? 0
+        const level = (Math.min(steps / goals.goalStepsPerDay, 1) + Math.min(focus / goals.goalFocusMinutes, 1)) / 2
+        const future = i > todayIdx
         return (
-          <div key={day} className="flex flex-col items-center gap-1.5">
-            <div className="w-7 h-7 rounded-xl transition-all duration-300 relative overflow-hidden"
-              style={{
-                background: isToday
-                  ? `rgba(76,175,80,${Math.max(opacity, 0.15)})`
-                  : `rgba(76,175,80,${opacity * 0.85})`,
-                border: isToday ? '2px solid #4CAF50' : '1px solid rgba(76,175,80,0.15)',
-              }}>
-              {isToday && (
-                <div className="absolute inset-0 bg-lp-primary/10 animate-pulse" />
-              )}
-            </div>
-            <span className={`text-[9px] font-semibold ${isToday ? 'text-lp-primary' : 'text-black/25 dark:text-white/20'}`}>
+          <div key={day} className="flex flex-col items-center gap-1">
+            <div
+              className={clsx('w-3 h-3 rounded-full', day === today && 'ring-2 ring-offset-2 ring-[#3D9A41]/40 ring-offset-white dark:ring-offset-transparent')}
+              style={{ background: future ? 'transparent' : level > 0 ? `rgba(61,154,65,${0.25 + level * 0.75})` : 'rgba(0,0,0,0.08)', border: future ? '1px dashed rgba(0,0,0,0.12)' : undefined }}
+              title={future ? day : `${day}: ${Math.round(level * 100)}% of your step and focus goals`}
+            />
+            <span className={clsx('text-[10px]', day === today ? 'font-semibold text-[#3D9A41]' : 'text-black/30 dark:text-white/30')}>
               {day.slice(0, 1)}
             </span>
           </div>
@@ -189,149 +137,38 @@ function WeekHeatmap() {
 }
 
 // ---------------------------------------------------------------------------
-// Dimension metric card — inspired by inspo
+// One tile in "Your day": icon, value, and progress toward the goal
 // ---------------------------------------------------------------------------
-interface DimensionCardProps {
+function DayTile({ label, value, note, progress, icon: Icon, tint, onClick, delay }: {
   label: string
   value: string
-  sub?: string
-  icon: React.ReactNode
-  color: string
-  trend?: 'up' | 'down' | 'flat'
-  to: string
-  sparkValues?: number[]
-}
-
-function DimensionCard({ label, value, sub, icon, color, trend, to, sparkValues }: DimensionCardProps) {
-  const navigate = useNavigate()
-  const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus
-  const trendColor = trend === 'up' ? '#4CAF50' : trend === 'down' ? '#FF6B6B' : '#94a3b8'
-  const trendLabel = trend === 'up' ? '+Good' : trend === 'down' ? 'Low' : 'Steady'
-
-  return (
-    <motion.button type="button" onClick={() => navigate(to)}
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      whileTap={{ scale: 0.97 }}
-      className="w-full text-left rounded-2xl p-4 relative overflow-hidden group transition-all duration-200"
-      style={{
-        background: `linear-gradient(135deg, ${color}10 0%, ${color}05 100%)`,
-        border: `1px solid ${color}25`,
-        boxShadow: `0 4px 20px ${color}10`,
-      }}>
-      {/* Background blob */}
-      <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full blur-2xl"
-        style={{ background: color, opacity: 0.12 }} />
-
-      <div className="relative z-10">
-        {/* Top row */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: `${color}20` }}>
-            <div style={{ color }}>{icon}</div>
-          </div>
-          <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full"
-            style={{ background: `${trendColor}15` }}>
-            <TrendIcon size={9} style={{ color: trendColor }} />
-            <span className="text-[9px] max-sm:text-[10px] font-bold" style={{ color: trendColor }}>{trendLabel}</span>
-          </div>
-        </div>
-
-        {/* Value */}
-        <div className="text-[10px] font-semibold uppercase tracking-widest mb-0.5"
-          style={{ color: `${color}99` }}>{label}</div>
-        <div className="text-xl font-black text-black/85 dark:text-white/90 leading-none">{value}</div>
-        {sub && <div className="text-[10px] max-sm:text-[11px] text-black/35 dark:text-white/30 mt-0.5">{sub}</div>}
-
-        {/* Sparkline */}
-        {sparkValues && sparkValues.some(v => v > 0) && (
-          <div className="mt-2">
-            <Sparkline values={sparkValues} color={color} />
-          </div>
-        )}
-      </div>
-    </motion.button>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Water ring — unchanged logic, new style
-// ---------------------------------------------------------------------------
-function WaterRing({ glasses, goal = 8, onClick }: {
-  glasses: number; goal?: number; onClick: () => void
+  note: string
+  progress: number | null // 0..1, or null when a bar doesn't fit (mood)
+  icon: typeof Activity
+  tint: string
+  onClick: () => void
+  delay: number
 }) {
-  const pct = Math.min(glasses / goal, 1)
-  const r = 20; const cx = 26; const cy = 26
-  const circ = 2 * Math.PI * r
-  const filled = pct * circ
-
   return (
-    <button type="button" onClick={onClick} className="relative flex-shrink-0 group"
-      title={`Water: ${glasses}/${goal} glasses`}>
-      <div className="relative w-[52px] h-[52px]">
-        <svg width="52" height="52" viewBox="0 0 52 52" className="-rotate-90">
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(59,130,246,0.12)" strokeWidth="5" />
-          <motion.circle cx={cx} cy={cy} r={r} fill="none"
-            stroke="#3B82F6" strokeWidth="5" strokeLinecap="round"
-            strokeDasharray={`${filled} ${circ}`}
-            initial={{ strokeDasharray: `0 ${circ}` }}
-            animate={{ strokeDasharray: `${filled} ${circ}` }}
-            transition={{ duration: 0.8, ease: 'easeOut' }} />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <Droplets size={12} className="text-blue-400" style={{ opacity: 0.5 + pct * 0.5 }} />
-          <span className="text-[11px] font-black text-blue-500 leading-none mt-0.5">{glasses}</span>
-        </div>
+    <motion.button type="button" onClick={onClick}
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay }}
+      className={clsx(card, 'w-full text-left p-4 max-sm:p-3.5 group hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(16,24,40,0.07)] transition-all duration-200')}>
+      <div className="flex items-center gap-2">
+        <span className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: `${tint}1A`, color: tint }}>
+          <Icon size={14} />
+        </span>
+        <span className="text-[13px] text-black/55 dark:text-white/55">{label}</span>
       </div>
-      {glasses >= goal && (
-        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-          className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-blue-500 flex items-center justify-center">
-          <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        </motion.div>
+      <div className="mt-3 text-[22px] max-sm:text-xl font-semibold text-black/85 dark:text-white/90 leading-none tabular-nums">{value}</div>
+      <div className="mt-1.5 text-xs text-black/40 dark:text-white/40 truncate">{note}</div>
+      {progress !== null && (
+        <div className="mt-3 h-1 rounded-full bg-black/[0.05] dark:bg-white/[0.07] overflow-hidden">
+          <motion.div className="h-full rounded-full" style={{ background: ACCENT }}
+            initial={{ width: 0 }} animate={{ width: `${Math.round(Math.min(progress, 1) * 100)}%` }}
+            transition={{ duration: 0.8, delay: delay + 0.15, ease: 'easeOut' }} />
+        </div>
       )}
-    </button>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Greeting illustration — inline SVG wellness scene
-// ---------------------------------------------------------------------------
-function WellnessSVG() {
-  return (
-    <svg viewBox="0 0 180 140" className="w-full h-full" fill="none">
-      {/* Body */}
-      <ellipse cx="90" cy="105" rx="28" ry="8" fill="rgba(76,175,80,0.12)" />
-      <rect x="75" y="72" width="30" height="36" rx="8" fill="rgba(76,175,80,0.25)" />
-      {/* Head */}
-      <circle cx="90" cy="58" r="16" fill="rgba(76,175,80,0.3)" />
-      <circle cx="84" cy="55" r="2.5" fill="rgba(76,175,80,0.8)" />
-      <circle cx="96" cy="55" r="2.5" fill="rgba(76,175,80,0.8)" />
-      <path d="M85 63 Q90 67 95 63" stroke="rgba(76,175,80,0.8)" strokeWidth="1.5" strokeLinecap="round" />
-      {/* Arms */}
-      <path d="M75 80 Q60 75 58 65" stroke="rgba(76,175,80,0.4)" strokeWidth="6" strokeLinecap="round" />
-      <path d="M105 80 Q120 75 122 65" stroke="rgba(76,175,80,0.4)" strokeWidth="6" strokeLinecap="round" />
-      {/* Phone in right hand */}
-      <rect x="118" y="56" width="10" height="16" rx="2.5" fill="rgba(76,175,80,0.5)" />
-      <rect x="120" y="58" width="6" height="9" rx="1" fill="rgba(76,175,80,0.8)" />
-      {/* Legs */}
-      <path d="M84 108 L80 128" stroke="rgba(76,175,80,0.4)" strokeWidth="6" strokeLinecap="round" />
-      <path d="M96 108 L100 128" stroke="rgba(76,175,80,0.4)" strokeWidth="6" strokeLinecap="round" />
-      {/* Floating hearts */}
-      <path d="M130 30 C130 28 128 26 126 28 C124 26 122 28 122 30 C122 33 126 36 126 36 C126 36 130 33 130 30Z"
-        fill="#FF6B6B" opacity="0.6" />
-      <path d="M148 45 C148 43.5 146.5 42 145 43.5 C143.5 42 142 43.5 142 45 C142 47 145 49 145 49 C145 49 148 47 148 45Z"
-        fill="#FF6B6B" opacity="0.4" />
-      {/* Heartbeat line */}
-      <polyline points="20,70 35,70 40,58 45,82 50,58 55,82 60,70 75,70"
-        stroke="rgba(76,175,80,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      {/* Sparkles */}
-      <circle cx="150" cy="25" r="2" fill="#FFA500" opacity="0.7" />
-      <circle cx="35" cy="40" r="1.5" fill="#4CAF50" opacity="0.6" />
-      <circle cx="160" cy="70" r="1.5" fill="#00BCD4" opacity="0.6" />
-      <path d="M152 15 L153 18 L156 19 L153 20 L152 23 L151 20 L148 19 L151 18Z"
-        fill="#FFA500" opacity="0.5" />
-    </svg>
+    </motion.button>
   )
 }
 
@@ -341,11 +178,13 @@ function WellnessSVG() {
 export default function Dashboard() {
   const navigate = useNavigate()
   const user = useAppStore((s) => s.user)
-  const lastUpdatedAt = useAppStore((s) => s.meta.lastUpdatedAt)
   const score = useAppStore(selectLifePulseScore)
   const insight = useAppStore(selectDailyInsight)
-  const dimensionScores = useAppStore(selectDimensionScores)
-  const stepGoal = useAppStore((s) => selectProgressiveGoals(s).goalStepsPerDay)
+  const dimensionScores = useAppStore(selectRollingScores)
+  const scoreReady = useAppStore(selectScoreReady)
+  const goals = useAppStore(selectProgressiveGoals)
+  const streak = useAppStore(selectStreak)
+  const moodModel = useMoodModel()
 
   const day = getDayKey()
   const steps = useAppStore((s) => s.physical.weeklySteps.find((x) => x.day === day)?.steps ?? 0)
@@ -355,36 +194,26 @@ export default function Dashboard() {
   const stressScore = useAppStore((s) => s.mood.today.stressScore)
   const [todayCalories, setTodayCalories] = useState(0)
   const [todayWater, setTodayWater] = useState(0)
-  const calorieGoal = useAppStore((s) => selectProgressiveGoals(s).goalCaloriesPerDay)
 
   useEffect(() => {
     apiGet<{ success: boolean; data: { totals: { calories: number } } }>('/api/nutrition/today')
-      .then(r => {
-        const cal = Math.round(r.data.totals.calories)
-        setTodayCalories(cal)
-      }).catch(() => null)
+      .then((r) => setTodayCalories(Math.round(r.data.totals.calories))).catch(() => null)
     apiGet<{ success: boolean; data: { glasses: number } }>('/api/nutrition/water/today')
-      .then(r => setTodayWater(r.data.glasses)).catch(() => null)
+      .then((r) => setTodayWater(r.data.glasses)).catch(() => null)
   }, [])
 
-  const ecoActions = useAppStore((s) => s.environment.ecoActions.filter(a => {
-    const d = new Date(a.timestamp)
-    const now = new Date()
-    return d.toDateString() === now.toDateString()
-  }).length)
+  const ecoActions = useAppStore((s) => s.environment.ecoActions.filter((a) =>
+    new Date(a.timestamp).toDateString() === new Date().toDateString()).length)
 
   const weeklySteps = useAppStore((s) => s.physical.weeklySteps)
   const weeklyScreen = useAppStore((s) => s.digital.weeklyScreenTimeMin)
   const weeklyFocus = useAppStore((s) => s.productivity.focusMinutesByDay)
 
-  const streak = useAppStore(selectStreak)
-
   const chartData = useMemo(() => {
     const stepsByDay = new Map(weeklySteps.map((x) => [x.day, x.steps]))
     const screenByDay = new Map(weeklyScreen.map((x) => [x.day, x.minutes]))
     const focusByDay = new Map(weeklyFocus.map((x) => [x.day, x.minutes]))
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
-    return days.map((d) => ({
+    return DAYS.map((d) => ({
       day: d,
       steps: stepsByDay.get(d) ?? 0,
       screenMin: screenByDay.get(d) ?? 0,
@@ -392,352 +221,208 @@ export default function Dashboard() {
     }))
   }, [weeklySteps, weeklyScreen, weeklyFocus])
 
-  // Sparkline data — last 7 days per metric
-  const stepsSparkline = weeklySteps.map(x => x.steps)
-  const screenSparkline = weeklyScreen.map(x => x.minutes)
-  const focusSparkline = weeklyFocus.map(x => x.minutes)
+  const weeklySleep = useAppStore((s) => s.physical.sleepHours)
+  // "This week": each habit as seven hearts that fill toward the day's goal
+  const weekRows = [
+    { label: 'Steps', icon: Activity, color: '#22C55E', goal: goals.goalStepsPerDay, lowerIsBetter: false,
+      values: weeklySteps.map((x) => ({ day: x.day, value: x.steps || null })), noun: 'step goal', format: (v: number) => `${formatNumber(v)} steps` },
+    { label: 'Sleep', icon: Moon, color: '#6366F1', goal: goals.goalSleepHours, lowerIsBetter: false,
+      values: weeklySleep.map((x) => ({ day: x.day, value: x.hours || null })), noun: 'sleep goal', format: (v: number) => `${v.toFixed(1)}h sleep` },
+    { label: 'Focus', icon: Timer, color: '#8B5CF6', goal: goals.goalFocusMinutes, lowerIsBetter: false,
+      values: weeklyFocus.map((x) => ({ day: x.day, value: x.minutes || null })), noun: 'focus goal', format: (v: number) => `${hm(v)} focus` },
+    { label: 'Screen time', icon: MonitorSmartphone, color: '#0EA5E9', goal: goals.goalScreenMinutes, lowerIsBetter: true,
+      values: weeklyScreen.map((x) => ({ day: x.day, value: x.minutes || null })), noun: 'screen limit', format: (v: number) => `${hm(v)} on screens` },
+  ].map((r) => ({ ...r, sentence: weekSentence({ values: r.values, today: day, goal: r.goal, noun: r.noun, lowerIsBetter: r.lowerIsBetter }) }))
 
-  const scoreColor = getScoreColor(score)
-  const scoreLabel = getScoreLabel(score)
   const hasAnyData = steps > 0 || sleep > 0 || screenMin > 0 || focusMin > 0
+  const hour = new Date().getHours()
+  const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening'
+  const moodLogged = stressScore !== 3
 
-  const timeOfDay = new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'
-
-  // 6 dimension bars — the same per-dimension scores the server used for the LifePulse Score
-  const dimensions = [
-    { label: 'Physical', value: dimensionScores.physical, color: '#4CAF50' },
-    { label: 'Digital',  value: dimensionScores.digital, color: '#00BCD4' },
-    { label: 'Focus',    value: dimensionScores.productivity, color: '#6366F1' },
-    { label: 'Mood',     value: dimensionScores.mood, color: '#FFA500' },
-    { label: 'Eco',      value: dimensionScores.eco, color: '#34A853' },
-    { label: 'Nutrition',value: dimensionScores.nutrition, color: '#FF6B6B' },
+  // Today's to-dos, in the order they're most worth doing
+  const todos = [
+    { label: 'Log a meal', done: todayCalories > 0, to: '/nutrition', icon: UtensilsCrossed },
+    { label: 'Check in with your mood', done: moodLogged, to: '/mood', icon: Heart },
+    { label: 'Take a walk or log activity', done: steps > 0, to: '/physical', icon: Activity },
+    { label: 'Do a focus session', done: focusMin > 0, to: '/productivity', icon: Timer },
+    { label: 'Log last night’s sleep', done: sleep > 0, to: '/physical', icon: Moon },
+    { label: 'One eco-friendly choice', done: ecoActions > 0, to: '/environment', icon: Leaf },
+    { label: `Drink water · ${todayWater} of ${WATER_GOAL} glasses`, done: todayWater >= WATER_GOAL, to: '/nutrition', icon: Droplets },
   ]
+  const doneCount = todos.filter((t) => t.done).length
+  const next = hasAnyData ? todos.find((t) => !t.done) : { label: 'Log your first activity', to: '/physical' }
+
+  // Weakest tracked dimension this week — a gentle nudge, not a warning
+  const focusArea = useMemo(() => {
+    const names: Record<string, string> = { physical: 'movement', digital: 'screen time', productivity: 'focus', mood: 'mood', eco: 'eco habits', nutrition: 'nutrition' }
+    const tracked = Object.entries(dimensionScores).filter(([, v]) => v !== null) as Array<[string, number]>
+    if (!scoreReady || tracked.length < 2) return null
+    return names[tracked.sort((a, b) => a[1] - b[1])[0][0]] ?? null
+  }, [dimensionScores, scoreReady])
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 max-sm:space-y-4">
 
-      {/* Weekly check-in reminder — only shows when one is due */}
+      {/* Weekly check-in — a slim reminder, only when one is due */}
       <AssessmentReminder />
 
       {/* "Worth getting checked" prompts, if any */}
       <HealthFlags />
 
-      {/* ══ ROW 1 — Greeting hero + streak ══ */}
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-        className="grid lg:grid-cols-[1fr_300px] gap-4 max-sm:grid-cols-1">
+      {/* ══ Hero: greeting, score, one next step ══ */}
+      <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
+        className={clsx(card, 'relative overflow-hidden p-7 max-sm:p-5')}>
+        <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#E8F5E9] dark:bg-[#3D9A41]/10 blur-2xl opacity-70" />
 
-        {/* ── Greeting + score ── */}
-        <div className="relative rounded-3xl overflow-hidden p-6 max-sm:p-4"
-          style={{
-            background: 'linear-gradient(135deg, rgba(76,175,80,0.12) 0%, rgba(0,188,212,0.06) 60%, transparent 100%)',
-            border: '1px solid rgba(76,175,80,0.18)',
-          }}>
-          {/* Background decoration */}
-          <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full blur-3xl opacity-20"
-            style={{ background: 'radial-gradient(circle, #4CAF50, #00BCD4)' }} />
-          <div className="absolute top-0 right-0 w-40 h-full opacity-40 pointer-events-none hidden lg:block">
-            <WellnessSVG />
-          </div>
+        <div className="relative flex items-center gap-8 max-md:flex-col-reverse max-md:items-start max-md:gap-5">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-black/45 dark:text-white/45">Good {timeOfDay}, {firstName(user.name)}</p>
+            <h1 className="font-serif font-normal text-black/85 dark:text-white/90 leading-[1.1] tracking-tight mt-1.5"
+              style={{ fontSize: 'clamp(1.9rem, 3.4vw, 2.75rem)' }}>
+              You’re <em className="italic" style={{ color: ACCENT }}>{scoreWords(score, scoreReady)}</em>
+              {scoreReady ? ' this week.' : '.'}
+            </h1>
+            <p className="mt-3 text-[15px] max-sm:text-sm text-black/55 dark:text-white/55 leading-relaxed max-w-xl">
+              {hasAnyData ? insight : 'Log anything today, like a meal, a walk or how you feel, and your LifePulse Score will start to grow.'}
+            </p>
 
-          <div className="relative z-10 flex items-start gap-6 max-sm:gap-3.5 max-sm:items-center">
-            <ScoreRing score={score} />
-            <div className="flex-1 min-w-0">
-              {/* Greeting */}
-              <div className="flex items-center gap-2 mb-1">
-                {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={user.name}
-                    className="w-7 h-7 rounded-xl object-cover ring-2 ring-lp-primary/30" />
-                ) : (
-                  <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-lp-primary to-green-400 flex items-center justify-center text-white text-[10px] font-black shadow-md">
-                    {user.name.trim().split(/\s+/).slice(0, 2).map((p: string) => p[0]).join('').toUpperCase()}
-                  </div>
-                )}
-                <span className="text-sm text-black/50 dark:text-white/45">
-                  Good {timeOfDay},{' '}
-                  <span className="font-bold text-black/75 dark:text-white/80">{firstName(user.name)}</span>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              {next ? (
+                <button type="button" onClick={() => navigate(next.to)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-[#2E7D32] hover:bg-[#276b2b] transition-colors">
+                  {next.label} <ArrowRight size={15} />
+                </button>
+              ) : (
+                <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-[#2E7D32] bg-[#E8F5E9] dark:bg-[#3D9A41]/15 dark:text-[#6FCF73]">
+                  <Sparkles size={15} /> Everything’s done for today
                 </span>
-              </div>
-
-              {/* Score label */}
-              <div className="flex items-baseline gap-2 mb-2 max-sm:flex-col max-sm:gap-0.5 max-sm:mb-1">
-                <span className="text-3xl max-sm:text-2xl font-black leading-none" style={{ color: scoreColor }}>{scoreLabel}</span>
-                <span className="text-xs max-sm:text-[10px] font-semibold text-black/35 dark:text-white/30 uppercase tracking-wider">LifePulse Score</span>
-              </div>
-
-              {/* Insight */}
-              {/* Phones: the tip goes full-width below the ring instead */}
-              <p className="max-sm:hidden text-sm text-black/60 dark:text-white/55 leading-relaxed max-w-sm mb-3">
-                {insight}
-              </p>
-
-              <div className="text-[10px] max-sm:text-[11px] text-black/25 dark:text-white/20">
-                Updated {new Date(lastUpdatedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
-              </div>
+              )}
+              <button type="button" onClick={() => navigate('/insights')}
+                className="text-sm font-medium text-black/55 dark:text-white/55 hover:text-black/80 dark:hover:text-white/85 transition-colors">
+                See your insights
+              </button>
             </div>
           </div>
 
-          <p className="sm:hidden relative z-10 mt-3 text-[13.5px] text-black/60 dark:text-white/60 leading-relaxed">
-            {insight}
-          </p>
-
-          {/* Dimension bars — 3×2 on phones so the labels have room */}
-          <div className="relative z-10 mt-5 pt-4 max-sm:mt-4 border-t border-black/[0.06] dark:border-white/[0.06]">
-            <div className="grid grid-cols-6 gap-3 max-sm:grid-cols-3 max-sm:gap-x-4 max-sm:gap-y-3.5">
-              {dimensions.map((d) => (
-                <div key={d.label} className="space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[9px] max-sm:text-[10.5px] font-bold uppercase tracking-wider max-sm:tracking-wide"
-                      style={{ color: `${d.color}99` }}>{d.label}</span>
-                    <span className="text-[9px] max-sm:text-[11px] font-black" style={{ color: d.color }}>{d.value}</span>
-                  </div>
-                  <div className="h-1.5 rounded-full overflow-hidden"
-                    style={{ background: `${d.color}18` }}>
-                    <motion.div className="h-full rounded-full"
-                      style={{ background: `linear-gradient(to right, ${d.color}80, ${d.color})` }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${d.value}%` }}
-                      transition={{ duration: 0.9, delay: 0.3, ease: 'easeOut' }} />
-                  </div>
-                </div>
-              ))}
+          <div className="flex items-center gap-6 max-md:gap-5">
+            <ScoreRing score={score} ready={scoreReady} />
+            <div className="space-y-3">
+              <div>
+                <div className="text-[13px] font-medium text-black/70 dark:text-white/75">LifePulse Score</div>
+                <div className="text-xs text-black/40 dark:text-white/40" title="Your last 7 days, today counting most. It doesn't reset at midnight.">Last 7 days</div>
+              </div>
+              <div className="flex items-center gap-1.5 text-[13px] text-black/60 dark:text-white/60">
+                <Flame size={14} className="text-[#F59E0B]" />
+                {streak > 0 ? <span><b className="font-semibold text-black/80 dark:text-white/85">{streak}-day</b> streak</span> : 'Start a streak today'}
+              </div>
+              <WeekDots />
             </div>
           </div>
         </div>
+      </motion.section>
 
-        {/* ── Streak card ── */}
-        <div className="relative rounded-3xl overflow-hidden p-6 max-sm:p-5 flex flex-col justify-between"
-          style={{
-            background: 'linear-gradient(145deg, rgba(255,165,0,0.1) 0%, rgba(255,107,107,0.06) 100%)',
-            border: '1px solid rgba(255,165,0,0.2)',
-          }}>
-          <div className="absolute -bottom-6 -right-6 w-32 h-32 rounded-full blur-3xl opacity-20"
-            style={{ background: '#FFA500' }} />
+      {/* Today's mood outlook from the nightly model — only when there is one */}
+      <TodayOutlookCard model={moodModel} />
 
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-2xl flex items-center justify-center shadow-lg"
-                  style={{ background: 'linear-gradient(135deg, #FFA500, #FF6B6B)' }}>
-                  <Flame size={17} className="text-white" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-black/80 dark:text-white/85">Daily Streak</div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider"
-                    style={{ color: '#FFA500' }}>{getStreakLabel(streak)}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-baseline gap-2 mb-5 max-sm:mb-4">
-              <span className="text-6xl max-sm:text-5xl font-black leading-none text-black/85 dark:text-white/90">{streak}</span>
-              <span className="text-base font-bold text-black/35 dark:text-white/30">days</span>
-            </div>
-
-            <StreakDisplay streak={streak} />
-          </div>
-
-          <div className="relative z-10 mt-5 pt-4 border-t border-black/[0.06] dark:border-white/[0.06]">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-black/35 dark:text-white/30 mb-3">This week</div>
-            <WeekHeatmap />
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Running experiment: today's "did you do it?" */}
+      {/* Running experiment and the top insight — each shows only when it has something to say */}
       <ExperimentCheckCard />
-
-      {/* Top insight from the user's own data, or progress toward the first one */}
       <TopInsightCard />
 
-      {/* ══ ROW 2 — Dimension metric cards ══ */}
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.1 }}
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <DimensionCard label="Steps" value={formatNumber(steps)} sub="today"
-          icon={<Activity size={17} />} color="#4CAF50"
-          trend={steps >= stepGoal ? 'up' : steps > 0 ? 'flat' : 'down'}
-          to="/physical" sparkValues={stepsSparkline} />
-        <DimensionCard label="Sleep" value={sleep > 0 ? `${sleep.toFixed(1)}h` : '—'} sub="last night"
-          icon={<Moon size={17} />} color="#6366F1"
-          trend={sleep >= 7.5 ? 'up' : sleep > 0 ? 'flat' : 'down'}
-          to="/physical" />
-        <DimensionCard label="Screen" value={screenMin > 0 ? formatMinutesToHM(screenMin) : '—'} sub="today"
-          icon={<MonitorSmartphone size={17} />} color="#00BCD4"
-          trend={screenMin <= 120 ? 'up' : screenMin <= 240 ? 'flat' : 'down'}
-          to="/digital" sparkValues={screenSparkline} />
-        <DimensionCard label="Focus" value={focusMin > 0 ? `${focusMin}m` : '—'} sub="today"
-          icon={<Timer size={17} />} color="#FFA500"
-          trend={focusMin >= 60 ? 'up' : focusMin > 0 ? 'flat' : 'down'}
-          to="/productivity" sparkValues={focusSparkline} />
-        <DimensionCard label="Stress" value={`${stressScore}/5`} sub="current"
-          icon={<Heart size={17} />}
-          color={stressScore <= 2 ? '#4CAF50' : stressScore <= 3 ? '#FFA500' : '#FF6B6B'}
-          trend={stressScore <= 2 ? 'up' : stressScore <= 3 ? 'flat' : 'down'}
-          to="/mood" />
-        <DimensionCard label="Calories" value={todayCalories > 0 ? `${todayCalories}` : '—'} sub="kcal today"
-          icon={<Flame size={17} />} color="#FF6B6B"
-          trend={todayCalories >= calorieGoal * 0.8 ? 'up' : todayCalories > 0 ? 'flat' : 'down'}
-          to="/nutrition" />
-      </motion.div>
+      {/* ══ Your day ══ */}
+      <section>
+        <div className="flex items-baseline justify-between mb-3 px-1">
+          <h2 className="font-serif text-[22px] text-black/85 dark:text-white/90">Your day</h2>
+          {focusArea && <span className="text-xs text-black/40 dark:text-white/40 max-sm:hidden">A little extra care for <b className="font-medium text-black/60 dark:text-white/60">{focusArea}</b> this week</span>}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <DayTile label="Steps" icon={Activity} tint="#22C55E" delay={0.05}
+            value={formatNumber(steps)} note={`of ${formatNumber(goals.goalStepsPerDay)}`}
+            progress={steps / goals.goalStepsPerDay} onClick={() => navigate('/physical')} />
+          <DayTile label="Sleep" icon={Moon} tint="#6366F1" delay={0.1}
+            value={sleep > 0 ? `${sleep.toFixed(1)}h` : '—'} note={sleep > 0 ? `of ${goals.goalSleepHours}h` : 'Not logged yet'}
+            progress={sleep / goals.goalSleepHours} onClick={() => navigate('/physical')} />
+          <DayTile label="Meals" icon={UtensilsCrossed} tint="#F97316" delay={0.15}
+            value={todayCalories > 0 ? formatNumber(todayCalories) : '—'} note={todayCalories > 0 ? `of ${formatNumber(goals.goalCaloriesPerDay)} kcal` : 'Nothing logged yet'}
+            progress={todayCalories / goals.goalCaloriesPerDay} onClick={() => navigate('/nutrition')} />
+          <DayTile label="Focus" icon={Timer} tint="#8B5CF6" delay={0.2}
+            value={focusMin > 0 ? hm(focusMin) : '—'} note={`of ${hm(goals.goalFocusMinutes)}`}
+            progress={focusMin / goals.goalFocusMinutes} onClick={() => navigate('/productivity')} />
+          <DayTile label="Screen time" icon={MonitorSmartphone} tint="#0EA5E9" delay={0.25}
+            value={screenMin > 0 ? hm(screenMin) : '—'}
+            note={screenMin > 0 ? (screenMin <= goals.goalScreenMinutes ? `Within your ${hm(goals.goalScreenMinutes)}` : `${hm(screenMin - goals.goalScreenMinutes)} over your limit`) : `Limit ${hm(goals.goalScreenMinutes)}`}
+            progress={screenMin / goals.goalScreenMinutes} onClick={() => navigate('/digital')} />
+          <DayTile label="Mood" icon={Heart} tint="#EC4899" delay={0.3}
+            value={moodLogged ? moodWord(stressScore) : '—'} note={moodLogged ? 'Today' : 'How are you feeling?'}
+            progress={null} onClick={() => navigate('/mood')} />
+        </div>
+      </section>
 
-      {/* ══ ROW 3 — Chart + quick actions ══ */}
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.2 }}
-        className="grid lg:grid-cols-[1fr_280px] gap-4 max-sm:grid-cols-1">
+      {/* ══ To do today + this week ══ */}
+      <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.2 }}
+        className="grid lg:grid-cols-[340px_1fr] gap-4">
 
-        {/* Activity chart */}
-        <div className="rounded-3xl p-5"
-          style={{
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(0,188,212,0.04) 100%)',
-            border: '1px solid rgba(99,102,241,0.12)',
-          }}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-sm font-bold text-black/80 dark:text-white/85">Weekly Activity</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5">Steps · Screen time · Focus</div>
+        <div className="space-y-4">
+          {/* Cycle phase — only for users tracking a cycle */}
+          <CyclePhaseCard />
+
+          <div className={clsx(card, 'p-5')}>
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="font-serif text-xl text-black/85 dark:text-white/90">To do today</h2>
+              <span className="text-xs text-black/40 dark:text-white/40 tabular-nums">{doneCount} of {todos.length}</span>
             </div>
-            <div className="flex items-center gap-3 text-[10px] font-semibold">
-              {[
-                { label: 'Steps', color: '#4CAF50' },
-                { label: 'Screen', color: '#00BCD4' },
-                { label: 'Focus', color: '#6366F1' },
-              ].map(l => (
-                <span key={l.label} className="flex items-center gap-1.5"
-                  style={{ color: `${l.color}99` }}>
-                  <span className="w-2 h-2 rounded-full inline-block" style={{ background: l.color }} />
-                  {l.label}
+            <ul className="space-y-0.5">
+              {todos.map((t) => (
+                <li key={t.label}>
+                  <button type="button" onClick={() => navigate(t.to)}
+                    className="w-full flex items-center gap-3 px-2 py-2 max-sm:py-2.5 -mx-2 rounded-xl hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors group">
+                    <span className={clsx('w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors',
+                      t.done ? 'bg-[#3D9A41] text-white' : 'border-[1.5px] border-black/15 dark:border-white/20 group-hover:border-[#3D9A41]/60')}>
+                      {t.done && <Check size={12} strokeWidth={3} />}
+                    </span>
+                    <span className={clsx('flex-1 text-left text-sm',
+                      t.done ? 'text-black/35 dark:text-white/30 line-through decoration-black/20' : 'text-black/70 dark:text-white/70')}>
+                      {t.label}
+                    </span>
+                    {!t.done && <ArrowRight size={14} className="text-black/20 dark:text-white/20 group-hover:text-[#3D9A41] transition-colors" />}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className={clsx(card, 'p-5 flex flex-col')}>
+          <h2 className="font-serif text-xl text-black/85 dark:text-white/90">This week</h2>
+          <p className="text-sm text-black/55 dark:text-white/55 mt-1 mb-4 leading-relaxed">
+            {weekRows.map((r) => r.sentence).find(Boolean) ?? 'Log a walk, your sleep or a focus session and your week will fill in here.'}
+          </p>
+          <div className="space-y-3">
+            {weekRows.map((r) => (
+              <div key={r.label} className="flex items-center gap-3 max-sm:flex-col max-sm:items-start max-sm:gap-1.5">
+                <div className="w-28 flex items-center gap-2 flex-shrink-0">
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: `${r.color}1A`, color: r.color }}>
+                    <r.icon size={13} />
+                  </span>
+                  <span className="text-sm text-black/65 dark:text-white/65">{r.label}</span>
+                </div>
+                <HabitWeekDots values={r.values} goal={r.goal} today={day} color={r.color} lowerIsBetter={r.lowerIsBetter} format={r.format} />
+              </div>
+            ))}
+          </div>
+          <SeeDetails>
+            <div className="flex items-center gap-3 text-xs text-black/45 dark:text-white/45 mb-2">
+              {[['Steps', '#4CAF50'], ['Screen', '#00BCD4'], ['Focus', '#6366F1']].map(([label, color]) => (
+                <span key={label} className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ background: color }} /> {label}
                 </span>
               ))}
             </div>
-          </div>
-          <div className="h-64">
-            <ActivityAnalyticsChart data={chartData} />
-          </div>
+            <div className="h-60 max-sm:h-48">
+              <ActivityAnalyticsChart data={chartData} />
+            </div>
+          </SeeDetails>
         </div>
-
-        {/* Right sidebar */}
-        <div className="space-y-3">
-
-          {/* Cycle phase — only for female users with a logged period; hidden until revealed */}
-          <CyclePhaseCard />
-
-          {/* Today's checklist */}
-          <div className="rounded-3xl p-4"
-            style={{
-              background: 'linear-gradient(135deg, rgba(76,175,80,0.07) 0%, rgba(76,175,80,0.03) 100%)',
-              border: '1px solid rgba(76,175,80,0.14)',
-            }}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-xl bg-lp-primary/15 flex items-center justify-center">
-                <CheckCircle2 size={14} className="text-lp-primary" />
-              </div>
-              <span className="text-sm font-bold text-black/75 dark:text-white/75">Today&apos;s checklist</span>
-            </div>
-            <div className="space-y-1.5">
-              {[
-                { label: 'Log physical activity', done: steps > 0, to: '/physical' },
-                { label: 'Track sleep', done: sleep > 0, to: '/physical' },
-                { label: 'Focus session', done: focusMin > 0, to: '/productivity' },
-                { label: 'Log mood', done: stressScore !== 3, to: '/mood' },
-                { label: 'Eco action', done: ecoActions > 0, to: '/environment' },
-                { label: 'Log a meal', done: todayCalories > 0, to: '/nutrition' },
-              ].map((item) => (
-                <button key={item.label} type="button" onClick={() => navigate(item.to)}
-                  className="w-full flex items-center gap-2.5 group py-0.5 max-sm:py-2 max-sm:gap-3">
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200
-                    ${item.done ? 'border-lp-primary bg-lp-primary' : 'border-black/20 dark:border-white/20 group-hover:border-lp-primary/60'}`}>
-                    {item.done && (
-                      <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className={`text-xs flex-1 text-left transition-colors duration-200
-                    ${item.done ? 'text-black/30 dark:text-white/25 line-through' : 'text-black/60 dark:text-white/55 group-hover:text-black/80 dark:group-hover:text-white/80'}`}>
-                    {item.label}
-                  </span>
-                  {!item.done && <ArrowRight size={11} className="text-black/20 dark:text-white/20 group-hover:text-lp-primary transition-colors" />}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick access + water */}
-          <div className="rounded-3xl p-4"
-            style={{
-              background: 'linear-gradient(135deg, rgba(0,188,212,0.07) 0%, rgba(99,102,241,0.04) 100%)',
-              border: '1px solid rgba(0,188,212,0.12)',
-            }}>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-black/35 dark:text-white/30 mb-3">
-              Quick access
-            </div>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {[
-                { label: 'Physical', Icon: Activity, to: '/physical', color: '#4CAF50' },
-                { label: 'Digital', Icon: MonitorSmartphone, to: '/digital', color: '#00BCD4' },
-                { label: 'Productivity', Icon: BarChart3, to: '/productivity', color: '#6366F1' },
-                { label: 'Nutrition', Icon: UtensilsCrossed, to: '/nutrition', color: '#FF6B6B' },
-                { label: 'Mood', Icon: Heart, to: '/mood', color: '#FFA500' },
-              ].map(({ label, Icon, to, color }) => (
-                <button key={to} type="button" onClick={() => navigate(to)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 group"
-                  style={{ background: `${color}0D`, border: `1px solid ${color}20` }}>
-                  <Icon size={13} style={{ color }} />
-                  <span className="text-xs font-semibold" style={{ color: `${color}CC` }}>{label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Water ring */}
-            <div className="pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
-              <div className="flex items-center gap-3">
-                <WaterRing glasses={todayWater} goal={8} onClick={() => navigate('/nutrition')} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-bold text-black/60 dark:text-white/55">
-                    {todayWater === 0 ? 'Stay hydrated'
-                      : todayWater >= 8 ? 'Water goal done!'
-                      : `${8 - todayWater} more glass${8 - todayWater === 1 ? '' : 'es'} to go`}
-                  </div>
-                  <div className="text-[10px] text-black/30 dark:text-white/25 mt-0.5">
-                    {todayWater}/{8} glasses today
-                  </div>
-                  <button type="button" onClick={() => navigate('/nutrition')}
-                    className="mt-1.5 text-[10px] font-bold text-blue-500 hover:text-blue-600 transition-colors">
-                    Log water →
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* ══ Empty state ══ */}
-      {!hasAnyData && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-          className="rounded-3xl p-5 flex items-center justify-between gap-4"
-          style={{
-            background: 'linear-gradient(135deg, rgba(76,175,80,0.08) 0%, rgba(76,175,80,0.04) 100%)',
-            border: '1px solid rgba(76,175,80,0.2)',
-          }}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg"
-              style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}>
-              <Zap size={18} className="text-white" />
-            </div>
-            <div>
-              <div className="text-sm font-bold text-black/80 dark:text-white/80">Start building your score</div>
-              <div className="text-xs text-black/45 dark:text-white/40 mt-0.5">Log your first activity to see your LifePulse Score come to life</div>
-            </div>
-          </div>
-          <button type="button" onClick={() => navigate('/physical')}
-            className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-white text-xs font-bold rounded-xl transition-all hover:scale-[1.02]"
-            style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}>
-            Get started <ArrowRight size={13} />
-          </button>
-        </motion.div>
-      )}
+      </motion.section>
     </div>
   )
 }

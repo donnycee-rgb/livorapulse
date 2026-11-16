@@ -1,4 +1,9 @@
 import { useMemo, useState } from 'react'
+import ScreenSplitBar from '../components/visuals/ScreenSplitBar'
+import WeekDots from '../components/visuals/WeekDots'
+import SeeDetails from '../components/visuals/SeeDetails'
+import { weekSentence } from '../lib/weekStory'
+import { screenSplitSentence } from '../lib/visualStories'
 import toast from 'react-hot-toast'
 import {
   MonitorSmartphone, Plus, TrendingUp, TrendingDown,
@@ -69,7 +74,7 @@ function StatCard({ label, value, context, icon, color, goalValue, goalMax, inve
   const trendColor = trend === 'up' ? '#4CAF50' : trend === 'down' ? '#FF6B6B' : '#94a3b8'
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: color + '18' }}>
@@ -169,7 +174,7 @@ function ScoreImpactCard({ screenMin }: { screenMin: number }) {
   const remaining = Math.max(0, LIMIT - screenMin)
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-accent/15 flex items-center justify-center">
           <Target size={14} className="text-lp-accent" />
@@ -230,7 +235,7 @@ function CategoryBreakdownCard({ categories }: {
   if (total === 0) return null
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-[#6366F1]/15 flex items-center justify-center">
           <BarChart3 size={14} className="text-[#6366F1]" />
@@ -289,7 +294,7 @@ function WeeklySummaryCard({ weeklyScreen }: {
   const bestDay = [...weeklyScreen].sort((a, b) => a.minutes - b.minutes).find(x => x.minutes > 0)
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-accent/15 flex items-center justify-center">
           <TrendingUp size={14} className="text-lp-accent" />
@@ -349,6 +354,10 @@ export default function Digital() {
   const toggleFocusMode = useAppStore((s) => s.toggleFocusMode)
 
   const day = getDayKey()
+  const screenWeekSentence = weekSentence({
+    values: digital.weeklyScreenTimeMin.map((x) => ({ day: x.day, value: x.minutes || null })),
+    today: day, goal: screenGoal, noun: 'screen limit', lowerIsBetter: true,
+  })
   const todayScreen = useAppStore(
     (s) => s.digital.weeklyScreenTimeMin.find((x) => x.day === day)?.minutes ?? 0,
   )
@@ -384,7 +393,7 @@ export default function Digital() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
-          <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Digital Usage</h1>
+          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Digital Usage</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
         </div>
         <button
@@ -452,7 +461,7 @@ export default function Digital() {
           />
 
           {/* Recent sessions */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-sm font-semibold text-black/80 dark:text-white/85">Recent sessions</div>
@@ -499,22 +508,37 @@ export default function Digital() {
             )}
           </div>
 
-          {/* Charts */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">App category split</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Distribution by category</div>
-              <div className="h-44">
-                <AppUsagePieChart data={digital.appUsageCategoriesMin} />
-              </div>
+          {/* Your week on screens — the charts are one tap away */}
+          <div className="rounded-3xl p-5 lp-card">
+            <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your week on screens</div>
+            <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug mb-4">
+              {screenWeekSentence ?? 'Log your screen time and your week will show up here.'}
+            </p>
+            <div className="flex items-center gap-3 max-sm:flex-col max-sm:items-start">
+              <span className="text-sm text-black/60 dark:text-white/60 w-24 flex-shrink-0">Within limit</span>
+              <WeekDots values={digital.weeklyScreenTimeMin.map((x) => ({ day: x.day, value: x.minutes || null }))}
+                goal={screenGoal} today={day} color="#0EA5E9" lowerIsBetter format={(v) => `${v} min on screens`} />
             </div>
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #00BCD40A 0%, #00BCD405 100%)`, border: `1px solid #00BCD420` }}>
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Screen time trend</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Minutes per day this week</div>
-              <div className="h-44">
-                <ScreenTimeLineChart data={digital.weeklyScreenTimeMin} />
+            {screenSplitSentence(digital.appUsageCategoriesMin) && (
+              <div className="mt-5">
+                <p className="text-sm text-black/60 dark:text-white/60 mb-2">{screenSplitSentence(digital.appUsageCategoriesMin)}</p>
+                <ScreenSplitBar parts={digital.appUsageCategoriesMin} />
               </div>
-            </div>
+            )}
+            <SeeDetails>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">App category split</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Distribution by category</div>
+                  <div className="h-44"><AppUsagePieChart data={digital.appUsageCategoriesMin} /></div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Screen time trend</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Minutes per day this week</div>
+                  <div className="h-44"><ScreenTimeLineChart data={digital.weeklyScreenTimeMin} /></div>
+                </div>
+              </div>
+            </SeeDetails>
           </div>
         </div>
 

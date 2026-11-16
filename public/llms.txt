@@ -15,8 +15,8 @@
 
 ## Key pages
 
-- [Home](https://livorapulse.netlify.app/): overview of features and how the LifePulse Score works.
-- [Sign in / create account](https://livorapulse.netlify.app/login): free sign-up with email or Google.
+- [Home](https://livorapulse.pages.dev/): overview of features and how the LifePulse Score works.
+- [Sign in / create account](https://livorapulse.pages.dev/login): free sign-up with email or Google.
 
 ## Notes
 

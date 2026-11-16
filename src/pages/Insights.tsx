@@ -1,4 +1,5 @@
 import { Lightbulb, Sparkles } from 'lucide-react'
+import WhatHelpsYou, { useMoodModel } from '../components/WhatHelpsYou'
 import { useEffect, useState } from 'react'
 
 import type { ExperimentList } from '../api/experiments'
@@ -17,11 +18,7 @@ function ProgressPanel({ status }: { status: InsightStatus }) {
 
   return (
     <div
-      className="rounded-3xl p-6 max-sm:p-4"
-      style={{
-        background: 'linear-gradient(135deg, rgba(76,175,80,0.10) 0%, rgba(0,188,212,0.05) 100%)',
-        border: '1px solid rgba(76,175,80,0.18)',
-      }}
+      className="lp-card rounded-3xl p-6 max-sm:p-4"
     >
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-lp-primary/15 flex items-center justify-center flex-shrink-0">
@@ -79,6 +76,7 @@ function ProgressPanel({ status }: { status: InsightStatus }) {
 }
 
 export default function Insights() {
+  const moodModel = useMoodModel()
   const [insights, setInsights] = useState<Insight[] | null>(null)
   const [status, setStatus] = useState<InsightStatus | null>(null)
   const [failed, setFailed] = useState(false)
@@ -103,7 +101,7 @@ export default function Insights() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Insights</h1>
+        <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Insights</h1>
         <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">
           Patterns found in your own data across sleep, mood, activity, screen time and more. Each one shows the numbers behind it.
         </p>
@@ -123,6 +121,7 @@ export default function Insights() {
       )}
 
       <HealthFlags />
+      <WhatHelpsYou model={moodModel} />
 
       {experiments.active && <ActiveExperimentCard exp={experiments.active} onChange={setExperiments} />}
 

@@ -4,6 +4,10 @@ import { MapPin, Play, Pause, Square, X, Save, Trash2, Navigation } from 'lucide
 import toast from 'react-hot-toast'
 import { useAppStore } from '../store/useAppStore'
 import { useAuthStore } from '../store/useAuthStore'
+import { notifyPendingWalksChanged } from '../hooks/usePendingWalkSync'
+import { keepPendingWalk, removePendingWalk } from '../utils/pendingWalks'
+import { chooseSteps, StepDetector } from '../utils/stepDetector'
+import { activeCalories, WalkClock } from '../utils/walkMetrics'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,28 +34,13 @@ function haversine(a: Coord, b: Coord): number {
   return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h))
 }
 
-// ---------------------------------------------------------------------------
-// Calories: MET × body weight × hours, worked out per GPS segment so that
-// running, brisk walking and standing still are each counted properly.
-// MET values from the Compendium of Physical Activities.
-// ---------------------------------------------------------------------------
-function metForSpeed(kmh: number): number {
-  if (kmh < 2.5) return 2.0   // strolling
-  if (kmh < 4) return 2.8     // slow walk
-  if (kmh < 5) return 3.5     // moderate walk
-  if (kmh < 5.6) return 4.3   // brisk walk
-  if (kmh < 6.5) return 5.0   // very brisk walk
-  if (kmh < 8) return 7.0     // jogging
-  if (kmh < 9.7) return 8.3   // running ~6:45 min/km
-  if (kmh < 11.3) return 9.8  // running ~5:50 min/km
-  return 11.0                 // running faster
-}
+// Calories are worked out per GPS segment (utils/walkMetrics.ts) so that
+// running, brisk walking and standing at a crossing are each counted properly.
 
 // GPS filtering
 const MAX_ACCURACY_M = 30    // ignore fixes less accurate than this
 const MIN_MOVE_M = 5         // ignore movement smaller than this (GPS jitter)
 const MAX_SPEED_KMH = 25     // faster than this is a GPS jump or a vehicle
-const MIN_STEP_GAP_MS = 280  // ~3.5 steps/s — faster "steps" are phone shakes
 const DEFAULT_WEIGHT_KG = 70
 
 // ---------------------------------------------------------------------------
@@ -214,16 +203,22 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
   const [trail, setTrail] = useState<Coord[]>([])
   const [currentPos, setCurrentPos] = useState<Coord | null>(null)
   const [distanceKm, setDistanceKm] = useState(0)
-  const [steps, setSteps] = useState(0)
+  const [sensorSteps, setSensorSteps] = useState(0)
+  const [sensorWorking, setSensorWorking] = useState(false)
   const [calories, setCalories] = useState(0)
   const [durationSec, setDurationSec] = useState(0)
   const [permissionError, setPermissionError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  // The number shown is the number saved: sensor steps, or an estimate from
+  // distance when the sensor clearly missed steps (e.g. the screen was off)
+  const stepResult = chooseSteps(sensorSteps, sensorWorking, distanceKm, strideM)
 
   const watchIdRef = useRef<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastCoordRef = useRef<Coord | null>(null)
-  const stepBufferRef = useRef<number[]>([])
-  const lastStepAtRef = useRef(0)
+  const detectorRef = useRef(new StepDetector())
+  const clockRef = useRef(new WalkClock())
+  const startedAtRef = useRef<string | null>(null)
   const lastFixAtRef = useRef<number | null>(null)
   const weightRef = useRef(weightKg)
   weightRef.current = weightKg
@@ -237,20 +232,33 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
   const handleMotion = useCallback((e: DeviceMotionEvent) => {
     if (!isActiveRef.current) return
     const acc = e.accelerationIncludingGravity
-    if (!acc) return
-    const mag = Math.sqrt((acc.x ?? 0) ** 2 + (acc.y ?? 0) ** 2 + (acc.z ?? 0) ** 2)
-    stepBufferRef.current.push(mag)
+    if (!acc || acc.x === null || acc.y === null || acc.z === null) return
+    setSensorWorking(true)
+    const mag = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2)
+    const added = detectorRef.current.push(mag, e.timeStamp || performance.now())
+    if (added > 0) setSensorSteps(detectorRef.current.count)
+  }, [])
 
-    if (stepBufferRef.current.length >= 5) {
-      const avg = stepBufferRef.current.reduce((a, b) => a + b, 0) / stepBufferRef.current.length
-      const max = Math.max(...stepBufferRef.current)
-      const nowMs = e.timeStamp || performance.now()
-      if (max - avg > 3.5 && nowMs - lastStepAtRef.current >= MIN_STEP_GAP_MS) {
-        lastStepAtRef.current = nowMs
-        setSteps(s => s + 1)
-      }
-      stepBufferRef.current = []
+  // Phones drop the keep-screen-on lock whenever the page is hidden; ask again on return
+  const requestWakeLock = useCallback(() => {
+    if (!('wakeLock' in navigator)) return
+    navigator.wakeLock.request('screen').then((lock) => {
+      wakeLockRef.current = lock
+    }).catch(() => null)
+  }, [])
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && isActiveRef.current) requestWakeLock()
     }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [requestWakeLock])
+
+  // Shows real elapsed time; reads the clock, so slowed-down timers don't lose time
+  const startTicker = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => setDurationSec(clockRef.current.seconds(Date.now())), 1000)
   }, [])
 
   // ---------------------------------------------------------------------------
@@ -319,7 +327,7 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
 
             setDistanceKm(prev => prev + dKm)
             setTrail(prev => [...prev, newCoord])
-            setCalories(prev => prev + metForSpeed(kmh) * weightRef.current * hours)
+            setCalories(prev => prev + activeCalories(kmh, weightRef.current, hours))
           },
           (err) => {
             console.warn('GPS error:', err.message)
@@ -327,20 +335,17 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
           { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 },
         )
 
-        // Duration timer
-        timerRef.current = setInterval(() => {
-          setDurationSec(s => s + 1)
-        }, 1000)
+        // Duration: measured from real timestamps
+        startedAtRef.current = new Date().toISOString()
+        clockRef.current.reset()
+        clockRef.current.start(Date.now())
+        startTicker()
 
         // Step counting
         window.addEventListener('devicemotion', handleMotion)
 
-        // Wake lock
-        if ('wakeLock' in navigator) {
-          navigator.wakeLock.request('screen').then(lock => {
-            wakeLockRef.current = lock
-          }).catch(() => null)
-        }
+        // Keep the screen on: phones stop GPS and motion updates when it's off
+        requestWakeLock()
       },
       (err) => {
         setPermissionError(`Location error: ${err.message}`)
@@ -348,13 +353,15 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
       },
       { enableHighAccuracy: true, timeout: 15000 },
     )
-  }, [handleMotion])
+  }, [handleMotion, requestWakeLock, startTicker])
 
   // ---------------------------------------------------------------------------
   // Pause / resume
   // ---------------------------------------------------------------------------
   const pauseTracking = useCallback(() => {
     isActiveRef.current = false
+    clockRef.current.pause(Date.now())
+    setDurationSec(clockRef.current.seconds(Date.now()))
     if (timerRef.current) clearInterval(timerRef.current)
     setTrackingState('paused')
   }, [])
@@ -363,15 +370,18 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
     // Start a fresh segment — distance moved while paused shouldn't count
     lastFixAtRef.current = null
     isActiveRef.current = true
-    timerRef.current = setInterval(() => setDurationSec(s => s + 1), 1000)
+    clockRef.current.start(Date.now())
+    startTicker()
     setTrackingState('active')
-  }, [])
+  }, [startTicker])
 
   // ---------------------------------------------------------------------------
   // Stop tracking
   // ---------------------------------------------------------------------------
   const stopTracking = useCallback(() => {
     isActiveRef.current = false
+    clockRef.current.pause(Date.now())
+    setDurationSec(clockRef.current.seconds(Date.now()))
     if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
     if (timerRef.current) clearInterval(timerRef.current)
     window.removeEventListener('devicemotion', handleMotion)
@@ -383,29 +393,53 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
   // Save session
   // ---------------------------------------------------------------------------
   const saveSession = useCallback(async () => {
-    if (distanceKm < 0.01 && steps < 10) {
+    if (distanceKm < 0.01 && stepResult.steps < 10) {
       toast.error('Walk too short to save')
       return
     }
-    // Phones without a usable motion sensor count few or no steps — fall back
-    // to an estimate from the GPS distance and the user's stride
-    const stepsFromDistance = Math.round((distanceKm * 1000) / strideM)
-    const finalSteps = steps < stepsFromDistance * 0.5 ? stepsFromDistance : steps
+    // Keep the walk on the phone first, so a failed upload never loses it
+    const walk = {
+      id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `walk-${Date.now()}`,
+      userId: useAuthStore.getState().user?.id ?? '',
+      startedAt: startedAtRef.current ?? new Date().toISOString(),
+      steps: stepResult.steps,
+      distanceKm: Math.round(distanceKm * 100) / 100,
+      caloriesKcal: Math.round(calories),
+      durationSec,
+      trail,
+      note: `Walk · ${fmtDuration(durationSec)}`,
+    }
+    keepPendingWalk(walk)
+    setSaving(true)
     try {
       await addActivity({
-        steps: finalSteps,
-        distanceKm: Math.round(distanceKm * 100) / 100,
-        caloriesKcal: Math.round(calories),
-        durationSec,
-        trail,
-        note: `Walk · ${fmtDuration(durationSec)}`,
+        steps: walk.steps,
+        distanceKm: walk.distanceKm,
+        caloriesKcal: walk.caloriesKcal,
+        durationSec: walk.durationSec,
+        trail: walk.trail,
+        note: walk.note,
+        startedAt: walk.startedAt,
       })
+      removePendingWalk(walk.id)
       toast.success('Walk saved!')
-      onClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save walk. Try again.')
+      const e = err as { offline?: boolean; sessionEnded?: boolean }
+      toast(
+        e.offline
+          ? "No connection right now. Your walk is saved on this phone and will upload when you're back online."
+          : e.sessionEnded
+            ? 'Your walk is saved on this phone. Sign in again and it will upload.'
+            : "Couldn't upload your walk yet. It's saved on this phone and will upload automatically.",
+        { duration: 6000 },
+      )
+    } finally {
+      setSaving(false)
+      notifyPendingWalksChanged()
     }
-  }, [addActivity, steps, distanceKm, calories, durationSec, trail, onClose, strideM])
+    // Either way the walk is safe, so the tracker can close
+    onClose()
+  }, [addActivity, stepResult.steps, distanceKm, calories, durationSec, trail, onClose])
 
   // ---------------------------------------------------------------------------
   // Discard / reset
@@ -415,9 +449,12 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
     setTrail([])
     setCurrentPos(null)
     setDistanceKm(0)
-    setSteps(0)
+    setSensorSteps(0)
+    setSensorWorking(false)
+    detectorRef.current = new StepDetector()
+    clockRef.current.reset()
+    startedAtRef.current = null
     setCalories(0)
-    lastStepAtRef.current = 0
     lastFixAtRef.current = null
     setDurationSec(0)
     setPermissionError(null)
@@ -505,10 +542,17 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
           {(trackingState === 'active' || trackingState === 'paused' || trackingState === 'done') && (
             <div className="px-4 pt-3 grid grid-cols-4 gap-2 flex-shrink-0">
               <MetricCard label="Distance" value={fmtDistance(distanceKm)} />
-              <MetricCard label="Steps" value={steps.toLocaleString()} />
+              <MetricCard label="Steps" value={stepResult.steps.toLocaleString()} sub={stepResult.estimated ? 'from distance' : undefined} />
               <MetricCard label="Time" value={fmtDuration(durationSec)} />
-              <MetricCard label="Calories" value={`${Math.round(calories)}`} sub="kcal" />
+              <MetricCard label="Calories" value={`${Math.round(calories)}`} sub="active kcal" />
             </div>
+          )}
+
+          {/* Phones stop GPS and motion updates while the screen is off */}
+          {trackingState === 'active' && (
+            <p className="px-5 pt-2 text-[11px] text-white/35 flex-shrink-0">
+              Keep this screen open while you walk. With the screen off, your phone pauses GPS and step counting.
+            </p>
           )}
 
           {/* Permission error */}
@@ -599,10 +643,11 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
                 <button
                   type="button"
                   onClick={saveSession}
-                  className="flex-1 flex items-center justify-center gap-2 bg-lp-primary text-white font-semibold rounded-2xl py-4 hover:bg-green-500 hover:shadow-xl hover:shadow-lp-primary/25 transition-all duration-200 text-sm"
+                  disabled={saving}
+                  className="flex-1 flex items-center justify-center gap-2 bg-lp-primary text-white font-semibold rounded-2xl py-4 hover:bg-green-500 hover:shadow-xl hover:shadow-lp-primary/25 transition-all duration-200 text-sm disabled:opacity-60"
                 >
                   <Save size={18} />
-                  Save Walk
+                  {saving ? 'Saving…' : 'Save Walk'}
                 </button>
               </>
             )}

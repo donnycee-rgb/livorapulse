@@ -10,6 +10,9 @@ import clsx from 'clsx'
 
 import MoodTimelineChart from '../components/charts/MoodTimelineChart'
 import StressLineChart from '../components/charts/StressLineChart'
+import MoodWeatherWeek from '../components/visuals/MoodWeatherWeek'
+import SeeDetails from '../components/visuals/SeeDetails'
+import { moodForecastSentence } from '../lib/weekStory'
 
 import type { MoodEmoji } from '../data/types'
 import { useAppStore } from '../store/useAppStore'
@@ -84,7 +87,7 @@ function ScoreImpactCard({ emoji, stressScore }: {
   const mentalScore = Math.round(0.6 * moodScore + 0.4 * stressComponent)
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FFA5000A 0%, #FFA50005 100%)`, border: `1px solid #FFA50020` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-alert/15 flex items-center justify-center">
           <Target size={14} className="text-lp-alert" />
@@ -154,7 +157,7 @@ function WeeklySummaryCard({ moodByDay, stressByDay }: {
   const loggedDays = moodByDay.filter(x => x.emoji).length
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FFA5000A 0%, #FFA50005 100%)`, border: `1px solid #FFA50020` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-accent/15 flex items-center justify-center">
           <TrendingUp size={14} className="text-lp-accent" />
@@ -301,7 +304,7 @@ function MoodTab() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Mood & Mindset</h1>
+        <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Mood & Mindset</h1>
         <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
       </div>
 
@@ -313,7 +316,7 @@ function MoodTab() {
 
           {/* Today's stats */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FFA5000A 0%, #FFA50005 100%)`, border: `1px solid #FFA50020` }}>
+            <div className="rounded-3xl p-4 lp-card">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
                 style={{ backgroundColor: currentLevel.bg }}>
                 <currentLevel.Icon size={17} style={{ color: currentLevel.color }} />
@@ -325,7 +328,7 @@ function MoodTab() {
               <div className="mt-1 text-xs text-black/45 dark:text-white/40">{currentLevel.description}</div>
             </div>
 
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FFA5000A 0%, #FFA50005 100%)`, border: `1px solid #FFA50020` }}>
+            <div className="rounded-3xl p-4 lp-card">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
                 style={{ backgroundColor: (currentStress?.color ?? '#FFA500') + '18' }}>
                 <Wind size={17} style={{ color: currentStress?.color ?? '#FFA500' }} />
@@ -339,7 +342,7 @@ function MoodTab() {
           </div>
 
           {/* Mood selector — icons only */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #FFA5000A 0%, #FFA50005 100%)`, border: `1px solid #FFA50020` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="text-sm font-semibold text-black/80 dark:text-white/85 mb-1">How are you feeling right now?</div>
             <div className="text-xs text-black/40 dark:text-white/35 mb-4">Tap a level to log your current mood</div>
             <div className="grid grid-cols-5 gap-2">
@@ -391,7 +394,7 @@ function MoodTab() {
           </div>
 
           {/* Stress logger — tap buttons */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #FFA5000A 0%, #FFA50005 100%)`, border: `1px solid #FFA50020` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="text-sm font-semibold text-black/80 dark:text-white/85 mb-1">Stress level</div>
             <div className="text-xs text-black/40 dark:text-white/35 mb-4">
               How stressed do you feel right now? 1 = very low, 5 = very high
@@ -430,22 +433,27 @@ function MoodTab() {
             </div>
           </div>
 
-          {/* Charts */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FFA5000A 0%, #FFA50005 100%)`, border: `1px solid #FFA50020` }}>
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Mood this week</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Daily mood level</div>
-              <div className="h-44">
-                <MoodTimelineChart data={mood.moodByDay} />
+          {/* Your week as weather — the charts are one tap away */}
+          <div className="rounded-3xl p-5 lp-card">
+            <h2 className="font-serif text-xl text-black/85 dark:text-white/90">Your mood forecast</h2>
+            <p className="text-sm text-black/55 dark:text-white/55 mt-1 mb-4 leading-relaxed">
+              {moodForecastSentence(mood.moodByDay, getDayKey()) ?? 'Log how you feel each day and your week will show up here as weather.'}
+            </p>
+            <MoodWeatherWeek byDay={mood.moodByDay} today={getDayKey()} />
+            <SeeDetails>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Mood this week</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Daily mood level</div>
+                  <div className="h-44"><MoodTimelineChart data={mood.moodByDay} /></div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Stress trend</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Daily stress score</div>
+                  <div className="h-44"><StressLineChart data={mood.stressByDay} /></div>
+                </div>
               </div>
-            </div>
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FFA5000A 0%, #FFA50005 100%)`, border: `1px solid #FFA50020` }}>
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Stress trend</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Daily stress score</div>
-              <div className="h-44">
-                <StressLineChart data={mood.stressByDay} />
-              </div>
-            </div>
+            </SeeDetails>
           </div>
         </div>
 

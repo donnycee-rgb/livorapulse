@@ -1,13 +1,14 @@
 import { Bell, Sun, Moon, ChevronDown, Settings, User, LogOut, Laptop, FileText } from 'lucide-react'
 import { useRef, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
+import BrandMark from './BrandMark'
 
 import { useAppStore } from '../store/useAppStore'
 import { useAuthStore } from '../store/useAuthStore'
-import { selectLifePulseScore, selectStreak } from '../store/selectors'
+import { selectLifePulseScore, selectScoreReady, selectStreak } from '../store/selectors'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -35,23 +36,6 @@ function formatTime(ts: number) {
 // ---------------------------------------------------------------------------
 // Animated pulse ECG logo
 // ---------------------------------------------------------------------------
-function PulseLogo() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-      <rect width="36" height="36" rx="10" fill="#4CAF50" fillOpacity="0.12" />
-      <rect width="36" height="36" rx="10" stroke="#4CAF50" strokeOpacity="0.25" strokeWidth="1" />
-      <polyline
-        points="3,18 8,18 11,11 14,25 17,8 20,22 23,15 27,18 33,18"
-        stroke="#4CAF50"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </svg>
-  )
-}
-
 // ---------------------------------------------------------------------------
 // User avatar — photo or initials
 // ---------------------------------------------------------------------------
@@ -286,10 +270,13 @@ export default function AppHeader() {
   const theme = useAppStore((s) => s.preferences.theme)
   const toggleTheme = useAppStore((s) => s.toggleTheme)
   const score = useAppStore(selectLifePulseScore)
-  const scoreColor = getScoreColor(score)
+  const scoreReady = useAppStore(selectScoreReady)
+  const scoreColor = scoreReady ? getScoreColor(score) : '#94a3b8'
   const navigate = useNavigate()
 
   const streak = useAppStore(selectStreak)
+  // The dashboard shows the score and streak itself, so the header doesn't repeat them there
+  const onDashboard = useLocation().pathname === '/dashboard'
 
   return (
     <header className="h-16 flex-shrink-0 flex items-center border-b border-black/[0.06] dark:border-white/[0.06] bg-white/95 dark:bg-[#0a0f1a]/95 backdrop-blur-md z-30">
@@ -302,7 +289,7 @@ export default function AppHeader() {
           className="flex items-center gap-3 group flex-shrink-0"
           aria-label="Go to dashboard"
         >
-          <PulseLogo />
+          <BrandMark />
           <div className="flex flex-col items-start leading-none">
             <span className="text-[15px] font-black text-black/85 dark:text-white/90 tracking-tight group-hover:text-lp-primary transition-colors duration-200">
               Livora<span className="text-lp-primary">Pulse</span>
@@ -314,7 +301,7 @@ export default function AppHeader() {
         </button>
 
         {/* Center — score + streak */}
-        <div className="hidden md:flex items-center gap-2.5">
+        <div className={clsx('items-center gap-2.5', onDashboard ? 'hidden' : 'hidden md:flex')}>
           {/* Score pill */}
           <div
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border transition-colors duration-300"
@@ -325,7 +312,7 @@ export default function AppHeader() {
               style={{ backgroundColor: scoreColor }}
             />
             <span className="text-xs font-black tabular-nums" style={{ color: scoreColor }}>
-              {score}
+              {scoreReady ? score : '–'}
             </span>
             <span className="text-[10px] text-black/30 dark:text-white/25 font-semibold">
               LifePulse Score

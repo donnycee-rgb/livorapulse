@@ -1,16 +1,21 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Plus, Trash2, Droplets, UtensilsCrossed,
   Target, TrendingUp, X, Flame, Coffee, Sun,
   Moon, Apple, CheckCircle2, AlertCircle, Info,
-  Pencil,
+  Pencil, Camera,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { scheduleScoreSync, useAppStore } from '../store/useAppStore'
 import { selectProgressiveGoals } from '../store/selectors'
 import { apiGet, apiPost, apiDel } from '../api/client'
+import FoodScanner, { type FoodScannerHandle } from '../components/FoodScanner'
+import { perServing } from '../ml/portion'
+import YourPlate from '../components/visuals/YourPlate'
+import { plateSentence, plateSlices } from '../lib/visualStories'
+import { dismissInterrupted, interruptedThisLoad } from '../ml/scanRecovery'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -66,7 +71,8 @@ async function searchFoods(query: string): Promise<FoodSearchResult[]> {
     const res = await apiGet<{ success: boolean; data: FoodSearchResult[] }>(
       `/api/nutrition/search?q=${encodeURIComponent(query)}`
     )
-    return res.data ?? []
+    // Search values are per 100 g; everything below works per serving.
+    return (res.data ?? []).map(perServing)
   } catch { return [] }
 }
 
@@ -78,7 +84,7 @@ function WaterTracker({ glasses, goal, onAdd }: {
 }) {
   const pct = Math.min(Math.round((glasses / goal) * 100), 100)
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FF6B6B08 0%, #FF6B6B04 100%)`, border: `1px solid #FF6B6B18` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-2xl bg-blue-500/15 flex items-center justify-center">
@@ -139,7 +145,7 @@ function MacrosCard({ protein, carbs, fat }: { protein: number; carbs: number; f
   })
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FF6B6B08 0%, #FF6B6B04 100%)`, border: `1px solid #FF6B6B18` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-2xl bg-lp-primary/15 flex items-center justify-center">
           <TrendingUp size={14} className="text-lp-primary" />
@@ -182,9 +188,11 @@ function MacrosCard({ protein, carbs, fat }: { protein: number; carbs: number; f
 // ---------------------------------------------------------------------------
 // Add food modal — no emojis
 // ---------------------------------------------------------------------------
-function AddFoodModal({ open, onClose, onSave }: {
+function AddFoodModal({ open, onClose, onSave, scanInterrupted = false }: {
   open: boolean
   onClose: () => void
+  /** Reopened after the phone closed the page during a photo */
+  scanInterrupted?: boolean
   onSave: (entry: Omit<FoodEntry, 'id' | 'timestamp'>) => Promise<void>
 }) {
   const [query, setQuery] = useState('')
@@ -195,12 +203,24 @@ function AddFoodModal({ open, onClose, onSave }: {
   const [mealType, setMealType] = useState('breakfast')
   const [quantity, setQuantity] = useState('1')
   const [saving, setSaving] = useState(false)
-  const [manualMode, setManualMode] = useState(false)
+  const [mode, setMode] = useState<'scan' | 'search' | 'manual'>('scan')
+  const manualMode = mode === 'manual'
   const [manualName, setManualName] = useState('')
   const [manualCal, setManualCal] = useState('')
   const [manualProtein, setManualProtein] = useState('')
   const [manualCarbs, setManualCarbs] = useState('')
   const [manualFat, setManualFat] = useState('')
+  const scannerRef = useRef<FoodScannerHandle>(null)
+  const [scanPending, setScanPending] = useState(false)
+  const [finishing, setFinishing] = useState(false)
+
+  // Done in Scan mode: log a food the user picked but didn't tap "Log this food" for.
+  const handleScanDone = async () => {
+    setFinishing(true)
+    const saved = (await scannerRef.current?.savePending()) ?? true
+    setFinishing(false)
+    if (saved) onClose()
+  }
 
   const handleSearch = useCallback(async () => {
     if (query.trim().length < 2) return
@@ -295,19 +315,27 @@ function AddFoodModal({ open, onClose, onSave }: {
 
           {/* Mode toggle */}
           <div className="flex gap-1.5 p-1 bg-black/[0.04] dark:bg-white/[0.05] rounded-xl">
-            <button type="button" onClick={() => setManualMode(false)}
+            <button type="button" onClick={() => setMode('scan')}
               className={clsx('flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all',
-                !manualMode ? 'bg-white dark:bg-slate-800 text-black/80 dark:text-white/80 shadow-sm' : 'text-black/40 dark:text-white/35')}>
-              <Search size={12} /> Search database
+                mode === 'scan' ? 'bg-white dark:bg-slate-800 text-black/80 dark:text-white/80 shadow-sm' : 'text-black/40 dark:text-white/35')}>
+              <Camera size={12} /> Scan
             </button>
-            <button type="button" onClick={() => setManualMode(true)}
+            <button type="button" onClick={() => setMode('search')}
+              className={clsx('flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all',
+                mode === 'search' ? 'bg-white dark:bg-slate-800 text-black/80 dark:text-white/80 shadow-sm' : 'text-black/40 dark:text-white/35')}>
+              <Search size={12} /> Search
+            </button>
+            <button type="button" onClick={() => setMode('manual')}
               className={clsx('flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all',
                 manualMode ? 'bg-white dark:bg-slate-800 text-black/80 dark:text-white/80 shadow-sm' : 'text-black/40 dark:text-white/35')}>
-              <Pencil size={12} /> Manual entry
+              <Pencil size={12} /> Manual
             </button>
           </div>
 
-          {!manualMode ? (
+          {mode === 'scan' ? (
+            <FoodScanner ref={scannerRef} mealType={mealType} onSave={onSave} interrupted={scanInterrupted}
+              onSearchInstead={() => setMode('search')} onPendingChange={setScanPending} />
+          ) : !manualMode ? (
             <>
               {/* Search row */}
               <div className="flex gap-2">
@@ -418,7 +446,7 @@ function AddFoodModal({ open, onClose, onSave }: {
           )}
 
           {/* Quantity */}
-          {(selected || manualMode) && (
+          {mode !== 'scan' && (selected || manualMode) && (
             <div>
               <div className="text-xs font-semibold text-black/45 dark:text-white/40 uppercase tracking-widest mb-1.5">
                 Quantity {selected ? `(× ${selected.servingSize})` : '(× serving)'}
@@ -435,6 +463,15 @@ function AddFoodModal({ open, onClose, onSave }: {
           )}
 
           {/* Actions */}
+          {mode === 'scan' ? (
+            <button type="button" onClick={handleScanDone} disabled={finishing}
+              className={clsx('w-full py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40',
+                scanPending
+                  ? 'bg-lp-primary text-white hover:bg-green-500'
+                  : 'bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 hover:bg-black/[0.09]')}>
+              {finishing ? 'Saving…' : scanPending ? 'Log & close' : 'Done'}
+            </button>
+          ) : (
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose}
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 hover:bg-black/[0.09] transition-all">
@@ -446,6 +483,7 @@ function AddFoodModal({ open, onClose, onSave }: {
               {saving ? 'Saving…' : 'Log Food'}
             </button>
           </div>
+          )}
         </div>
       </motion.div>
     </motion.div>
@@ -462,7 +500,9 @@ export default function Nutrition() {
   const [entries, setEntries] = useState<FoodEntry[]>([])
   const [totals, setTotals] = useState<DailyTotals>({ calories: 0, proteinG: 0, carbsG: 0, fatG: 0 })
   const [glasses, setGlasses] = useState(0)
-  const [modalOpen, setModalOpen] = useState(false)
+  // If the phone closed the page while the camera was open, reopen the scanner and explain
+  const [scanInterrupted] = useState(interruptedThisLoad)
+  const [modalOpen, setModalOpen] = useState(scanInterrupted)
   const [loading, setLoading] = useState(true)
 
   const fetchData = async () => {
@@ -506,6 +546,7 @@ export default function Nutrition() {
   }
 
   const calPct = Math.min(Math.round((totals.calories / calorieGoal) * 100), 100)
+  const plate = plateSlices(totals)
   const calColor = calPct > 110 ? '#FF6B6B' : calPct >= 80 ? '#4CAF50' : '#FFA500'
 
   const groupedEntries = MEAL_TYPES.map(m => ({
@@ -519,7 +560,7 @@ export default function Nutrition() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
-          <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Nutrition</h1>
+          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Nutrition</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5">
             {totals.calories === 0
               ? 'Log your meals to track daily nutrition'
@@ -527,7 +568,7 @@ export default function Nutrition() {
           </p>
         </div>
         <button type="button" onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-2xl hover:shadow-lg hover:shadow-lp-primary/25 hover:scale-[1.02] transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3" style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}>
+          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-full bg-[#2E7D32] hover:bg-[#276b2b] transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3">
           <Plus size={15} /> Log Food
         </button>
       </div>
@@ -536,7 +577,7 @@ export default function Nutrition() {
         <div className="space-y-5 min-w-0">
 
           {/* Calorie progress */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #FF6B6B08 0%, #FF6B6B04 100%)`, border: `1px solid #FF6B6B18` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: calColor + '18' }}>
@@ -564,6 +605,15 @@ export default function Nutrition() {
             </div>
           </div>
 
+          {/* Your plate: today's food as slices of a plate, with what's missing */}
+          {plate && (
+            <div className="rounded-3xl p-5 lp-card">
+              <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your plate today</div>
+              <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug mb-4">{plateSentence(plate)}</p>
+              <YourPlate slices={plate} />
+            </div>
+          )}
+
           {/* Meals */}
           {loading ? (
             <div className="flex justify-center py-8">
@@ -584,7 +634,7 @@ export default function Nutrition() {
           ) : (
             <div className="space-y-4">
               {groupedEntries.map(meal => (
-                <div key={meal.value} className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FF6B6B08 0%, #FF6B6B04 100%)`, border: `1px solid #FF6B6B18` }}>
+                <div key={meal.value} className="rounded-3xl p-4 lp-card">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{ backgroundColor: meal.color + '18' }}>
                       <meal.Icon size={14} style={{ color: meal.color }} />
@@ -627,7 +677,7 @@ export default function Nutrition() {
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Score impact */}
-          <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FF6B6B08 0%, #FF6B6B04 100%)`, border: `1px solid #FF6B6B18` }}>
+          <div className="rounded-3xl p-4 lp-card">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-9 h-9 rounded-2xl bg-lp-primary/15 flex items-center justify-center">
                 <Target size={14} className="text-lp-primary" />
@@ -659,7 +709,7 @@ export default function Nutrition() {
           )}
 
           {/* Summary */}
-          <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #FF6B6B08 0%, #FF6B6B04 100%)`, border: `1px solid #FF6B6B18` }}>
+          <div className="rounded-3xl p-4 lp-card">
             <div className="text-xs font-bold text-black/30 dark:text-white/25 uppercase tracking-widest mb-3">Today</div>
             <div className="space-y-2">
               {[
@@ -680,7 +730,7 @@ export default function Nutrition() {
 
       <AnimatePresence>
         {modalOpen && (
-          <AddFoodModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSaveFood} />
+          <AddFoodModal open={modalOpen} onClose={() => { dismissInterrupted(); setModalOpen(false) }} onSave={handleSaveFood} scanInterrupted={scanInterrupted} />
         )}
       </AnimatePresence>
     </div>

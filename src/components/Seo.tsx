@@ -5,7 +5,7 @@ import { getTitleForPath, routes } from '../routes/routeMeta'
 
 // Live site address — used for canonical URLs. Keep in sync with
 // public/sitemap.xml, public/robots.txt and index.html.
-export const SITE_URL = 'https://livorapulse.netlify.app'
+export const SITE_URL = 'https://livorapulse.pages.dev'
 
 const DEFAULT_DESCRIPTION =
   'LivoraPulse is a free wellness tracker built for Kenya and Africa. Track activity, Kenyan food and nutrition, screen time, focus, mood and eco habits in one LifePulse Score.'
@@ -37,7 +37,7 @@ function seoForPath(pathname: string): PageSeo {
   }
 
   // Signed-in app pages and unknown URLs stay out of search results
-  const isAppPage = routes.some((r) => path === r.path) || path === '/nutrition' || path === '/welcome'
+  const isAppPage = routes.some((r) => path === r.path) || ['/nutrition', '/welcome', '/verify-email', '/reset-password'].includes(path)
   return {
     title: isAppPage ? `${getTitleForPath(path)} | LivoraPulse` : 'Page Not Found | LivoraPulse',
     description: DEFAULT_DESCRIPTION,

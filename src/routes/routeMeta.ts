@@ -30,6 +30,8 @@ export function getTitleForPath(pathname: string) {
   if (pathname === '/login') return 'LivoraPulse — Sign In'
   if (pathname === '/register') return 'LivoraPulse — Create Account'
   if (pathname === '/forgot-password') return 'LivoraPulse — Reset Password'
+  if (pathname === '/reset-password') return 'Set a new password'
+  if (pathname === '/verify-email') return 'Confirm your email'
 
   // Aliases / fallbacks
   if (pathname === '/') return 'LivoraPulse'

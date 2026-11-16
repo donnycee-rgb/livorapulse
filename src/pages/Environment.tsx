@@ -1,4 +1,7 @@
 import { Plus, Leaf, Target, TrendingUp, Wind, Car, Bike, Footprints, Award, Zap } from 'lucide-react'
+import GrowingPlant from '../components/visuals/GrowingPlant'
+import SeeDetails from '../components/visuals/SeeDetails'
+import { ecoSentence } from '../lib/visualStories'
 import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { motion } from 'framer-motion'
@@ -59,7 +62,7 @@ function StatCard({ label, value, context, icon, color, wide = false }: {
   wide?: boolean
 }) {
   return (
-    <div className={`rounded-3xl p-4 max-sm:p-3.5 ${wide ? 'max-sm:col-span-2' : ''}`} style={{ background: `linear-gradient(135deg, #34A8530A 0%, #34A85305 100%)`, border: `1px solid #34A85320` }}>
+    <div className={`lp-card rounded-3xl p-4 max-sm:p-3.5 ${wide ? 'max-sm:col-span-2' : ''}`}>
       <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 max-sm:mb-2"
         style={{ backgroundColor: color + '18' }}>
         <div style={{ color }}>{icon}</div>
@@ -83,7 +86,7 @@ function ScoreImpactCard({ ecoActions, carbonKg }: {
   const actionsNeeded = Math.max(0, goal - ecoActions)
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #34A8530A 0%, #34A85305 100%)`, border: `1px solid #34A85320` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-primary/15 flex items-center justify-center">
           <Target size={14} className="text-lp-primary" />
@@ -144,7 +147,7 @@ function WeeklySummaryCard({ carbonByDay, recycledByDay }: {
   const activeDays = recycledByDay.filter(x => x.items > 0).length
 
   return (
-    <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #34A8530A 0%, #34A85305 100%)`, border: `1px solid #34A85320` }}>
+    <div className="rounded-3xl p-4 lp-card">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-9 h-9 rounded-xl bg-lp-accent/15 flex items-center justify-center">
           <TrendingUp size={14} className="text-lp-accent" />
@@ -240,6 +243,10 @@ export default function Environment() {
   const [impact, setImpact] = useState('0.4')
 
   const day = getDayKey()
+  // This week (from Monday): one leaf per eco action, and the CO₂ they saved
+  const weekStart = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime() })()
+  const weekActions = env.ecoActions.filter((a) => a.timestamp >= weekStart).length
+  const weekKgSaved = env.carbonKgByDay.reduce((sum, d) => sum + (d.kg || 0), 0)
   const todayActions = useMemo(() =>
     env.ecoActions.filter(a => {
       const d = new Date(a.timestamp)
@@ -282,13 +289,13 @@ export default function Environment() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 max-sm:flex-col max-sm:items-stretch max-sm:gap-3">
         <div>
-          <h1 className="text-2xl font-black text-black/85 dark:text-white/90">Environment</h1>
+          <h1 className="font-serif font-normal text-[32px] max-sm:text-[28px] leading-tight tracking-tight text-black/85 dark:text-white/90">Environment</h1>
           <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">{headline}</p>
         </div>
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3" style={{ background: 'linear-gradient(135deg, #4CAF50, #00BCD4)' }}
+          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-full bg-[#2E7D32] hover:bg-[#276b2b] transition-all duration-200 flex-shrink-0 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
         >
           <Plus size={15} />
           Log eco action
@@ -332,7 +339,7 @@ export default function Environment() {
           </div>
 
           {/* Transport mode selector */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #34A8530A 0%, #34A85305 100%)`, border: `1px solid #34A85320` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="text-sm font-semibold text-black/80 dark:text-white/85 mb-1">Today's transport mode</div>
             <div className="text-xs text-black/40 dark:text-white/35 mb-4">How did you get around today?</div>
             <div className="grid grid-cols-3 gap-3 max-sm:gap-2">
@@ -367,7 +374,7 @@ export default function Environment() {
           </div>
 
           {/* Quick eco actions */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #34A8530A 0%, #34A85305 100%)`, border: `1px solid #34A85320` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="text-sm font-semibold text-black/80 dark:text-white/85 mb-1">Quick log</div>
             <div className="text-xs text-black/40 dark:text-white/35 mb-4">Tap to instantly log a common eco action</div>
             <div className="grid grid-cols-2 gap-2">
@@ -394,7 +401,7 @@ export default function Environment() {
           </div>
 
           {/* Recent eco actions */}
-          <div className="rounded-3xl p-5" style={{ background: `linear-gradient(135deg, #34A8530A 0%, #34A85305 100%)`, border: `1px solid #34A85320` }}>
+          <div className="rounded-3xl p-5 lp-card">
             <div className="text-sm font-semibold text-black/80 dark:text-white/85 mb-1">Eco actions log</div>
             <div className="text-xs text-black/40 dark:text-white/35 mb-4">Your recent sustainable actions</div>
             {recent.length === 0 ? (
@@ -435,29 +442,37 @@ export default function Environment() {
             )}
           </div>
 
-          {/* Charts — real data only */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #34A8530A 0%, #34A85305 100%)`, border: `1px solid #34A85320` }}>
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Recycling this week</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Items recycled per day</div>
-              <div className="h-44">
-                <RecyclePlasticBarChart recycled={env.recycledItemsByDay} plastic={env.plasticUsageByDay} />
+          {/* Your plant grows with each eco action — the charts are one tap away */}
+          <div className="rounded-3xl p-5 lp-card">
+            <div className="flex items-center gap-6 max-sm:flex-col max-sm:items-start max-sm:gap-3">
+              <GrowingPlant leaves={weekActions} />
+              <div className="flex-1">
+                <div className="text-xs text-black/40 dark:text-white/40 mb-1">Your eco plant this week</div>
+                <p className="font-serif text-xl text-black/85 dark:text-white/90 leading-snug">
+                  {ecoSentence(weekActions, weekKgSaved) ?? 'Log an eco action, like walking instead of driving or recycling a bottle, and your plant will grow its first leaf.'}
+                </p>
+                <p className="text-sm text-black/50 dark:text-white/50 mt-2">Each eco action adds a leaf. It starts again every Monday.</p>
               </div>
             </div>
-            <div className="rounded-3xl p-4" style={{ background: `linear-gradient(135deg, #34A8530A 0%, #34A85305 100%)`, border: `1px solid #34A85320` }}>
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Transport split</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Trips by mode this week</div>
-              <div className="h-44">
-                <TransportModeChart data={env.transportModeSplit} />
+            <SeeDetails>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Recycling this week</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Items recycled per day</div>
+                  <div className="h-44"><RecyclePlasticBarChart recycled={env.recycledItemsByDay} plastic={env.plasticUsageByDay} /></div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Transport split</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">Trips by mode this week</div>
+                  <div className="h-44"><TransportModeChart data={env.transportModeSplit} /></div>
+                </div>
+                <div className="md:col-span-2">
+                  <div className="text-sm font-semibold text-black/80 dark:text-white/85">Carbon impact</div>
+                  <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">kg CO₂ saved per day</div>
+                  <div className="h-44"><CarbonLineChart data={env.carbonKgByDay} /></div>
+                </div>
               </div>
-            </div>
-            <div className="md:col-span-2 bg-white dark:bg-slate-900 rounded-3xl p-4">
-              <div className="text-sm font-semibold text-black/80 dark:text-white/85">Carbon impact</div>
-              <div className="text-xs text-black/40 dark:text-white/35 mt-0.5 mb-3">kg CO₂ saved per day</div>
-              <div className="h-44">
-                <CarbonLineChart data={env.carbonKgByDay} />
-              </div>
-            </div>
+            </SeeDetails>
           </div>
         </div>
 

@@ -1,3 +1,5 @@
+import { getAccessToken, OfflineError, renewSession, sessionExpired } from './session'
+
 export type ApiError = {
   message: string
   details?: unknown
@@ -7,10 +9,6 @@ export type ApiError = {
 // In production this should be set to your API domain via VITE_API_URL
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
-function getToken(): string | null {
-  return localStorage.getItem('lp_access_token')
-}
-
 async function parseJsonSafe(res: Response) {
   const text = await res.text()
   if (!text) return null
@@ -19,6 +17,40 @@ async function parseJsonSafe(res: Response) {
   } catch {
     return null
   }
+}
+
+/**
+ * fetch with the sign-in token. If the token has run out (401), the session
+ * is renewed once and the request retried; if it can't be renewed, the user
+ * is sent to sign in again. A network failure throws OfflineError and never
+ * signs anyone out.
+ */
+async function authedFetch(url: string, init: RequestInit, auth: boolean): Promise<Response> {
+  const send = (token: string | null) => {
+    const headers = new Headers(init.headers)
+    if (auth && token) headers.set('Authorization', `Bearer ${token}`)
+    return fetch(url, { ...init, headers }).catch(() => {
+      throw new OfflineError()
+    })
+  }
+
+  const token = auth ? getAccessToken() : null
+  const res = await send(token)
+  if (res.status !== 401 || !auth || !token) return res
+
+  const renewed = await renewSession(token)
+  if (!renewed) {
+    sessionExpired()
+    throw Object.assign(new Error('Your session has ended. Please sign in again.'), { status: 401, sessionEnded: true })
+  }
+  return send(renewed)
+}
+
+async function toError(res: Response): Promise<Error> {
+  const data = await parseJsonSafe(res)
+  const errMsg = data?.error?.message || res.statusText || 'Request failed'
+  const err: ApiError = { message: errMsg, details: data?.error?.details }
+  return Object.assign(new Error(err.message), { status: res.status, details: err.details })
 }
 
 export async function apiRequest<T>(
@@ -33,21 +65,9 @@ export async function apiRequest<T>(
   const hasBody = options?.body !== undefined
   if (hasBody && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
 
-  const auth = options?.auth ?? true
-  if (auth) {
-    const token = getToken()
-    if (token) headers.set('Authorization', `Bearer ${token}`)
-  }
-
-  const res = await fetch(url, { ...options, headers })
-
-  if (!res.ok) {
-    const data = await parseJsonSafe(res)
-    const errMsg = data?.error?.message || res.statusText || 'Request failed'
-    const details = data?.error?.details
-    const err: ApiError = { message: errMsg, details }
-    throw Object.assign(new Error(err.message), { status: res.status, details: err.details })
-  }
+  const { auth = true, ...init } = options ?? {}
+  const res = await authedFetch(url, { ...init, headers }, auth)
+  if (!res.ok) throw await toError(res)
 
   const data = await parseJsonSafe(res)
   return data as T
@@ -56,16 +76,8 @@ export async function apiRequest<T>(
 /** For file downloads (e.g. a PDF): same auth and error handling, returns the body as a Blob */
 export async function apiBlob(path: string, auth = true): Promise<Blob> {
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`
-  const headers = new Headers()
-  if (auth) {
-    const token = getToken()
-    if (token) headers.set('Authorization', `Bearer ${token}`)
-  }
-  const res = await fetch(url, { headers })
-  if (!res.ok) {
-    const data = await parseJsonSafe(res)
-    throw Object.assign(new Error(data?.error?.message || res.statusText || 'Request failed'), { status: res.status })
-  }
+  const res = await authedFetch(url, {}, auth)
+  if (!res.ok) throw await toError(res)
   return res.blob()
 }
 
