@@ -59,3 +59,28 @@ export class WalkClock {
     this.banked = 0
   }
 }
+
+// ─── Steps counted by the phone itself ──────────────────────────────────────
+
+/** Average walking stride is about 41.5% of height (0.75 m when height is unknown) */
+export function strideFromHeight(heightCm: number | null | undefined): number {
+  return heightCm && heightCm > 0 ? heightCm * 0.00415 : 0.75
+}
+
+/** A normal walking pace, for steps whose speed we don't know */
+const TYPICAL_WALK_KMH = 4.5
+
+/**
+ * Distance and active calories for steps typed in from the phone's own step
+ * counter. Distance from the person's stride (their height); calories as a
+ * walk at a normal pace for that distance, from their weight (MET method, as
+ * for tracked walks). `estimated` is true when height or weight is missing
+ * and a typical value was used.
+ */
+export function stepsEstimate(steps: number, heightCm: number | null | undefined, weightKg: number | null | undefined) {
+  const s = Math.max(0, Math.round(steps))
+  const distanceKm = Math.round(((s * strideFromHeight(heightCm)) / 1000) * 100) / 100
+  const kg = weightKg && weightKg > 0 ? weightKg : 70
+  const caloriesKcal = Math.round(activeCalories(TYPICAL_WALK_KMH, kg, distanceKm / TYPICAL_WALK_KMH))
+  return { distanceKm, caloriesKcal, estimated: !(heightCm && heightCm > 0) || !(weightKg && weightKg > 0) }
+}

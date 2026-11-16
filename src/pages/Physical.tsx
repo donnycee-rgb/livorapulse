@@ -23,6 +23,9 @@ import WalkTracker from '../components/WalkTracker'
 import PendingWalksCard from '../components/PendingWalksCard'
 
 import { useAppStore } from '../store/useAppStore'
+import { useAuthStore } from '../store/useAuthStore'
+import { ACTIVITIES, ACTIVITY_TYPES, activityValue, isActivityType, type ActivityType } from '../lib/activities'
+import { stepsEstimate } from '../utils/walkMetrics'
 import { selectDimensionScores, selectLifePulseScore, selectProgressiveGoals } from '../store/selectors'
 import { getDayKey } from '../utils/date'
 import { formatDistance, formatNumber } from '../utils/format'
@@ -92,17 +95,25 @@ function StatCard({ label, value, context, icon, color, goalValue, goalMax, tren
 // ---------------------------------------------------------------------------
 // Score impact sidebar card
 // ---------------------------------------------------------------------------
-function ScoreImpactCard({ steps, sleep }: { steps: number; sleep: number }) {
+function ScoreImpactCard({ steps, sleep, nightLogged }: { steps: number; sleep: number; nightLogged: boolean }) {
   // Server-calculated physical score and today's goals (after the streak multiplier)
   const physicalScore = useAppStore((s) => selectDimensionScores(s).physical)
   const goals = useAppStore(selectProgressiveGoals)
+  // steps includes other activities' step credit, as the score does
   const stepsNeeded = Math.max(0, goals.goalStepsPerDay - steps)
   const sleepGap = Math.max(0, goals.goalSleepHours - sleep)
-  // Points the overall score would gain by reaching both goals (physical weighs 23%)
-  const potentialGain = Math.round(
-    (Math.min(stepsNeeded / goals.goalStepsPerDay, 1) * 70 +
-      Math.min(sleepGap / goals.goalSleepHours, 1) * 30) * 0.23,
-  )
+  // Points the overall score would gain by reaching the step goal (steps are 70% of physical, physical 23%)
+  const stepGain = Math.round(Math.min(stepsNeeded / goals.goalStepsPerDay, 1) * 70 * 0.23)
+  // About 100 steps a minute of moderate activity
+  const minutesInstead = Math.ceil(stepsNeeded / 100 / 5) * 5
+
+  const advice = stepsNeeded > 0
+    ? <>Walk {formatNumber(stepsNeeded)} more steps, or about {minutesInstead} min of another activity, to gain up to <span className="font-bold text-lp-primary">+{stepGain} points</span> on your overall score.</>
+    : !nightLogged
+    ? <>Step goal reached. Log last night&apos;s sleep on the Sleep tab: it counts toward your score too.</>
+    : sleepGap > 0
+    ? <>Step goal reached. You&apos;re {sleepGap.toFixed(1)}h short on sleep: a nap counts (add it on the Sleep tab), or aim for {goals.goalSleepHours}h tonight.</>
+    : null
 
   return (
     <div className="rounded-3xl p-4 lp-card">
@@ -116,13 +127,8 @@ function ScoreImpactCard({ steps, sleep }: { steps: number; sleep: number }) {
         <span className="text-3xl font-black text-black/85 dark:text-white/90">{physicalScore}</span>
         <span className="text-xs text-black/35 dark:text-white/30">/ 100 physical score</span>
       </div>
-      {potentialGain > 0 ? (
-        <p className="text-xs text-black/50 dark:text-white/45 leading-relaxed mt-2">
-          {stepsNeeded > 0
-            ? `Walk ${formatNumber(stepsNeeded)} more steps`
-            : `Get ${sleepGap.toFixed(1)}h more sleep`} to gain up to{' '}
-          <span className="font-bold text-lp-primary">+{potentialGain} points</span> on your overall score.
-        </p>
+      {advice ? (
+        <p className="text-xs text-ui-muted leading-relaxed mt-2">{advice}</p>
       ) : (
         <p className="text-xs text-lp-primary font-semibold mt-2">Physical goal reached today!</p>
       )}
@@ -206,44 +212,51 @@ function WeeklySummaryCard({ weeklySteps, sleepHours }: {
 // ---------------------------------------------------------------------------
 // Sleep quick logger sidebar card
 // ---------------------------------------------------------------------------
-function SleepLogger({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function SleepLogger({ nightHours, napMinutes, onNight, onNap }: {
+  nightHours: number
+  napMinutes: number
+  onNight: (hours: number) => void
+  onNap: (minutes: number) => void
+}) {
   const levels = [5, 6, 6.5, 7, 7.5, 8, 8.5, 9]
-  const getColor = (h: number) => h >= 8 ? '#4CAF50' : h >= 7 ? '#00BCD4' : h >= 6 ? '#FFA500' : '#FF6B6B'
-  const getLabel = (h: number) => h >= 8 ? 'Great' : h >= 7 ? 'Good' : h >= 6 ? 'Fair' : 'Short'
+  const naps = [20, 30, 60, 90]
+  const total = nightHours + napMinutes / 60
+  const fmtNap = (m: number) => (m >= 60 ? `${m / 60}h` : `${m}m`)
 
   return (
-    <div className="rounded-3xl p-4 lp-card">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-9 h-9 rounded-xl bg-[#6366F1]/15 flex items-center justify-center">
-          <Moon size={14} className="text-[#6366F1]" />
+    <div className="rounded-3xl p-5 lp-card">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `rgb(${HABIT.sleep.rgb} / 0.16)`, color: HABIT.sleep.hex }}>
+          <Moon size={15} />
         </div>
-        <span className="text-sm font-semibold text-black/70 dark:text-white/70">Log Sleep</span>
+        <div className="min-w-0">
+          <div className="text-sm font-bold text-ui-ink">Sleep today</div>
+          <div className="text-xs text-ui-muted">
+            {total > 0
+              ? `${Math.round(total * 10) / 10}h${napMinutes > 0 ? ` · ${nightHours}h last night + ${fmtNap(napMinutes)} of naps` : ''}`
+              : 'Nothing logged yet'}
+          </div>
+        </div>
       </div>
-      <div className="flex items-baseline gap-2 mb-3">
-        <span className="text-2xl font-black" style={{ color: value > 0 ? getColor(value) : '#94a3b8' }}>
-          {value > 0 ? `${value}h` : '—'}
-        </span>
-        {value > 0 && (
-          <span className="text-xs font-semibold" style={{ color: getColor(value) }}>
-            {getLabel(value)}
-          </span>
-        )}
-      </div>
+
+      <div className="text-[12px] font-semibold text-ui-muted mb-2">Last night <span className="font-normal">(tap again to correct it)</span></div>
       <div className="flex flex-wrap gap-1.5">
         {levels.map((h) => (
-          <button
-            key={h}
-            type="button"
-            onClick={() => onChange(h)}
-            className={clsx(
-              'px-2.5 py-1 max-sm:px-3 max-sm:py-2 rounded-lg text-xs font-semibold transition-all duration-150',
-              value === h
-                ? 'text-white shadow-sm'
-                : 'bg-black/[0.04] dark:bg-white/[0.05] text-black/50 dark:text-white/45 hover:bg-black/[0.08] dark:hover:bg-white/[0.09]'
-            )}
-            style={value === h ? { backgroundColor: getColor(h) } : undefined}
-          >
+          <button key={h} type="button" onClick={() => onNight(h)}
+            className={clsx('px-3 py-2 rounded-xl text-xs font-bold transition-all duration-150',
+              nightHours === h ? 'text-white shadow-sm' : 'bg-ui-raised text-ui-muted hover:text-ui-ink')}
+            style={nightHours === h ? { backgroundColor: HABIT.sleep.hex } : undefined}>
             {h}h
+          </button>
+        ))}
+      </div>
+
+      <div className="text-[12px] font-semibold text-ui-muted mt-4 mb-2">Add a nap <span className="font-normal">(each one adds)</span></div>
+      <div className="flex flex-wrap gap-1.5">
+        {naps.map((m) => (
+          <button key={m} type="button" onClick={() => onNap(m)}
+            className="px-3 py-2 rounded-xl text-xs font-bold bg-ui-raised text-ui-ink hover:bg-ui-line/[0.08] transition">
+            +{fmtNap(m)}
           </button>
         ))}
       </div>
@@ -286,8 +299,19 @@ export default function Physical() {
   const [otherOpen, setOtherOpen] = useState(false)
   const [stepsOpen, setStepsOpen] = useState(false)
   const [phoneStepsInput, setPhoneStepsInput] = useState('')
-  const [caloriesInput, setCaloriesInput] = useState('100')
+  const [activityType, setActivityType] = useState<ActivityType>('gym')
+  const [durationInput, setDurationInput] = useState('30')
   const [noteInput, setNoteInput] = useState('')
+  const addWorkout = useAppStore((s) => s.addWorkout)
+  const addNap = useAppStore((s) => s.addNap)
+  const heightCm = useAuthStore((s) => s.user?.profile?.heightCm)
+  const weightKg = useAuthStore((s) => s.user?.profile?.weightKg)
+  const todayKey = new Date().toDateString()
+  const sleepToday = physical.sleepToday?.date === todayKey ? physical.sleepToday : { nightHours: 0, napMinutes: 0 }
+  // Other activities' credit toward today's step goal (the score counts it too)
+  const todayCredit = physical.activityLog
+    .filter((a) => new Date(a.timestamp).toDateString() === todayKey)
+    .reduce((n, a) => n + (a.stepEquivalent ?? 0), 0)
 
   const stepPct = Math.min(100, Math.round((todaySteps / stepGoal) * 100))
   const recent = useMemo(() => physical.activityLog.slice(0, 5), [physical.activityLog])
@@ -373,7 +397,7 @@ export default function Physical() {
             </div>
             {stepsSentence && <p className="text-[13px] text-ui-muted mt-3">{stepsSentence}</p>}
           </div>
-          <ScoreImpactCard steps={todaySteps} sleep={todaySleep} />
+          <ScoreImpactCard steps={todaySteps + todayCredit} sleep={todaySleep} nightLogged={sleepToday.nightHours > 0} />
         </div>
       )}
 
@@ -396,17 +420,32 @@ export default function Physical() {
                 <motion.div key={a.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                   className="flex items-center gap-3 p-3 rounded-2xl bg-ui-raised">
                   <div className="w-9 h-9 rounded-xl bg-lp-primary/10 flex items-center justify-center flex-shrink-0">
-                    {a.note?.includes('Walk') ? <Navigation size={14} className="text-lp-primary" /> : <Activity size={14} className="text-lp-primary" />}
+                    {isActivityType(a.activityType)
+                      ? <span className="text-base leading-none" aria-hidden>{ACTIVITIES[a.activityType].emoji}</span>
+                      : a.note?.includes('Walk') ? <Navigation size={14} className="text-lp-primary" /> : <Activity size={14} className="text-lp-primary" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-ui-ink truncate">{a.note?.trim() || 'Activity'}</div>
+                    <div className="text-sm font-semibold text-ui-ink truncate">
+                      {isActivityType(a.activityType)
+                        ? `${ACTIVITIES[a.activityType].label} · ${a.durationMin} min${a.note ? ` · ${a.note}` : ''}`
+                        : a.note?.trim() || 'Activity'}
+                    </div>
                     <div className="text-xs text-ui-muted mt-0.5">
                       {new Date(a.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="text-sm font-bold text-ui-ink">{formatNumber(a.steps)} steps</div>
-                    <div className="text-xs text-ui-muted">{formatDistance(a.distanceKm, units)} · {a.caloriesKcal} kcal</div>
+                    {a.activityType ? (
+                      <>
+                        <div className="text-sm font-bold text-ui-ink">{a.caloriesKcal} kcal</div>
+                        <div className="text-xs text-ui-muted">{a.stepEquivalent ? `counts as ${formatNumber(a.stepEquivalent)} steps` : 'light activity'}</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-sm font-bold text-ui-ink">{formatNumber(a.steps)} steps</div>
+                        <div className="text-xs text-ui-muted">{formatDistance(a.distanceKm, units)} · {a.caloriesKcal} kcal</div>
+                      </>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -419,7 +458,9 @@ export default function Physical() {
 
       {tab === 'sleep' && (
         <div className="grid lg:grid-cols-[300px_1fr] gap-4">
-          <SleepLogger value={todaySleep} onChange={(h) => { updateSleepForToday(h); toast.success(`Sleep logged: ${h}h`) }} />
+          <SleepLogger nightHours={sleepToday.nightHours} napMinutes={sleepToday.napMinutes}
+            onNight={(h) => { updateSleepForToday(h).then(() => toast.success(`Last night: ${h}h`)).catch((e: Error) => toast.error(e.message)) }}
+            onNap={(m) => { addNap(m).then(() => toast.success(`Nap added: ${m >= 60 ? `${m / 60}h` : `${m} min`}`)).catch((e: Error) => toast.error(e.message)) }} />
           <div className="rounded-3xl p-5 lp-card min-w-0">
             <div className="text-[13px] font-bold text-ui-ink mb-1">Your nights</div>
             <p className="text-[15px] text-ui-muted leading-snug mb-4">
@@ -458,6 +499,22 @@ export default function Physical() {
         </p>
         <Input label="Today's steps on your phone" value={phoneStepsInput} onChange={(e) => setPhoneStepsInput(e.target.value)}
           inputMode="numeric" placeholder="e.g. 6400" autoFocus />
+        {(() => {
+          const total = Math.round(Number(phoneStepsInput.replace(/[,\s]/g, '')))
+          const extra = Number.isFinite(total) ? total - todaySteps : 0
+          if (!(extra > 0)) return null
+          const est = stepsEstimate(extra, heightCm, weightKg)
+          return (
+            <div className="mt-3 rounded-2xl bg-ui-raised p-3 text-[13px] text-ui-ink">
+              Adds <b>{formatNumber(extra)} steps</b> ≈ <b>{formatDistance(est.distanceKm, units)}</b> and <b>{est.caloriesKcal} kcal</b>
+              <div className="text-[11px] text-ui-muted mt-1">
+                {est.estimated
+                  ? 'Using a typical height and weight. Add yours in Profile for a closer estimate.'
+                  : 'Distance from your height (stride), calories from your weight at a normal walking pace.'}
+              </div>
+            </div>
+          )
+        })()}
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setStepsOpen(false)}>Cancel</Button>
           <Button onClick={() => {
@@ -472,32 +529,73 @@ export default function Physical() {
               toast.success(`Already counted: you have ${formatNumber(todaySteps)} steps today`)
               return
             }
-            // About 0.75 m a step, as elsewhere on this page
-            addActivity({ steps: extra, distanceKm: Math.round(extra * 0.00075 * 100) / 100, caloriesKcal: 0, note: "Steps from my phone's step counter" })
+            // Distance from the person's stride, calories from their weight
+            const est = stepsEstimate(extra, heightCm, weightKg)
+            addActivity({ steps: extra, distanceKm: est.distanceKm, caloriesKcal: est.caloriesKcal, note: "Steps from my phone's step counter" })
               .then(() => toast.success(`Added ${formatNumber(extra)} steps (${formatNumber(total)} today)`))
               .catch((err: Error) => toast.error(err.message))
           }}>Save</Button>
         </div>
       </Modal>
 
-      {/* Log other activity modal */}
-      <Modal open={otherOpen} onClose={() => setOtherOpen(false)} title="Log other activity">
-        <p className="text-sm text-black/55 dark:text-white/45 -mt-1 mb-4">
-          For gym sessions, cycling, swimming, or any activity where GPS tracking doesn&apos;t apply.
+      {/* Another activity: what it was and for how long */}
+      <Modal open={otherOpen} onClose={() => setOtherOpen(false)} title="Log another activity">
+        <p className="text-sm text-ui-muted -mt-1 mb-4">
+          For the gym, football, cycling, dancing, shamba work and more. Calories come from the activity and your
+          weight, and it counts toward your step goal.
         </p>
-        <div className="grid md:grid-cols-2 gap-3">
-          <Input label="Calories burned (kcal)" value={caloriesInput} onChange={(e) => setCaloriesInput(e.target.value)} inputMode="numeric" />
-          <Input label="Activity note" value={noteInput} onChange={(e) => setNoteInput(e.target.value)} placeholder="e.g. Gym session, Cycling…" />
+        <div className="text-[12px] font-semibold text-ui-muted mb-2">What did you do?</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-56 overflow-y-auto pr-1">
+          {ACTIVITY_TYPES.map((t) => (
+            <button key={t} type="button" onClick={() => setActivityType(t)} aria-pressed={activityType === t}
+              className={clsx('flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] font-semibold text-left transition',
+                activityType === t ? 'bg-lp-primary/15 text-ui-ink ring-2 ring-lp-primary' : 'bg-ui-raised text-ui-muted hover:text-ui-ink')}>
+              <span aria-hidden>{ACTIVITIES[t].emoji}</span> <span className="truncate">{ACTIVITIES[t].label}</span>
+            </button>
+          ))}
         </div>
+        <div className="text-[12px] font-semibold text-ui-muted mt-4 mb-2">For how long?</div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {[15, 30, 45, 60, 90].map((m) => (
+            <button key={m} type="button" onClick={() => setDurationInput(String(m))}
+              className={clsx('px-3 py-2 rounded-xl text-xs font-bold transition',
+                durationInput === String(m) ? 'bg-lp-btn text-lp-btn-ink' : 'bg-ui-raised text-ui-muted hover:text-ui-ink')}>
+              {m} min
+            </button>
+          ))}
+          <input value={durationInput} onChange={(e) => setDurationInput(e.target.value.replace(/[^0-9]/g, ''))}
+            inputMode="numeric" aria-label="Minutes"
+            className="w-20 px-3 py-2 rounded-xl bg-ui-raised text-ui-ink text-xs font-bold border border-ui-line/10 focus:outline-none focus:ring-2 focus:ring-lp-primary/40" />
+        </div>
+        <div className="mt-3">
+          <Input label="Note (optional)" value={noteInput} onChange={(e) => setNoteInput(e.target.value)} placeholder="e.g. Leg day, weekend match" />
+        </div>
+        {(() => {
+          const mins = Number(durationInput)
+          if (!(mins > 0)) return null
+          const v = activityValue(activityType, mins, weightKg)
+          return (
+            <div className="mt-3 rounded-2xl bg-ui-raised p-3 text-[13px] text-ui-ink">
+              ≈ <b>{v.caloriesKcal} kcal</b> burned · {v.stepEquivalent > 0
+                ? <>counts as <b>{formatNumber(v.stepEquivalent)} steps</b> toward your goal ({v.intensity})</>
+                : <>light activity: burns calories but doesn&apos;t count toward steps</>}
+              {!(weightKg && weightKg > 0) && <div className="text-[11px] text-ui-muted mt-1">Using a typical weight. Add yours in Profile for a closer estimate.</div>}
+            </div>
+          )
+        })()}
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setOtherOpen(false)}>Cancel</Button>
           <Button onClick={() => {
-            const c = Math.max(0, Math.round(Number(caloriesInput) || 0))
-            addActivity({ steps: 0, distanceKm: 0, caloriesKcal: c, note: noteInput.trim() || 'Other activity' })
+            const mins = Math.round(Number(durationInput))
+            if (!(mins >= 1 && mins <= 600)) {
+              toast.error('Enter how many minutes (1 to 600)')
+              return
+            }
             setOtherOpen(false)
-            toast.success('Activity logged')
+            addWorkout({ activityType, durationMin: mins, note: noteInput.trim() || undefined })
+              .then(() => toast.success(`${ACTIVITIES[activityType].label} logged`))
+              .catch((err: Error) => toast.error(err.message))
             setNoteInput('')
-            setCaloriesInput('100')
           }}>Save</Button>
         </div>
       </Modal>

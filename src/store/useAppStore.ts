@@ -4,6 +4,8 @@ import type { AppCategory, AppState, DayKey, MoodEmoji, ScoreDimension, ThemeMod
 import { seedState } from '../data/seed'
 import { apiGet, apiPut } from '../api/client'
 import { saveLog } from '../offline/outbox'
+import { activityValue, type ActivityType } from '../lib/activities'
+import { useAuthStore } from './useAuthStore'
 import { elapsedAt, endedAtFor, remainingAt } from '../utils/focusTimer'
 
 // Same defaults as the server (GoalService.DEFAULT_GOALS)
@@ -52,6 +54,10 @@ type PhysicalEntry = {
   note?: string | null
   trail?: Array<{ lat: number; lng: number }> | null
   timestamp: string
+  sleepType?: 'night' | 'nap' | null
+  activityType?: string | null
+  durationMin?: number
+  stepEquivalent?: number
 }
 
 type DigitalEntry = {
@@ -188,11 +194,20 @@ function buildWeeklySleep(entries: PhysicalEntry[]): AppState['physical']['sleep
     const day = dayKeyFromDate(e.timestamp)
     map.get(day)?.push(e.sleepMinutes / 60)
   })
+  // A day's sleep is last night plus any naps, so they add up
   return DAYS.map((day) => {
-    const vals = map.get(day) ?? []
-    const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
-    return { day, hours: Math.round(avg * 10) / 10 }
+    const total = (map.get(day) ?? []).reduce((a, b) => a + b, 0)
+    return { day, hours: Math.round(total * 10) / 10 }
   })
+}
+
+/** Today's sleep: last night (one value, the latest) and naps (each adds) */
+export function buildSleepToday(entries: PhysicalEntry[]): NonNullable<AppState['physical']['sleepToday']> {
+  const today = new Date().toDateString()
+  const mine = entries.filter((e) => e.sleepMinutes > 0 && new Date(e.timestamp).toDateString() === today)
+  const night = mine.filter((e) => e.sleepType !== 'nap').sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0]
+  const napMinutes = mine.filter((e) => e.sleepType === 'nap').reduce((s, e) => s + e.sleepMinutes, 0)
+  return { date: today, nightHours: night ? Math.round((night.sleepMinutes / 60) * 10) / 10 : 0, napMinutes }
 }
 
 function buildWeeklyScreen(entries: DigitalEntry[]): AppState['digital']['weeklyScreenTimeMin'] {
@@ -381,6 +396,8 @@ export type AppActions = {
   /** `startedAt` (ISO) files the activity under the day it happened, even if it's saved later */
   addActivity: (input: { steps: number; distanceKm: number; caloriesKcal: number; note?: string; trail?: Array<{ lat: number; lng: number }>; durationSec?: number; startedAt?: string }) => Promise<void>
   updateSleepForToday: (hours: number) => Promise<void>
+  addNap: (minutes: number) => Promise<void>
+  addWorkout: (input: { activityType: ActivityType; durationMin: number; note?: string }) => Promise<void>
   addScreenSession: (input: { category: AppCategory; minutes: number }) => Promise<void>
   toggleFocusMode: () => void
   startFocusTimer: (minutes: number, label?: string) => void
@@ -506,15 +523,18 @@ export const useAppStore = create<AppStore>()(
         }
       },
 
-      // FIX: Separate sleep API call — no longer mixed with activity
+      // Last night's sleep: setting it again corrects it. Naps add on top.
       updateSleepForToday: async (hours) => {
         const day = getDayKey()
-        const prevHours = get().physical.sleepHours.find((x) => x.day === day)?.hours ?? 0
-        // Optimistic update
+        const today = new Date().toDateString()
+        const before = get().physical
+        const st = before.sleepToday?.date === today ? before.sleepToday : { date: today, nightHours: 0, napMinutes: 0 }
+        const total = Math.round((hours + st.napMinutes / 60) * 10) / 10
         set((s) => ({
           physical: {
             ...s.physical,
-            sleepHours: updateByDay(s.physical.sleepHours, day, { hours }),
+            sleepHours: updateByDay(s.physical.sleepHours, day, { hours: total }),
+            sleepToday: { ...st, nightHours: hours },
           },
           meta: { lastUpdatedAt: now() },
         }))
@@ -524,18 +544,79 @@ export const useAppStore = create<AppStore>()(
             distanceKm: 0,
             caloriesKcal: 0,
             sleepMinutes: Math.round(hours * 60),
+            sleepType: 'night',
             timestamp: new Date().toISOString(),
           })
           if (result === 'sent') scheduleScoreSync()
         } catch {
-          // Rollback
+          set((s) => ({ physical: { ...s.physical, sleepHours: before.sleepHours, sleepToday: before.sleepToday } }))
+          throw new Error('Failed to save sleep data. Please try again.')
+        }
+      },
+
+      // A nap adds to today's sleep (last night stays as it was)
+      addNap: async (minutes) => {
+        const day = getDayKey()
+        const today = new Date().toDateString()
+        const before = get().physical
+        const st = before.sleepToday?.date === today ? before.sleepToday : { date: today, nightHours: 0, napMinutes: 0 }
+        set((s) => ({
+          physical: {
+            ...s.physical,
+            sleepHours: incrementByDay(s.physical.sleepHours, day, 'hours', Math.round((minutes / 60) * 10) / 10),
+            sleepToday: { ...st, napMinutes: st.napMinutes + minutes },
+          },
+          meta: { lastUpdatedAt: now() },
+        }))
+        try {
+          const result = await saveLog('/api/activity/physical', {
+            steps: 0, distanceKm: 0, caloriesKcal: 0,
+            sleepMinutes: Math.round(minutes),
+            sleepType: 'nap',
+            timestamp: new Date().toISOString(),
+          })
+          if (result === 'sent') scheduleScoreSync()
+        } catch {
+          set((s) => ({ physical: { ...s.physical, sleepHours: before.sleepHours, sleepToday: before.sleepToday } }))
+          throw new Error('Failed to save the nap. Please try again.')
+        }
+      },
+
+      // Another activity: the server works out calories and step credit from
+      // the activity, how long, and the person's weight; this is the preview
+      addWorkout: async ({ activityType, durationMin, note }) => {
+        const day = getDayKey()
+        const weightKg = useAuthStore.getState().user?.profile?.weightKg
+        const { caloriesKcal, stepEquivalent } = activityValue(activityType, durationMin, weightKg)
+        const id = uid('act')
+        set((s) => ({
+          physical: {
+            ...s.physical,
+            weeklyCaloriesKcal: incrementByDay(s.physical.weeklyCaloriesKcal, day, 'kcal', caloriesKcal),
+            activityLog: [
+              { id, timestamp: now(), steps: 0, distanceKm: 0, caloriesKcal, note, activityType, durationMin, stepEquivalent },
+              ...s.physical.activityLog,
+            ],
+          },
+          meta: { lastUpdatedAt: now() },
+        }))
+        try {
+          const result = await saveLog('/api/activity/physical', {
+            steps: 0, distanceKm: 0, caloriesKcal: 0, sleepMinutes: 0,
+            activityType, durationMin,
+            note: note ?? '',
+            timestamp: new Date().toISOString(),
+          })
+          if (result === 'sent') scheduleScoreSync()
+        } catch (err) {
           set((s) => ({
             physical: {
               ...s.physical,
-              sleepHours: updateByDay(s.physical.sleepHours, day, { hours: prevHours }),
+              weeklyCaloriesKcal: incrementByDay(s.physical.weeklyCaloriesKcal, day, 'kcal', -caloriesKcal),
+              activityLog: s.physical.activityLog.filter((a) => a.id !== id),
             },
           }))
-          throw new Error('Failed to save sleep data. Please try again.')
+          throw err instanceof Error ? err : new Error('Failed to save the activity. Please try again.')
         }
       },
 
@@ -898,8 +979,9 @@ export const useAppStore = create<AppStore>()(
                 weeklyDistanceKm: buildWeeklyDistance(entries),
                 weeklyCaloriesKcal: buildWeeklyCalories(entries),
                 sleepHours: buildWeeklySleep(entries),
-                // Sleep-only entries belong in the sleep chart, not the activity list
-                activityLog: entries.filter((e) => e.steps > 0 || e.distanceKm > 0).slice(0, 20).map((e) => ({
+                sleepToday: buildSleepToday(entries),
+                // Sleep belongs in the sleep views; walks, steps and other activities here
+                activityLog: entries.filter((e) => e.steps > 0 || e.distanceKm > 0 || !!e.activityType).slice(0, 20).map((e) => ({
                   id: e.id,
                   timestamp: new Date(e.timestamp).getTime(),
                   steps: e.steps,
@@ -907,6 +989,9 @@ export const useAppStore = create<AppStore>()(
                   caloriesKcal: e.caloriesKcal,
                   note: e.note ?? undefined,
                   trail: Array.isArray(e.trail) ? e.trail as Array<{ lat: number; lng: number }> : undefined,
+                  activityType: e.activityType ?? undefined,
+                  durationMin: e.durationMin || undefined,
+                  stepEquivalent: e.stepEquivalent || undefined,
                 })),
               }
             }

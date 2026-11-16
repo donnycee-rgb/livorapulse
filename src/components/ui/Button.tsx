@@ -16,7 +16,7 @@ const base =
 
 const variants: Record<Variant, string> = {
   primary:
-    'bg-lp-secondary text-white shadow-card hover:opacity-95',
+    'bg-lp-btn text-lp-btn-ink shadow-card hover:opacity-95',
   secondary:
     'bg-lp-primary text-white shadow-card hover:opacity-95',
   ghost:
