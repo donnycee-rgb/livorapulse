@@ -89,6 +89,11 @@ export type ActivityLogEntry = {
   note?: string
   durationSec?: number
   trail?: Coord[]
+  /** Another activity (gym, football…): what it was and how long */
+  activityType?: string
+  durationMin?: number
+  /** Its credit toward the step goal (kept apart from real steps) */
+  stepEquivalent?: number
 }
 
 export type AppState = {
@@ -132,6 +137,8 @@ export type AppState = {
     weeklyDistanceKm: WeeklyDistance
     weeklyCaloriesKcal: WeeklyCalories
     sleepHours: WeeklySleep
+    /** Today's sleep split into last night and naps (date = local day it belongs to) */
+    sleepToday?: { date: string; nightHours: number; napMinutes: number }
     activityLog: ActivityLogEntry[]
   }
   digital: {

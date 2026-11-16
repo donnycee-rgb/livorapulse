@@ -7,7 +7,7 @@ import { useAuthStore } from '../store/useAuthStore'
 import { notifyPendingWalksChanged } from '../hooks/usePendingWalkSync'
 import { keepPendingWalk, removePendingWalk } from '../utils/pendingWalks'
 import { chooseSteps, StepDetector } from '../utils/stepDetector'
-import { activeCalories, WalkClock } from '../utils/walkMetrics'
+import { strideFromHeight, activeCalories, WalkClock } from '../utils/walkMetrics'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -197,7 +197,7 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
   const weightKg = useAuthStore((s) => s.user?.profile?.weightKg) || DEFAULT_WEIGHT_KG
   const heightCm = useAuthStore((s) => s.user?.profile?.heightCm) || null
   // Average walking stride ≈ 41.5% of height; 0.75 m when height is unknown
-  const strideM = heightCm ? heightCm * 0.00415 : 0.75
+  const strideM = strideFromHeight(heightCm)
 
   const [trackingState, setTrackingState] = useState<TrackingState>('idle')
   const [trail, setTrail] = useState<Coord[]>([])
