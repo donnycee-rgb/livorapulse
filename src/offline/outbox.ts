@@ -6,6 +6,8 @@
 // the order it was made. Each log carries a random id the server uses to save
 // it exactly once, so a retry after a dropped reply never doubles it.
 
+import { createElement } from 'react'
+import { CloudOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { apiRequest } from '../api/client'
 import { useAuthStore } from '../store/useAuthStore'
@@ -122,7 +124,7 @@ export async function saveLog(path: string, body: Record<string, unknown>): Prom
 }
 
 function notifyQueued(): void {
-  toast("Saved on your phone. It'll upload when you're back online.", { id: 'outbox-queued', icon: '📶' })
+  toast("Saved on your phone. It'll upload when you're back online.", { id: 'outbox-queued', icon: createElement(CloudOff, { size: 18, 'aria-hidden': true }) })
 }
 
 // ─── Uploading what's waiting ────────────────────────────────────────────────

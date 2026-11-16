@@ -24,6 +24,7 @@ import PendingWalksCard from '../components/PendingWalksCard'
 
 import { useAppStore } from '../store/useAppStore'
 import { useAuthStore } from '../store/useAuthStore'
+import { ACTIVITY_ICONS } from '../lib/activityIcons'
 import { ACTIVITIES, ACTIVITY_TYPES, activityValue, isActivityType, type ActivityType } from '../lib/activities'
 import { stepsEstimate } from '../utils/walkMetrics'
 import { selectDimensionScores, selectLifePulseScore, selectProgressiveGoals } from '../store/selectors'
@@ -421,7 +422,7 @@ export default function Physical() {
                   className="flex items-center gap-3 p-3 rounded-2xl bg-ui-raised">
                   <div className="w-9 h-9 rounded-xl bg-lp-primary/10 flex items-center justify-center flex-shrink-0">
                     {isActivityType(a.activityType)
-                      ? <span className="text-base leading-none" aria-hidden>{ACTIVITIES[a.activityType].emoji}</span>
+                      ? (() => { const Icon = ACTIVITY_ICONS[a.activityType]; return <Icon size={15} className="text-lp-primary" aria-hidden /> })()
                       : a.note?.includes('Walk') ? <Navigation size={14} className="text-lp-primary" /> : <Activity size={14} className="text-lp-primary" />}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -550,7 +551,8 @@ export default function Physical() {
             <button key={t} type="button" onClick={() => setActivityType(t)} aria-pressed={activityType === t}
               className={clsx('flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] font-semibold text-left transition',
                 activityType === t ? 'bg-lp-primary/15 text-ui-ink ring-2 ring-lp-primary' : 'bg-ui-raised text-ui-muted hover:text-ui-ink')}>
-              <span aria-hidden>{ACTIVITIES[t].emoji}</span> <span className="truncate">{ACTIVITIES[t].label}</span>
+              {(() => { const Icon = ACTIVITY_ICONS[t]; return <Icon size={16} className={activityType === t ? 'text-lp-primary flex-shrink-0' : 'flex-shrink-0'} aria-hidden /> })()}
+              <span className="truncate">{ACTIVITIES[t].label}</span>
             </button>
           ))}
         </div>
