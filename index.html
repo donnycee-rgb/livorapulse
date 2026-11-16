@@ -1,6 +1,40 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      // If the app's own files fail to load (an old or bad copy saved on this
+      // device), clear the saved app and reload once from the network.
+      // At most once every 30 seconds, so it can never loop.
+      (function () {
+        var KEY = 'lp-recovered-at'
+        function recover() {
+          try {
+            if (Date.now() - Number(sessionStorage.getItem(KEY) || 0) < 30000) return
+            sessionStorage.setItem(KEY, String(Date.now()))
+          } catch (_) {}
+          var jobs = []
+          if (navigator.serviceWorker) {
+            jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+              return Promise.all(rs.map(function (r) { return r.unregister() }))
+            }))
+          }
+          if (window.caches) {
+            jobs.push(caches.keys().then(function (ks) {
+              return Promise.all(ks.filter(function (k) { return k !== 'lp-models' }).map(function (k) { return caches.delete(k) }))
+            }))
+          }
+          var reload = function () { location.reload() }
+          Promise.all(jobs).then(reload, reload)
+        }
+        window.addEventListener('error', function (e) {
+          var t = e.target
+          if (!t || (t.tagName !== 'SCRIPT' && t.tagName !== 'LINK')) return
+          if ((t.src || t.href || '').indexOf('/assets/') !== -1) recover()
+        }, true)
+        // A page's code that fails to download after a new version went live
+        window.addEventListener('vite:preloadError', function (e) { e.preventDefault(); recover() })
+      })()
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LivoraPulse — Wellness Tracker Built for Kenya &amp; Africa</title>

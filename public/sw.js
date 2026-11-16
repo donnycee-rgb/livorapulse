@@ -7,30 +7,48 @@
 // - Food scan model (/models): saved the first time someone scans.
 // - The API is never cached here: logs made offline wait in the app's own
 //   queue (src/offline/outbox.ts) and upload later.
+//
+// One rule above all: an app file is only saved if it really is that file.
+// A host answers an unknown path with the app's HTML page (single-page app
+// fallback), e.g. for a moment during a deploy. Saving that HTML under a
+// JavaScript file's name breaks the app until the cache is cleared, so
+// anything that comes back as HTML for /assets or /models is never saved.
 
 const VERSION = '__LP_VERSION__'
 const PRECACHE = ['__LP_PRECACHE__']
 
 const SHELL = `lp-shell-${VERSION}`
-const RUNTIME = 'lp-runtime'
 const MODELS = 'lp-models'
 const NAV_TIMEOUT_MS = 3500
 
+/** True when a response is the real file, not the app's HTML page standing in for it */
+function isRealFile(res) {
+  if (!res || !res.ok) return false
+  const type = res.headers.get('content-type') || ''
+  return !type.includes('text/html')
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(SHELL)
-      .then((cache) => cache.addAll(PRECACHE))
-      .then(() => self.skipWaiting()),
-  )
+  event.waitUntil((async () => {
+    const cache = await caches.open(SHELL)
+    // One by one, checked, and never failing the install: a file that can't
+    // be fetched cleanly now is simply fetched later when it's needed
+    await Promise.all(PRECACHE.map(async (path) => {
+      try {
+        const res = await fetch(path, { cache: 'no-cache' })
+        if (path === '/' ? res.ok : isRealFile(res)) await cache.put(path, res)
+      } catch { /* offline or a bad response: skip */ }
+    }))
+    await self.skipWaiting()
+  })())
 })
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    // Keep this version and the one before it: a tab still running the
-    // previous version may yet load one of its pages
-    const shells = (await caches.keys()).filter((k) => k.startsWith('lp-shell-')).sort()
-    const keep = new Set([SHELL, ...shells.filter((k) => k !== SHELL).slice(-1)])
-    await Promise.all(shells.filter((k) => !keep.has(k)).map((k) => caches.delete(k)))
+    // Keep only this version's files and the food model; everything else
+    // (older versions, and any bad copy saved by an earlier version) goes
+    const keep = new Set([SHELL, MODELS])
+    await Promise.all((await caches.keys()).filter((k) => !keep.has(k)).map((k) => caches.delete(k)))
     await self.clients.claim()
   })())
 })
@@ -43,29 +61,35 @@ function withTimeout(promise, ms) {
 }
 
 async function page(request) {
+  const cache = await caches.open(SHELL)
   try {
     const res = await withTimeout(fetch(request), NAV_TIMEOUT_MS)
-    if (res.ok) {
-      const cache = await caches.open(RUNTIME)
-      cache.put('/', res.clone())
-    }
+    if (res.ok) cache.put('/', res.clone())
     return res
   } catch {
-    // Every page is the same app (index.html); the app shows the right one
-    return (await caches.match('/', { ignoreSearch: true })) || Response.error()
+    // No signal, or too slow: every page is the same app (index.html)
+    return (await cache.match('/')) || Response.error()
   }
 }
 
 async function cacheFirst(request, cacheName) {
-  const hit = await caches.match(request)
-  if (hit) return hit
+  const cache = await caches.open(cacheName)
+  const hit = await cache.match(request)
+  if (isRealFile(hit)) return hit
+  if (hit) await cache.delete(request) // a bad copy from before: drop it
   const res = await fetch(request)
-  if (res.ok) (await caches.open(cacheName)).put(request, res.clone())
-  return res
+  if (isRealFile(res)) {
+    cache.put(request, res.clone())
+    return res
+  }
+  // The host sent its HTML page for a missing app file (an old version's
+  // file after a deploy). Don't pass HTML off as JavaScript: fail cleanly so
+  // the app reloads itself onto the current version.
+  return res.ok ? new Response('', { status: 404, statusText: 'Not Found' }) : res
 }
 
 async function staleWhileRevalidate(request) {
-  const cache = await caches.open(RUNTIME)
+  const cache = await caches.open(SHELL)
   const hit = await cache.match(request)
   const fresh = fetch(request).then((res) => {
     if (res.ok) cache.put(request, res.clone())
