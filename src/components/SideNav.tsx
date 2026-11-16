@@ -63,7 +63,7 @@ export default function SideNav() {
       }}
     >
       <div
-        className="flex flex-col rounded-2xl bg-white dark:bg-slate-900 border border-black/[0.06] dark:border-white/[0.06] shadow-card overflow-hidden h-[calc(100vh-64px-40px)]"
+        className="flex flex-col rounded-2xl bg-ui-card border border-black/[0.06] dark:border-white/[0.06] shadow-card overflow-hidden h-[calc(100vh-64px-40px)]"
         style={{ width: w, minWidth: w, transition: 'width 0.25s ease-in-out' }}
       >
         {/* Toggle button */}

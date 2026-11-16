@@ -133,7 +133,7 @@ export default function CheckInModal({ open, onClose }: { open: boolean; onClose
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={close} />
           <motion.div role="dialog" aria-modal="true" aria-label="Weekly check-in"
-            className="relative bg-white dark:bg-slate-900 rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl p-6 w-full max-w-md max-h-[88vh] overflow-y-auto"
+            className="relative bg-ui-card rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl p-6 w-full max-w-md max-h-[88vh] overflow-y-auto"
             initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }} transition={{ duration: 0.2 }}>
 

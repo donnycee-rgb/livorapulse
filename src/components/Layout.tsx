@@ -42,7 +42,7 @@ export default function Layout({ children }: PropsWithChildren) {
   }, [hydrated])
 
   return (
-    <div className="h-dvh flex flex-col bg-slate-50 dark:bg-[#0a0f1a]">
+    <div className="h-dvh flex flex-col bg-ui-bg">
 
       {/* Header — full width, never scrolls */}
       <AppHeader />
