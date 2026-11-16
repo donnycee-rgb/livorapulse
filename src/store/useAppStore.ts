@@ -2,7 +2,8 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AppCategory, AppState, DayKey, MoodEmoji, ScoreDimension, ThemeMode, TransportMode, Units, UserGoals } from '../data/types'
 import { seedState } from '../data/seed'
-import { apiGet, apiPost, apiPut } from '../api/client'
+import { apiGet, apiPut } from '../api/client'
+import { saveLog } from '../offline/outbox'
 import { elapsedAt, endedAtFor, remainingAt } from '../utils/focusTimer'
 
 // Same defaults as the server (GoalService.DEFAULT_GOALS)
@@ -473,20 +474,22 @@ export const useAppStore = create<AppStore>()(
         }))
         try {
           // FIX: Only send activity fields — no sleep data in this call
-          await apiPost('/api/activity/physical', {
+          const result = await saveLog('/api/activity/physical', {
             steps,
             distanceKm,
             caloriesKcal,
             sleepMinutes: 0,
             note: note ?? '',
             trail: trail ?? [],
-            ...(startedAt ? { timestamp: startedAt } : {}),
+            timestamp: startedAt ?? new Date().toISOString(),
           })
-          scheduleScoreSync()
-          get().pushNotification({
-            title: 'Activity saved',
-            message: `${steps} steps and ${distanceKm.toFixed(1)} km saved to your profile.`,
-          })
+          if (result === 'sent') {
+            scheduleScoreSync()
+            get().pushNotification({
+              title: 'Activity saved',
+              message: `${steps} steps and ${distanceKm.toFixed(1)} km saved to your profile.`,
+            })
+          }
         } catch (err) {
           // Rollback optimistic update on failure
           set((s) => ({
@@ -516,13 +519,14 @@ export const useAppStore = create<AppStore>()(
           meta: { lastUpdatedAt: now() },
         }))
         try {
-          await apiPost('/api/activity/physical', {
+          const result = await saveLog('/api/activity/physical', {
             steps: 0,
             distanceKm: 0,
             caloriesKcal: 0,
             sleepMinutes: Math.round(hours * 60),
+            timestamp: new Date().toISOString(),
           })
-          scheduleScoreSync()
+          if (result === 'sent') scheduleScoreSync()
         } catch {
           // Rollback
           set((s) => ({
@@ -554,11 +558,12 @@ export const useAppStore = create<AppStore>()(
           meta: { lastUpdatedAt: now() },
         }))
         try {
-          await apiPost('/api/activity/digital', {
+          const result = await saveLog('/api/activity/digital', {
             screenTimeMinutes: minutes,
             categoryBreakdown: { [category]: minutes },
+            date: new Date().toISOString(),
           })
-          scheduleScoreSync()
+          if (result === 'sent') scheduleScoreSync()
         } catch {
           // Rollback
           set((s) => ({
@@ -677,15 +682,17 @@ export const useAppStore = create<AppStore>()(
         }))
 
         try {
-          await apiPost('/api/productivity/session', {
+          const result = await saveLog('/api/productivity/session', {
             kind: 'FOCUS',
             label: sessionLabel,
             startedAt: new Date(startedAt).toISOString(),
             endedAt: new Date(endedAt).toISOString(),
             durationSec: elapsed,
           })
-          scheduleScoreSync()
-          get().pushNotification({ title: 'Focus saved', message: `${minutes} minutes saved to your profile.` })
+          if (result === 'sent') {
+            scheduleScoreSync()
+            get().pushNotification({ title: 'Focus saved', message: `${minutes} minutes saved to your profile.` })
+          }
         } catch {
           // Rollback focus minutes on failure
           set((s) => ({
@@ -719,9 +726,11 @@ export const useAppStore = create<AppStore>()(
         }))
 
         try {
-          await apiPost('/api/eco', { category, type, impactKgCO2 })
-          scheduleScoreSync()
-          get().pushNotification({ title: 'Eco action saved', message: type })
+          const result = await saveLog('/api/eco', { category, type, impactKgCO2, timestamp: new Date().toISOString() })
+          if (result === 'sent') {
+            scheduleScoreSync()
+            get().pushNotification({ title: 'Eco action saved', message: type })
+          }
         } catch {
           set((s) => ({
             environment: {
@@ -754,12 +763,13 @@ export const useAppStore = create<AppStore>()(
             Cycling: 'TRANSPORT',
             Driving: 'TRANSPORT',
           }
-          await apiPost('/api/eco', {
+          const result = await saveLog('/api/eco', {
             category: modeMap[mode],
             type: mode,
             impactKgCO2: mode === 'Driving' ? 0 : 0.5,
+            timestamp: new Date().toISOString(),
           })
-          scheduleScoreSync()
+          if (result === 'sent') scheduleScoreSync()
         } catch {
           set((s) => ({
             environment: {
@@ -790,8 +800,8 @@ export const useAppStore = create<AppStore>()(
         try {
           // Send only the mood — the stress slider's current value may be a
           // default or yesterday's, and must not be saved as today's answer
-          await apiPost('/api/mood', { emoji })
-          scheduleScoreSync()
+          const result = await saveLog('/api/mood', { emoji, timestamp: new Date().toISOString() })
+          if (result === 'sent') scheduleScoreSync()
         } catch {
           set((s) => ({
             mood: {
@@ -819,8 +829,8 @@ export const useAppStore = create<AppStore>()(
         try {
           // Send only the stress score (1-5 → 1-10 for the backend) — the
           // selected emoji may be a default or yesterday's
-          await apiPost('/api/mood', { stressScore: clamped * 2 })
-          scheduleScoreSync()
+          const result = await saveLog('/api/mood', { stressScore: clamped * 2, timestamp: new Date().toISOString() })
+          if (result === 'sent') scheduleScoreSync()
         } catch {
           set((s) => ({
             mood: {

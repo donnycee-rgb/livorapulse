@@ -10,7 +10,9 @@ import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { scheduleScoreSync, useAppStore } from '../store/useAppStore'
 import { selectProgressiveGoals } from '../store/selectors'
-import { apiGet, apiPost, apiDel } from '../api/client'
+import { apiGet, apiDel } from '../api/client'
+import { pendingFor, removeFromOutbox, saveLog, subscribeOutbox } from '../offline/outbox'
+import { useAuthStore } from '../store/useAuthStore'
 import FoodScanner, { type FoodScannerHandle } from '../components/FoodScanner'
 import { perServing } from '../ml/portion'
 import YourPlate from '../components/visuals/YourPlate'
@@ -505,29 +507,62 @@ export default function Nutrition() {
   const [modalOpen, setModalOpen] = useState(scanInterrupted)
   const [loading, setLoading] = useState(true)
 
+  const userId = useAuthStore((s) => s.user?.id)
+  // What the server last told us; meals and water still waiting on the phone are added on top
+  const [server, setServer] = useState<{ entries: FoodEntry[]; glasses: number }>({ entries: [], glasses: 0 })
+  const [, setOutboxTick] = useState(0)
+  useEffect(() => subscribeOutbox(() => setOutboxTick((n) => n + 1)), [])
+
   const fetchData = async () => {
     try {
       const [nutrition, water] = await Promise.all([
         apiGet<{ success: boolean; data: { entries: FoodEntry[]; totals: DailyTotals } }>('/api/nutrition/today'),
         apiGet<{ success: boolean; data: { glasses: number } }>('/api/nutrition/water/today'),
       ])
-      setEntries(nutrition.data.entries)
-      setTotals(nutrition.data.totals)
-      setGlasses(water.data.glasses)
-    } catch { /* non-fatal */ }
+      setServer({ entries: nutrition.data.entries, glasses: water.data.glasses })
+    } catch { /* offline: keep what we had, plus what's waiting on the phone */ }
     finally { setLoading(false) }
   }
 
   useEffect(() => { fetchData() }, [])
+  // When waiting meals upload, show the server's copy
+  useEffect(() => subscribeOutbox(() => { if (pendingFor(userId, '/api/nutrition').length === 0) void fetchData() }), [userId])
+
+  // Today's meals and glasses that are saved on the phone but not uploaded yet
+  const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString()
+  const waitingMeals: FoodEntry[] = pendingFor(userId, '/api/nutrition')
+    .filter((i) => isToday(String(i.body.timestamp ?? i.createdAt)))
+    .map((i) => ({ ...(i.body as unknown as Omit<FoodEntry, 'id' | 'timestamp'>), id: `waiting-${i.id}`, timestamp: String(i.body.timestamp ?? i.createdAt) }))
+  const waitingGlasses = pendingFor(userId, '/api/nutrition/water')
+    .filter((i) => isToday(String(i.body.timestamp ?? i.createdAt)))
+    .reduce((n, i) => n + (Number(i.body.glasses) || 1), 0)
+
+  useEffect(() => {
+    const all = [...server.entries, ...waitingMeals]
+    setEntries(all)
+    setTotals({
+      calories: all.reduce((n, e) => n + e.calories, 0),
+      proteinG: all.reduce((n, e) => n + e.proteinG, 0),
+      carbsG: all.reduce((n, e) => n + e.carbsG, 0),
+      fatG: all.reduce((n, e) => n + e.fatG, 0),
+    })
+    setGlasses(server.glasses + waitingGlasses)
+  }, [server, waitingMeals.length, waitingGlasses]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSaveFood = async (entry: Omit<FoodEntry, 'id' | 'timestamp'>) => {
-    await apiPost('/api/nutrition', entry)
+    const result = await saveLog('/api/nutrition', { ...entry, timestamp: new Date().toISOString() })
+    if (result === 'queued') return // shown from the phone until it uploads
     scheduleScoreSync()
     toast.success('Food logged!')
     await fetchData()
   }
 
   const handleDelete = async (id: string) => {
+    if (id.startsWith('waiting-')) { // never uploaded: just take it off the phone
+      removeFromOutbox(id.slice('waiting-'.length))
+      toast.success('Entry removed')
+      return
+    }
     try {
       await apiDel(`/api/nutrition/${id}`)
       scheduleScoreSync()
@@ -538,9 +573,10 @@ export default function Nutrition() {
 
   const handleAddWater = async () => {
     try {
-      await apiPost('/api/nutrition/water', { glasses: 1 })
+      const result = await saveLog('/api/nutrition/water', { glasses: 1, timestamp: new Date().toISOString() })
+      if (result === 'queued') return // counted from the phone until it uploads
       scheduleScoreSync() // water counts toward the streak
-      setGlasses(g => g + 1)
+      setServer((v) => ({ ...v, glasses: v.glasses + 1 }))
       toast.success('Water logged!')
     } catch { toast.error('Failed to log water') }
   }
@@ -656,6 +692,7 @@ export default function Nutrition() {
                             {entry.proteinG > 0 && ` · P: ${Math.round(entry.proteinG)}g`}
                             {entry.carbsG > 0 && ` · C: ${Math.round(entry.carbsG)}g`}
                             {entry.fatG > 0 && ` · F: ${Math.round(entry.fatG)}g`}
+                            {entry.id.startsWith('waiting-') && ' · waiting to upload'}
                           </div>
                         </div>
                         <div className="text-sm font-bold text-black/65 dark:text-white/60 flex-shrink-0">

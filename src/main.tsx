@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 
@@ -9,6 +9,9 @@ import { useAuthStore } from './store/useAuthStore'
 import { readGoogleReturn } from './auth/googleReturn'
 import { useAppStore } from './store/useAppStore'
 import { usePendingWalkSync } from './hooks/usePendingWalkSync'
+import { flushOutbox } from './offline/outbox'
+import { useOutboxSync } from './offline/useOutboxSync'
+import { registerServiceWorker } from './offline/registerServiceWorker'
 import './styles/globals.css'
 
 function Root() {
@@ -36,12 +39,20 @@ function Root() {
     loadMe().catch(() => null)
   }, [authReady, loadMe])
 
-  // Pull data once authenticated
-  useEffect(() => {
-    if (!isAuthenticated) return
+  const refresh = useCallback(() => {
     hydrateFromApi().catch(() => null)
     syncDashboardScore().catch(() => null)
-  }, [isAuthenticated, hydrateFromApi, syncDashboardScore])
+  }, [hydrateFromApi, syncDashboardScore])
+
+  // Upload logs saved on this phone while offline, whenever possible
+  useOutboxSync(refresh)
+
+  // Pull data once authenticated. Logs still waiting on the phone go up
+  // first, so the server's copy already includes them.
+  useEffect(() => {
+    if (!isAuthenticated) return
+    flushOutbox().catch(() => null).finally(refresh)
+  }, [isAuthenticated, refresh])
 
   // Phones keep a tab open for days. Coming back to it on a new day (above all
   // a new week, when the charts start again on Monday) pulls fresh data rather
@@ -54,12 +65,11 @@ function Root() {
       const today = new Date().toDateString()
       if (today === loadedOn) return
       loadedOn = today
-      hydrateFromApi().catch(() => null)
-      syncDashboardScore().catch(() => null)
+      flushOutbox().catch(() => null).finally(refresh)
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [isAuthenticated, hydrateFromApi, syncDashboardScore])
+  }, [isAuthenticated, refresh])
 
   return (
     <>
@@ -93,3 +103,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </React.StrictMode>,
 )
+// Keep the app's files on the phone so it opens without a connection
+registerServiceWorker()

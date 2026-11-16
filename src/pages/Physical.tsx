@@ -272,6 +272,8 @@ export default function Physical() {
 
   const [walkOpen, setWalkOpen] = useState(false)
   const [otherOpen, setOtherOpen] = useState(false)
+  const [stepsOpen, setStepsOpen] = useState(false)
+  const [phoneStepsInput, setPhoneStepsInput] = useState('')
   const [caloriesInput, setCaloriesInput] = useState('100')
   const [noteInput, setNoteInput] = useState('')
 
@@ -313,6 +315,14 @@ export default function Physical() {
           >
             <Plus size={15} />
             Other
+          </button>
+          <button
+            type="button"
+            onClick={() => { setPhoneStepsInput(''); setStepsOpen(true) }}
+            className="flex items-center gap-2 px-3 py-2.5 bg-black/[0.05] dark:bg-white/[0.06] text-black/60 dark:text-white/55 text-sm font-semibold rounded-xl hover:bg-black/[0.09] dark:hover:bg-white/[0.10] transition-all duration-200 max-sm:flex-1 max-sm:justify-center max-sm:py-3"
+          >
+            <Footprints size={15} />
+            Enter steps
           </button>
         </div>
       </div>
@@ -482,6 +492,36 @@ export default function Physical() {
 
       {/* Walk Tracker overlay */}
       <WalkTracker open={walkOpen} onClose={() => setWalkOpen(false)} />
+
+      {/* Steps counted by the phone itself (the app can't read them in the background) */}
+      <Modal open={stepsOpen} onClose={() => setStepsOpen(false)} title="Enter today's steps">
+        <p className="text-sm text-black/55 dark:text-white/45 -mt-1 mb-4">
+          Your phone counts steps all day, even when LivoraPulse is closed. Open its health or fitness app and type
+          in today&apos;s total. Steps already counted here ({formatNumber(todaySteps)}) aren&apos;t added twice.
+        </p>
+        <Input label="Today's steps on your phone" value={phoneStepsInput} onChange={(e) => setPhoneStepsInput(e.target.value)}
+          inputMode="numeric" placeholder="e.g. 6400" autoFocus />
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setStepsOpen(false)}>Cancel</Button>
+          <Button onClick={() => {
+            const total = Math.round(Number(phoneStepsInput.replace(/[,\s]/g, '')))
+            if (!Number.isFinite(total) || total <= 0 || total > 100000) {
+              toast.error('Enter the number of steps your phone shows for today')
+              return
+            }
+            const extra = total - todaySteps
+            setStepsOpen(false)
+            if (extra <= 0) {
+              toast.success(`Already counted: you have ${formatNumber(todaySteps)} steps today`)
+              return
+            }
+            // About 0.75 m a step, as elsewhere on this page
+            addActivity({ steps: extra, distanceKm: Math.round(extra * 0.00075 * 100) / 100, caloriesKcal: 0, note: "Steps from my phone's step counter" })
+              .then(() => toast.success(`Added ${formatNumber(extra)} steps (${formatNumber(total)} today)`))
+              .catch((err: Error) => toast.error(err.message))
+          }}>Save</Button>
+        </div>
+      </Modal>
 
       {/* Log other activity modal */}
       <Modal open={otherOpen} onClose={() => setOtherOpen(false)} title="Log other activity">

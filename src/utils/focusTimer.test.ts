@@ -41,6 +41,14 @@ vi.mock('../api/client', () => ({
   apiPut: vi.fn(async () => ({ success: true })),
   apiDel: vi.fn(async () => ({ success: true })),
 }))
+// Logs go through the offline queue; here it sends straight to the mocked API
+vi.mock('../offline/outbox', () => ({
+  saveLog: vi.fn(async (path: string, body: unknown) => {
+    const { apiPost } = await import('../api/client')
+    await apiPost(path, body)
+    return 'sent'
+  }),
+}))
 
 describe('focus timer in the store', () => {
   beforeEach(() => {
