@@ -120,16 +120,22 @@ export function scheduleScoreSync(delayMs = 400) {
 // ---------------------------------------------------------------------------
 const DAYS: DayKey[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-// The charts are bucketed by weekday, so only entries from the last 7 local
-// days may go in — otherwise last Monday's steps would be added to this Monday.
-function startOfLocalDay(daysAgo = 0): number {
-  const d = new Date()
+// The charts show this calendar week, Monday to Sunday, bucketed by weekday.
+// Only entries since this Monday may go in: "the last 7 days" would put last
+// weekend's logs in this week's Sat and Sun on a Monday.
+function startOfLocalDay(daysAgo = 0, now = new Date()): number {
+  const d = new Date(now)
   d.setHours(0, 0, 0, 0)
   d.setDate(d.getDate() - daysAgo)
   return d.getTime()
 }
-function inLastWeek(iso: string): boolean {
-  return new Date(iso).getTime() >= startOfLocalDay(6)
+/** Midnight at the start of this week's Monday, local time */
+export function startOfThisWeek(now = new Date()): number {
+  return startOfLocalDay((now.getDay() + 6) % 7, now)
+}
+export function inThisWeek(iso: string, now = new Date()): boolean {
+  const t = new Date(iso).getTime()
+  return t >= startOfThisWeek(now) && t <= now.getTime()
 }
 function isToday(iso: string): boolean {
   return new Date(iso).getTime() >= startOfLocalDay(0)
@@ -142,7 +148,7 @@ function dayKeyFromDate(iso: string): DayKey {
 }
 
 function buildWeeklySteps(entries: PhysicalEntry[]): AppState['physical']['weeklySteps'] {
-  entries = entries.filter((e) => inLastWeek(e.timestamp))
+  entries = entries.filter((e) => inThisWeek(e.timestamp))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   // FIX: Only count entries with actual steps (not sleep-only entries)
   entries.filter(e => e.steps > 0).forEach((e) => {
@@ -153,7 +159,7 @@ function buildWeeklySteps(entries: PhysicalEntry[]): AppState['physical']['weekl
 }
 
 function buildWeeklyDistance(entries: PhysicalEntry[]): AppState['physical']['weeklyDistanceKm'] {
-  entries = entries.filter((e) => inLastWeek(e.timestamp))
+  entries = entries.filter((e) => inThisWeek(e.timestamp))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.filter(e => e.distanceKm > 0).forEach((e) => {
     const day = dayKeyFromDate(e.timestamp)
@@ -163,7 +169,7 @@ function buildWeeklyDistance(entries: PhysicalEntry[]): AppState['physical']['we
 }
 
 function buildWeeklyCalories(entries: PhysicalEntry[]): AppState['physical']['weeklyCaloriesKcal'] {
-  entries = entries.filter((e) => inLastWeek(e.timestamp))
+  entries = entries.filter((e) => inThisWeek(e.timestamp))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.filter(e => e.caloriesKcal > 0).forEach((e) => {
     const day = dayKeyFromDate(e.timestamp)
@@ -174,7 +180,7 @@ function buildWeeklyCalories(entries: PhysicalEntry[]): AppState['physical']['we
 }
 
 function buildWeeklySleep(entries: PhysicalEntry[]): AppState['physical']['sleepHours'] {
-  entries = entries.filter((e) => inLastWeek(e.timestamp))
+  entries = entries.filter((e) => inThisWeek(e.timestamp))
   const map = new Map<DayKey, number[]>(DAYS.map((d) => [d, []]))
   // FIX: Only count entries with actual sleep minutes (not activity-only entries)
   entries.filter(e => e.sleepMinutes > 0).forEach((e) => {
@@ -189,7 +195,7 @@ function buildWeeklySleep(entries: PhysicalEntry[]): AppState['physical']['sleep
 }
 
 function buildWeeklyScreen(entries: DigitalEntry[]): AppState['digital']['weeklyScreenTimeMin'] {
-  entries = entries.filter((e) => inLastWeek(e.date))
+  entries = entries.filter((e) => inThisWeek(e.date))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.forEach((e) => {
     const day = dayKeyFromDate(e.date)
@@ -216,7 +222,7 @@ function buildAppUsageCategories(entries: DigitalEntry[]): AppState['digital']['
 }
 
 function buildWeeklyFocus(entries: ProductivityEntry[]): AppState['productivity']['focusMinutesByDay'] {
-  entries = entries.filter((e) => inLastWeek(e.startedAt))
+  entries = entries.filter((e) => inThisWeek(e.startedAt))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.filter((e) => e.kind === 'FOCUS').forEach((e) => {
     const day = dayKeyFromDate(e.startedAt)
@@ -226,7 +232,7 @@ function buildWeeklyFocus(entries: ProductivityEntry[]): AppState['productivity'
 }
 
 function buildWeeklyStudy(entries: ProductivityEntry[]): AppState['productivity']['studySessionsByDay'] {
-  entries = entries.filter((e) => inLastWeek(e.startedAt))
+  entries = entries.filter((e) => inThisWeek(e.startedAt))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.filter((e) => e.kind === 'STUDY').forEach((e) => {
     const day = dayKeyFromDate(e.startedAt)
@@ -246,7 +252,7 @@ function buildFocusSessions(entries: ProductivityEntry[]): AppState['productivit
 }
 
 function buildMoodByDay(entries: MoodEntry[]): AppState['mood']['moodByDay'] {
-  entries = entries.filter((e) => inLastWeek(e.timestamp))
+  entries = entries.filter((e) => inThisWeek(e.timestamp))
   const map = new Map<DayKey, MoodEmoji>()
   const validEmojis = new Set<string>(['😄', '🙂', '😐', '😕', '😣'])
   entries.forEach((e) => {
@@ -257,7 +263,7 @@ function buildMoodByDay(entries: MoodEntry[]): AppState['mood']['moodByDay'] {
 }
 
 function buildStressByDay(entries: MoodEntry[]): AppState['mood']['stressByDay'] {
-  entries = entries.filter((e) => inLastWeek(e.timestamp))
+  entries = entries.filter((e) => inThisWeek(e.timestamp))
   const map = new Map<DayKey, number[]>(DAYS.map((d) => [d, []]))
   entries.forEach((e) => {
     if (e.stressScore === null) return // mood-only check-in
@@ -283,7 +289,7 @@ function buildEcoActions(entries: EcoEntry[]): AppState['environment']['ecoActio
 }
 
 function buildRecycledByDay(entries: EcoEntry[]): AppState['environment']['recycledItemsByDay'] {
-  entries = entries.filter((e) => inLastWeek(e.timestamp))
+  entries = entries.filter((e) => inThisWeek(e.timestamp))
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.filter((e) => e.category === 'WASTE').forEach((e) => {
     const day = dayKeyFromDate(e.timestamp)
@@ -293,7 +299,7 @@ function buildRecycledByDay(entries: EcoEntry[]): AppState['environment']['recyc
 }
 
 function buildCarbonByDay(entries: EcoEntry[]): AppState['environment']['carbonKgByDay'] {
-  entries = entries.filter((e) => inLastWeek(e.timestamp))
+  entries = entries.filter((e) => inThisWeek(e.timestamp))
   // CO₂ actually saved by logged actions — no invented baseline footprint
   const map = new Map<DayKey, number>(DAYS.map((d) => [d, 0]))
   entries.filter((e) => e.impactKgCO2 > 0).forEach((e) => {
@@ -923,8 +929,8 @@ export const useAppStore = create<AppStore>()(
             if (moodRes.status === 'fulfilled' && moodRes.value.data) {
               const entries = moodRes.value.data
               // FIX: Get today's mood entry specifically
-              const todayKey = getDayKey()
-              const todayEntries = entries.filter(e => dayKeyFromDate(e.timestamp) === todayKey)
+              // Today by date, not weekday name: last Monday's check-in isn't today's
+              const todayEntries = entries.filter((e) => isToday(e.timestamp))
               // Latest answer of each kind — a check-in may hold only one of them
               const pick = <K extends 'emoji' | 'stressScore'>(key: K) =>
                 (todayEntries.find((e) => e[key] !== null) ?? entries.find((e) => e[key] !== null))?.[key] ?? null

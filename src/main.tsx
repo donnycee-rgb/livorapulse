@@ -43,6 +43,24 @@ function Root() {
     syncDashboardScore().catch(() => null)
   }, [isAuthenticated, hydrateFromApi, syncDashboardScore])
 
+  // Phones keep a tab open for days. Coming back to it on a new day (above all
+  // a new week, when the charts start again on Monday) pulls fresh data rather
+  // than showing yesterday's.
+  useEffect(() => {
+    if (!isAuthenticated) return
+    let loadedOn = new Date().toDateString()
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      const today = new Date().toDateString()
+      if (today === loadedOn) return
+      loadedOn = today
+      hydrateFromApi().catch(() => null)
+      syncDashboardScore().catch(() => null)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [isAuthenticated, hydrateFromApi, syncDashboardScore])
+
   return (
     <>
       <App />
