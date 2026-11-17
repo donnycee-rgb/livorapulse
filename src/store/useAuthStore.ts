@@ -21,6 +21,7 @@ export type AuthUser = {
   profile?: {
     onboardingComplete: boolean
     primaryGoal?: string
+    goals?: string[]
     goalStepsPerDay?: number
     goalSleepHours?: number
     goalScreenMinutes?: number

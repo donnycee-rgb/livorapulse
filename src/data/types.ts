@@ -23,6 +23,8 @@ export type PrimaryGoal =
 export type UserOnboardingProfile = {
   onboardingComplete: boolean
   primaryGoal?: PrimaryGoal
+  /** Every main goal chosen (1 to 3), the first is primaryGoal */
+  goals?: PrimaryGoal[]
   hasDisability?: boolean
   gender?: string
   dateOfBirth?: string
