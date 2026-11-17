@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -7,7 +7,7 @@ import { CloudRain, Frown, Meh, Smile, SmilePlus } from 'lucide-react'
 import {
   ArrowRight, Activity, MonitorSmartphone, Timer, Heart, Leaf, UtensilsCrossed,
   Footprints, Search, Plus, Check, TrendingUp, Flame, Droplets, Sparkles,
-  Target, Bot, Globe2, BookOpen, Menu, X, Lock, Sun, Moon,
+  Target, Bot, Globe2, BookOpen, Menu, X, Lock, Sun, Moon, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 
 import { useAppStore } from '../store/useAppStore'
@@ -485,39 +485,93 @@ const SLIDES: Slide[] = [
   },
 ]
 
-const SLIDE_MS = 6000
+const SLIDE_MS = 9000
 const SLIDE_TRANSITION = 'transform 900ms cubic-bezier(0.65, 0, 0.35, 1)'
 
-// Auto-advancing index that always slides left. The track renders a copy of
-// the first slide at the end; when we land on it we jump back to 0 without animating.
-function useAutoSlide(count: number) {
+// The highlights move on by themselves, slowly, until the visitor takes over:
+// - hovering or keeping a finger on them pauses,
+// - the back / forward buttons, the slide bars, a swipe or the arrow keys
+//   move to a slide and stop the automatic moving for good, so nothing jumps
+//   away while someone is reading.
+// The track has a copy of the first slide at the end, so going forward from
+// the last slide still slides left; landing on the copy jumps back to 0.
+function useSlides(count: number) {
   const [index, setIndex] = useState(0)
   const [animate, setAnimate] = useState(true)
+  const [auto, setAuto] = useState(true)
+  const [paused, setPaused] = useState(false)
+  const reduce = useRef(false)
+  /** Going back from the first slide passes through the copy at the end: don't snap to 0 then */
+  const steppingBack = useRef(false)
 
   useEffect(() => {
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduce) setAnimate(false)
-    const id = window.setInterval(() => {
+    reduce.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduce.current) { setAnimate(false); setAuto(false) }
+  }, [])
+
+  useEffect(() => {
+    if (!auto || paused) return
+    const id = window.setTimeout(() => {
       if (document.hidden) return
-      setAnimate(!reduce)
-      setIndex(i => (i >= count ? 1 : i + 1))
+      setAnimate(!reduce.current)
+      setIndex((i) => (i >= count ? 1 : i + 1))
     }, SLIDE_MS)
-    return () => window.clearInterval(id)
-  }, [count])
+    return () => window.clearTimeout(id)
+  }, [auto, paused, index, count])
 
   const onTransitionEnd = () => {
-    if (index === count) {
-      setAnimate(false)
-      setIndex(0)
-    }
+    if (index === count) { setAnimate(false); setIndex(0) }
   }
-
   // Without animation there is no transitionend, so wrap immediately
   useEffect(() => {
-    if (!animate && index === count) setIndex(0)
+    if (!animate && index === count && !steppingBack.current) setIndex(0)
   }, [animate, index, count])
 
-  return { index, animate, onTransitionEnd, active: index % count }
+  const goTo = useCallback((target: number) => {
+    setAuto(false)
+    setAnimate(!reduce.current)
+    setIndex(target)
+  }, [])
+  const next = useCallback(() => {
+    setAuto(false)
+    setAnimate(!reduce.current)
+    setIndex((i) => (i >= count ? 1 : i + 1))
+  }, [count])
+  const prev = useCallback(() => {
+    setAuto(false)
+    const at = index % count
+    if (at > 0) { setAnimate(!reduce.current); setIndex(at - 1); return }
+    // From the first slide: jump to the copy at the end without moving, then slide back to the last
+    steppingBack.current = true
+    setAnimate(false)
+    setIndex(count)
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      steppingBack.current = false
+      setAnimate(!reduce.current)
+      setIndex(count - 1)
+    }))
+  }, [index, count])
+
+  return { index, animate, onTransitionEnd, active: index % count, playing: auto && !paused, setPaused, goTo, next, prev }
+}
+
+/** Left / right swipes on touch screens; vertical scrolling is left alone */
+function useSwipe(onLeft: () => void, onRight: () => void) {
+  const start = useRef<{ x: number; y: number } | null>(null)
+  return {
+    onTouchStart: (e: React.TouchEvent) => { const t = e.touches[0]; start.current = { x: t.clientX, y: t.clientY } },
+    onTouchEnd: (e: React.TouchEvent) => {
+      const s = start.current
+      start.current = null
+      if (!s) return
+      const t = e.changedTouches[0]
+      const dx = t.clientX - s.x
+      const dy = t.clientY - s.y
+      if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.3) return
+      if (dx < 0) onLeft()
+      else onRight()
+    },
+  }
 }
 
 function SlideTrack({ index, animate, onTransitionEnd, children }: {
@@ -534,11 +588,16 @@ function SlideTrack({ index, animate, onTransitionEnd, children }: {
 }
 
 function Hero() {
-  const { index, animate, onTransitionEnd, active } = useAutoSlide(SLIDES.length)
+  const { index, animate, onTransitionEnd, active, playing, setPaused, goTo, next, prev } = useSlides(SLIDES.length)
   const slides = [...SLIDES, SLIDES[0]]
+  const swipe = useSwipe(next, prev)
 
   return (
-    <section className="relative pt-24 sm:pt-28 pb-12 sm:pb-16 max-sm:pt-20 max-sm:pb-6 overflow-hidden" aria-roledescription="carousel" aria-label="LivoraPulse highlights">
+    <section className="relative pt-24 sm:pt-28 pb-12 sm:pb-16 max-sm:pt-20 max-sm:pb-6 overflow-hidden" aria-roledescription="carousel" aria-label="LivoraPulse highlights"
+      onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+      onTouchStart={(e) => { setPaused(true); swipe.onTouchStart(e) }}
+      onTouchEnd={(e) => { setPaused(false); swipe.onTouchEnd(e) }}
+      onKeyDown={(e) => { if (e.key === 'ArrowRight') next(); if (e.key === 'ArrowLeft') prev() }}>
       <div className="absolute -top-40 -right-40 w-[560px] h-[560px] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, var(--lp-glow) 0%, transparent 70%)' }} />
 
@@ -579,16 +638,30 @@ function Hero() {
             </a>
           </div>
 
-          {/* Passive progress indicator — not interactive */}
-          <div className="flex gap-1.5 mt-8 max-sm:mt-4" aria-hidden="true">
-            {SLIDES.map((_, i) => (
-              <span key={i} className="h-1 rounded-full overflow-hidden" style={{ width: i === active ? 40 : 16, background: C.line, transition: 'width 400ms' }}>
-                {i === active && (
-                  <motion.span key={`${active}-${index}`} className="block h-full rounded-full" style={{ background: C.btn }}
-                    initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: SLIDE_MS / 1000, ease: 'linear' }} />
-                )}
-              </span>
+          {/* Back, one bar per slide (tap to jump there), forward */}
+          <div className="flex items-center gap-1 mt-6 max-sm:mt-3 -ml-2">
+            <button type="button" onClick={prev} aria-label="Previous highlight"
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 dark:hover:bg-white/10" style={{ color: C.muted }}>
+              <ChevronLeft size={18} />
+            </button>
+            {SLIDES.map((s, i) => (
+              <button key={i} type="button" onClick={() => goTo(i)} aria-label={`Show highlight ${i + 1} of ${SLIDES.length}: ${s.eyebrow}`}
+                aria-current={i === active ? 'true' : undefined}
+                className="h-9 flex items-center px-1">
+                <span className="h-1 rounded-full overflow-hidden block" style={{ width: i === active ? 40 : 16, background: C.line, transition: 'width 400ms' }}>
+                  {i === active && (playing ? (
+                    <motion.span key={`${active}-${index}`} className="block h-full rounded-full" style={{ background: C.btn }}
+                      initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: SLIDE_MS / 1000, ease: 'linear' }} />
+                  ) : (
+                    <span className="block h-full w-full rounded-full" style={{ background: C.btn }} />
+                  ))}
+                </span>
+              </button>
             ))}
+            <button type="button" onClick={next} aria-label="Next highlight"
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 dark:hover:bg-white/10" style={{ color: C.muted }}>
+              <ChevronRight size={18} />
+            </button>
           </div>
         </div>
 
