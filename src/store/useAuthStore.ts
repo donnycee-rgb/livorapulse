@@ -22,8 +22,9 @@ export type AuthUser = {
     onboardingComplete: boolean
     primaryGoal?: string
     goals?: string[]
-    /** Where the walking journey starts (lib/towns.ts id, or "other") */
-    homeTown?: string | null
+    /** Walking journey: where it starts and its stops (lib/walkRoute.ts) */
+    walkArea?: string | null
+    walkRoute?: Array<{ name: string; km: number }> | null
     goalStepsPerDay?: number
     goalSleepHours?: number
     goalScreenMinutes?: number

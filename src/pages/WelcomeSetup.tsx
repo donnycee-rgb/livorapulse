@@ -1,4 +1,5 @@
-import { OTHER_TOWN, TOWNS } from '../lib/towns'
+import { locateMe } from '../lib/walkRoute'
+import { locateMessage } from '../components/visuals/StepsJourney'
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
@@ -6,7 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import {
-  Activity, ArrowRight, Brain, CalendarCheck, Check, ChevronLeft, Dumbbell,
+  Activity, ArrowRight, Brain, CalendarCheck, Check, ChevronLeft, Dumbbell, LocateFixed,
   Footprints, Leaf, Moon, MonitorSmartphone, Scale, Target, UtensilsCrossed,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -29,8 +30,6 @@ type Draft = {
   gender: string
   heightCm: string
   weightKg: string
-  /** lib/towns.ts id, "other", or '' (not answered) */
-  homeTown: string
   hasDisability: boolean
   disabilityNote: string
   currentActivityLevel: string
@@ -40,7 +39,7 @@ type Draft = {
 }
 
 const EMPTY: Draft = {
-  goals: [], birthYear: '', gender: '', heightCm: '', weightKg: '', homeTown: '',
+  goals: [], birthYear: '', gender: '', heightCm: '', weightKg: '',
   hasDisability: false, disabilityNote: '',
   currentActivityLevel: '', currentSleepHours: 0, currentScreenHours: 0, ecoConsciousness: '',
 }
@@ -145,6 +144,39 @@ function TextBox(props: React.InputHTMLAttributes<HTMLInputElement> & { suffix?:
   )
 }
 
+/** "Use my location": the walking journey starts from the places around you */
+function LocationButton() {
+  const area = useAuthStore((st) => st.user?.profile?.walkArea)
+  const [state, setState] = useState<'idle' | 'busy' | 'no'>('idle')
+  if (area) {
+    return (
+      <p className="flex items-center gap-2 text-sm text-white/80">
+        <Check size={15} className="text-lp-primary" /> Starting from {area}
+      </p>
+    )
+  }
+  return (
+    <div>
+      <button type="button" disabled={state === 'busy'}
+        onClick={async () => {
+          setState('busy')
+          const r = await locateMe()
+          if (r.ok) setState('idle')
+          else { setState('no'); toast(locateMessage(r).replace('You can pick a town instead.', 'No problem: it starts from Nairobi, and you can change it later.')) }
+        }}
+        className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.06] text-sm font-semibold text-white hover:border-white/20 disabled:opacity-60">
+        <LocateFixed size={16} className="text-lp-primary" />
+        {state === 'busy' ? 'Finding places near you…' : 'Use my location'}
+      </button>
+      <p className="mt-1.5 text-[11.5px] text-white/35 leading-relaxed">
+        {state === 'no'
+          ? 'Your journey starts from Nairobi for now.'
+          : 'Shows your weekly walk as a trip past places near you. Only your rough area is used, once. It is not saved.'}
+      </p>
+    </div>
+  )
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 export default function WelcomeSetup() {
   const navigate = useNavigate()
@@ -198,7 +230,6 @@ export default function WelcomeSetup() {
         ...(draft.gender && { gender: draft.gender }),
         ...(num(draft.heightCm) && { heightCm: num(draft.heightCm) }),
         ...(num(draft.weightKg) && { weightKg: num(draft.weightKg) }),
-        ...(draft.homeTown && { homeTown: draft.homeTown }),
         hasDisability: draft.hasDisability,
         ...(draft.hasDisability && draft.disabilityNote.trim() && { disabilityNote: draft.disabilityNote.trim() }),
         // Unanswered habits are left out and the server uses typical values
@@ -208,7 +239,6 @@ export default function WelcomeSetup() {
         ...(!skipHabits && draft.ecoConsciousness && { ecoConsciousness: draft.ecoConsciousness }),
       })
       setGoals(res.data.goals)
-      if (draft.homeTown) useAuthStore.getState().patchProfile({ homeTown: draft.homeTown })
       setStep(3)
       if (user?.id) try { localStorage.removeItem(draftKey(user.id)) } catch { /* ignore */ }
     } catch (err) {
@@ -326,16 +356,8 @@ export default function WelcomeSetup() {
                     </div>
                   </Field>
 
-                  <Field label="Home town" hint="Your walking journey starts here">
-                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.06] focus-within:ring-1 focus-within:ring-lp-primary/50">
-                      <select value={draft.homeTown} onChange={(e) => set({ homeTown: e.target.value })} aria-label="Home town"
-                        className="w-full px-3.5 py-2.5 bg-transparent text-base sm:text-sm focus:outline-none [&>option]:text-black"
-                        style={{ color: draft.homeTown ? 'white' : 'rgba(255,255,255,0.35)' }}>
-                        <option value="">Choose a town</option>
-                        {TOWNS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                        <option value={OTHER_TOWN}>Somewhere else</option>
-                      </select>
-                    </div>
+                  <Field label="Walking journey" hint="Optional">
+                    <LocationButton />
                   </Field>
 
                   <Field label="Height and weight" hint="For accurate calorie targets">

@@ -1,4 +1,4 @@
-import { TOWNS, journeyOn } from './towns'
+import { NAIROBI_STOPS, journeyOn } from './walkRoute'
 // Plain-language takeaways for a week of data ("You hit your step goal on 3
 // of 5 days — Thursday was your best"), so each visual leads with what it
 // means rather than numbers on an axis.
@@ -83,11 +83,11 @@ export function moodForecastSentence(byDay: Array<{ day: DayKey | string; emoji:
 }
 
 // ─── Steps as a journey ──────────────────────────────────────────────────────
-// The routes now live in lib/towns.ts (from the person's own town). These stay
-// for anything that still means "from Nairobi".
-export const NAIROBI_PLACES: ReadonlyArray<{ name: string; km: number }> = TOWNS[0].places
+// The journey is built around each person (lib/walkRoute.ts). These stay for
+// anything that still means "from Nairobi".
+export const NAIROBI_PLACES: ReadonlyArray<{ name: string; km: number }> = NAIROBI_STOPS
 
 /** The furthest place reached from Nairobi, and the next one with the distance still to go. */
 export function journey(km: number) {
-  return journeyOn(TOWNS[0].places, km)
+  return journeyOn(NAIROBI_STOPS, km)
 }
