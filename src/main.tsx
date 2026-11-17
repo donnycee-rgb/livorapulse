@@ -12,6 +12,7 @@ import { usePendingWalkSync } from './hooks/usePendingWalkSync'
 import { flushOutbox } from './offline/outbox'
 import { useOutboxSync } from './offline/useOutboxSync'
 import { registerServiceWorker } from './offline/registerServiceWorker'
+import { pullSleepSession } from './lib/sleepSync'
 import './styles/globals.css'
 // Catch the browser's "can install" signal from the very start (see lib/install.ts)
 import './lib/install'
@@ -44,6 +45,7 @@ function Root() {
   const refresh = useCallback(() => {
     hydrateFromApi().catch(() => null)
     syncDashboardScore().catch(() => null)
+    pullSleepSession().catch(() => null)
   }, [hydrateFromApi, syncDashboardScore])
 
   // Upload logs saved on this phone while offline, whenever possible
@@ -56,17 +58,20 @@ function Root() {
     flushOutbox().catch(() => null).finally(refresh)
   }, [isAuthenticated, refresh])
 
-  // Phones keep a tab open for days. Coming back to it on a new day (above all
-  // a new week, when the charts start again on Monday) pulls fresh data rather
-  // than showing yesterday's.
+  // Coming back to the app (switching from another app or tab, unlocking the
+  // phone) pulls fresh data, so what was logged on another device shows here
+  // too. Not more than once every 20 seconds; always on a new day (a new week
+  // starts the charts again on Monday).
   useEffect(() => {
     if (!isAuthenticated) return
     let loadedOn = new Date().toDateString()
+    let loadedAt = Date.now()
     const onVisible = () => {
       if (document.visibilityState !== 'visible') return
       const today = new Date().toDateString()
-      if (today === loadedOn) return
+      if (today === loadedOn && Date.now() - loadedAt < 20000) return
       loadedOn = today
+      loadedAt = Date.now()
       flushOutbox().catch(() => null).finally(refresh)
     }
     document.addEventListener('visibilitychange', onVisible)

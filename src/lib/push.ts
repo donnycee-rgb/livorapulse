@@ -7,8 +7,6 @@
 // iPhone/iPad once LivoraPulse is installed to the home screen (iOS 16.4+).
 
 import { apiGet, apiPost, apiPut } from '../api/client'
-import { useAuthStore } from '../store/useAuthStore'
-import { useSleepSession } from '../store/useSleepSession'
 import { isIOS, isStandalone } from './install'
 
 export type PushSupport = 'ok' | 'install-first' | 'unsupported'
@@ -105,18 +103,4 @@ export function remindersAsked(): boolean {
 }
 export function markRemindersAsked(): void {
   try { localStorage.setItem(ASKED, '1') } catch { /* private mode */ }
-}
-
-// ── The server needs to know a sleep is running, for the morning reminder ──
-// (and to skip the bedtime reminder once someone is already in bed)
-
-let syncing = false
-export function startSleepSessionSync(): void {
-  if (syncing || typeof window === 'undefined') return
-  syncing = true
-  useSleepSession.subscribe((s, prev) => {
-    if (s.startedAt === prev.startedAt) return
-    if (!useAuthStore.getState().user) return
-    apiPost('/api/push/sleep-session', { startedAt: s.startedAt ? new Date(s.startedAt).toISOString() : null }).catch(() => null)
-  })
 }
