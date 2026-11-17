@@ -13,7 +13,7 @@ import { useAuthStore } from '../store/useAuthStore'
 // recalculates them on the server. Nothing is logged as activity.
 
 type Answers = {
-  primaryGoal: string
+  goals: string[]
   currentActivityLevel: string
   currentSleepHours: number
   currentScreenHours: number
@@ -61,7 +61,7 @@ const ECO: Option<string>[] = [
 ]
 
 const STEPS = [
-  { title: "What's your main goal right now?", key: 'primaryGoal', options: GOALS },
+  { title: 'What do you want to work on right now? Pick up to 3.', key: 'goals', options: GOALS },
   { title: 'How active were you this past week?', key: 'currentActivityLevel', options: ACTIVITY },
   { title: 'How much did you sleep most nights?', key: 'currentSleepHours', options: SLEEP },
   { title: 'How much screen time on a typical day?', key: 'currentScreenHours', options: SCREEN },
@@ -70,14 +70,15 @@ const STEPS = [
 ] as const
 
 export default function CheckInModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const primaryGoal = useAppStore((s) => s.onboarding?.primaryGoal) ?? ''
+  const savedGoals = useAppStore((s) => s.onboarding?.goals)
+  const primaryGoal = useAppStore((s) => s.onboarding?.primaryGoal)
   const weightKg = useAuthStore((s) => s.user?.profile?.weightKg)
   const setLastAssessmentAt = useAuthStore((s) => s.setLastAssessmentAt)
 
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [answers, setAnswers] = useState<Answers>({
-    primaryGoal,
+    goals: savedGoals?.length ? [...savedGoals] : primaryGoal ? [primaryGoal] : [],
     currentActivityLevel: '',
     currentSleepHours: 0,
     currentScreenHours: 0,
@@ -87,7 +88,7 @@ export default function CheckInModal({ open, onClose }: { open: boolean; onClose
 
   const current = STEPS[step]
   const value = answers[current.key as keyof Answers]
-  const answered = current.options === null || Boolean(value)
+  const answered = current.options === null || (Array.isArray(value) ? value.length > 0 : Boolean(value))
   const isLast = step === STEPS.length - 1
 
   const close = () => { setStep(0); onClose() }
@@ -101,7 +102,8 @@ export default function CheckInModal({ open, onClose }: { open: boolean; onClose
     setSaving(true)
     try {
       const res = await apiPost<{ success: boolean; data: { goals: Record<string, number> } }>('/api/user/onboarding/checkin', {
-        primaryGoal: answers.primaryGoal,
+        goals: answers.goals,
+        primaryGoal: answers.goals[0],
         currentActivityLevel: answers.currentActivityLevel,
         currentSleepHours: answers.currentSleepHours,
         currentScreenHours: answers.currentScreenHours,
@@ -155,10 +157,17 @@ export default function CheckInModal({ open, onClose }: { open: boolean; onClose
             {current.options ? (
               <div className="space-y-1.5">
                 {current.options.map((o) => {
-                  const selected = value === o.value
+                  const multi = current.key === 'goals'
+                  const selected = multi ? answers.goals.includes(o.value as string) : value === o.value
                   return (
                     <button key={String(o.value)} type="button" aria-pressed={selected}
-                      onClick={() => setAnswers((a) => ({ ...a, [current.key]: o.value }))}
+                      onClick={() => setAnswers((a) => {
+                        if (!multi) return { ...a, [current.key]: o.value }
+                        const v = o.value as string
+                        if (a.goals.includes(v)) return { ...a, goals: a.goals.filter((g) => g !== v) }
+                        if (a.goals.length >= 3) { toast('You can pick up to 3. Tap one to remove it.', { id: 'max-goals' }); return a }
+                        return { ...a, goals: [...a.goals, v] }
+                      })}
                       className={clsx('w-full text-left flex items-center justify-between gap-3 px-4 py-3 rounded-xl border transition-all',
                         selected
                           ? 'border-lp-primary bg-lp-primary/10'

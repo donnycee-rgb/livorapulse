@@ -994,7 +994,7 @@ export const useAppStore = create<AppStore>()(
             apiGet<{ success: boolean; data: ProductivityEntry[] }>('/api/productivity/session'),
             apiGet<{ success: boolean; data: MoodEntry[] }>('/api/mood'),
             apiGet<{ success: boolean; data: EcoEntry[] }>('/api/eco'),
-            apiGet<{ success: boolean; data: { name: string; email: string; avatarUrl?: string | null; preferences?: { theme: string; units: string; notificationsEnabled: boolean } | null; profile?: { onboardingComplete: boolean; primaryGoal?: string; goalStepsPerDay?: number; goalSleepHours?: number; goalScreenMinutes?: number; goalFocusMinutes?: number; goalEcoActionsPerDay?: number; goalSocialMinutes?: number; goalEntertainmentMinutes?: number; goalCaloriesPerDay?: number; hasDisability?: boolean } | null } }>('/api/user/profile'),
+            apiGet<{ success: boolean; data: { name: string; email: string; avatarUrl?: string | null; preferences?: { theme: string; units: string; notificationsEnabled: boolean } | null; profile?: { onboardingComplete: boolean; primaryGoal?: string; goals?: string[]; goalStepsPerDay?: number; goalSleepHours?: number; goalScreenMinutes?: number; goalFocusMinutes?: number; goalEcoActionsPerDay?: number; goalSocialMinutes?: number; goalEntertainmentMinutes?: number; goalCaloriesPerDay?: number; hasDisability?: boolean } | null } }>('/api/user/profile'),
           ])
 
           // FIX: Start from clean empty state — not from existing store state
@@ -1145,6 +1145,7 @@ export const useAppStore = create<AppStore>()(
                 next.onboarding = {
                   onboardingComplete: user.profile.onboardingComplete ?? false,
                   primaryGoal: user.profile.primaryGoal as any,
+                  goals: (user.profile.goals?.length ? user.profile.goals : user.profile.primaryGoal ? [user.profile.primaryGoal] : []) as any,
                 }
               }
             }

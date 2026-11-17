@@ -22,7 +22,8 @@ import BrandMark from '../components/BrandMark'
 // ─────────────────────────────────────────────────────────────────────────────
 
 type Draft = {
-  primaryGoal: string
+  /** Main goals in the order picked (up to MAX_GOALS); the first matters most */
+  goals: string[]
   birthYear: string
   gender: string
   heightCm: string
@@ -36,10 +37,12 @@ type Draft = {
 }
 
 const EMPTY: Draft = {
-  primaryGoal: '', birthYear: '', gender: '', heightCm: '', weightKg: '',
+  goals: [], birthYear: '', gender: '', heightCm: '', weightKg: '',
   hasDisability: false, disabilityNote: '',
   currentActivityLevel: '', currentSleepHours: 0, currentScreenHours: 0, ecoConsciousness: '',
 }
+
+const MAX_GOALS = 3
 
 const GOALS: { value: string; label: string; desc: string; Icon: LucideIcon }[] = [
   { value: 'build-habits', label: 'Build healthy habits', desc: 'A bit better every day', Icon: CalendarCheck },
@@ -153,7 +156,11 @@ export default function WelcomeSetup() {
     if (!user?.id) return EMPTY
     try {
       const saved = localStorage.getItem(draftKey(user.id))
-      return saved ? { ...EMPTY, ...JSON.parse(saved) } : EMPTY
+      if (!saved) return EMPTY
+      const d = { ...EMPTY, ...JSON.parse(saved) } as Draft & { primaryGoal?: string }
+      // A draft saved by the earlier one-goal version
+      if (!Array.isArray(d.goals)) d.goals = d.primaryGoal ? [d.primaryGoal] : []
+      return d
     } catch { return EMPTY }
   })
   const [saving, setSaving] = useState(false)
@@ -181,7 +188,8 @@ export default function WelcomeSetup() {
     try {
       const num = (v: string) => (v.trim() === '' ? undefined : Number(v))
       const res = await apiPost<{ success: boolean; data: { goals: Goals } }>('/api/user/onboarding', {
-        primaryGoal: draft.primaryGoal,
+        goals: draft.goals,
+        primaryGoal: draft.goals[0], // for a server that only knows one goal
         // Year of birth is enough for age-based targets; mid-year keeps the age within ±6 months
         ...(draft.birthYear && { dateOfBirth: `${draft.birthYear}-07-01T00:00:00.000Z` }),
         ...(draft.gender && { gender: draft.gender }),
@@ -216,7 +224,7 @@ export default function WelcomeSetup() {
   }
 
   const titles = [
-    { title: `Welcome, ${firstName}! What's your main goal?`, sub: 'Pick the one that matters most right now. You can change it any time.' },
+    { title: `Welcome, ${firstName}! What do you want to work on?`, sub: `Pick up to ${MAX_GOALS}. The first one you pick counts most. You can change them any time.` },
     { title: 'A bit about you', sub: 'This helps us set realistic targets. Everything here is optional.' },
     { title: 'Your typical day', sub: 'Be honest — we start from where you are, not where you think you should be.' },
     { title: 'Your daily targets are ready', sub: 'Personalised from your answers. They adjust as your streak grows.' },
@@ -253,14 +261,20 @@ export default function WelcomeSetup() {
               initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
               transition={{ duration: 0.2 }}>
 
-              {/* ── Step 2: goal (one tap moves on) ── */}
+              {/* ── Step 2: goals (up to three, in order) ── */}
               {step === 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {GOALS.map(({ value, label, desc, Icon }) => {
-                    const selected = draft.primaryGoal === value
+                    const order = draft.goals.indexOf(value)
+                    const selected = order >= 0
+                    const full = !selected && draft.goals.length >= MAX_GOALS
                     return (
                       <button key={value} type="button" aria-pressed={selected}
-                        onClick={() => { set({ primaryGoal: value }); setTimeout(() => setStep(1), 180) }}
+                        onClick={() => {
+                          if (selected) set({ goals: draft.goals.filter((g) => g !== value) })
+                          else if (full) toast(`You can pick up to ${MAX_GOALS}. Tap one to remove it.`, { id: 'max-goals' })
+                          else set({ goals: [...draft.goals, value] })
+                        }}
                         className={clsx(
                           'flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border transition-all duration-150',
                           selected ? 'bg-lp-primary/15 border-lp-primary/60' : 'bg-white/[0.04] border-white/[0.08] hover:border-white/20',
@@ -269,10 +283,16 @@ export default function WelcomeSetup() {
                           selected ? 'bg-lp-primary text-white' : 'bg-white/[0.06] text-lp-primary')}>
                           <Icon size={17} />
                         </span>
-                        <span className="min-w-0">
+                        <span className="min-w-0 flex-1">
                           <span className="block text-sm font-semibold text-white leading-tight">{label}</span>
                           <span className="block text-xs text-white/40 mt-0.5">{desc}</span>
                         </span>
+                        {selected && (
+                          <span className="w-6 h-6 rounded-full bg-lp-primary text-white text-[12px] font-bold flex items-center justify-center flex-shrink-0"
+                            aria-label={order === 0 ? 'Main goal' : `Goal ${order + 1}`}>
+                            {order + 1}
+                          </span>
+                        )}
                       </button>
                     )
                   })}
@@ -395,7 +415,15 @@ export default function WelcomeSetup() {
           {/* Navigation */}
           <div className="mt-6 space-y-3">
             {step === 0 && (
-              <p className="text-center text-xs text-white/35">Tap a goal to continue</p>
+              <>
+                <button type="button" disabled={draft.goals.length === 0} onClick={() => setStep(1)}
+                  className="w-full flex items-center justify-center gap-2 bg-lp-primary text-white font-semibold rounded-xl py-3 hover:bg-green-500 transition-all text-sm disabled:opacity-40">
+                  Continue <ArrowRight size={15} />
+                </button>
+                <p className="text-center text-xs text-white/35">
+                  {draft.goals.length === 0 ? `Pick at least one, up to ${MAX_GOALS}` : `${draft.goals.length} of ${MAX_GOALS} picked`}
+                </p>
+              </>
             )}
 
             {(step === 1 || step === 2) && (
