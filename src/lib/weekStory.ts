@@ -1,3 +1,4 @@
+import { TOWNS, journeyOn } from './towns'
 // Plain-language takeaways for a week of data ("You hit your step goal on 3
 // of 5 days — Thursday was your best"), so each visual leads with what it
 // means rather than numbers on an axis.
@@ -82,22 +83,11 @@ export function moodForecastSentence(byDay: Array<{ day: DayKey | string; emoji:
 }
 
 // ─── Steps as a journey ──────────────────────────────────────────────────────
-// Rough road distances from Nairobi CBD, for "you walked about as far as…"
-export const NAIROBI_PLACES: ReadonlyArray<{ name: string; km: number }> = [
-  { name: 'Westlands', km: 4 },
-  { name: 'Kasarani', km: 13 },
-  { name: 'Ruiru', km: 25 },
-  { name: 'Thika', km: 45 },
-  { name: 'Machakos', km: 63 },
-  { name: 'Naivasha', km: 90 },
-  { name: 'Nakuru', km: 160 },
-  { name: 'Kisumu', km: 345 },
-  { name: 'Mombasa', km: 480 },
-]
+// The routes now live in lib/towns.ts (from the person's own town). These stay
+// for anything that still means "from Nairobi".
+export const NAIROBI_PLACES: ReadonlyArray<{ name: string; km: number }> = TOWNS[0].places
 
-/** The furthest place reached, and the next one with the distance still to go. */
-export function journey(km: number): { reached: { name: string; km: number } | null; next: { name: string; km: number; toGo: number } | null } {
-  const reached = [...NAIROBI_PLACES].reverse().find((p) => km >= p.km) ?? null
-  const nextPlace = NAIROBI_PLACES.find((p) => km < p.km) ?? null
-  return { reached, next: nextPlace ? { ...nextPlace, toGo: Math.round((nextPlace.km - km) * 10) / 10 } : null }
+/** The furthest place reached from Nairobi, and the next one with the distance still to go. */
+export function journey(km: number) {
+  return journeyOn(TOWNS[0].places, km)
 }

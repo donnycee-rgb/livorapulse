@@ -1,3 +1,4 @@
+import { OTHER_TOWN, TOWNS } from '../lib/towns'
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
@@ -28,6 +29,8 @@ type Draft = {
   gender: string
   heightCm: string
   weightKg: string
+  /** lib/towns.ts id, "other", or '' (not answered) */
+  homeTown: string
   hasDisability: boolean
   disabilityNote: string
   currentActivityLevel: string
@@ -37,7 +40,7 @@ type Draft = {
 }
 
 const EMPTY: Draft = {
-  goals: [], birthYear: '', gender: '', heightCm: '', weightKg: '',
+  goals: [], birthYear: '', gender: '', heightCm: '', weightKg: '', homeTown: '',
   hasDisability: false, disabilityNote: '',
   currentActivityLevel: '', currentSleepHours: 0, currentScreenHours: 0, ecoConsciousness: '',
 }
@@ -195,6 +198,7 @@ export default function WelcomeSetup() {
         ...(draft.gender && { gender: draft.gender }),
         ...(num(draft.heightCm) && { heightCm: num(draft.heightCm) }),
         ...(num(draft.weightKg) && { weightKg: num(draft.weightKg) }),
+        ...(draft.homeTown && { homeTown: draft.homeTown }),
         hasDisability: draft.hasDisability,
         ...(draft.hasDisability && draft.disabilityNote.trim() && { disabilityNote: draft.disabilityNote.trim() }),
         // Unanswered habits are left out and the server uses typical values
@@ -204,6 +208,7 @@ export default function WelcomeSetup() {
         ...(!skipHabits && draft.ecoConsciousness && { ecoConsciousness: draft.ecoConsciousness }),
       })
       setGoals(res.data.goals)
+      if (draft.homeTown) useAuthStore.getState().patchProfile({ homeTown: draft.homeTown })
       setStep(3)
       if (user?.id) try { localStorage.removeItem(draftKey(user.id)) } catch { /* ignore */ }
     } catch (err) {
@@ -318,6 +323,18 @@ export default function WelcomeSetup() {
                         <Chip key={g.value} selected={draft.gender === g.value}
                           onClick={() => set({ gender: draft.gender === g.value ? '' : g.value })}>{g.label}</Chip>
                       ))}
+                    </div>
+                  </Field>
+
+                  <Field label="Home town" hint="Your walking journey starts here">
+                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.06] focus-within:ring-1 focus-within:ring-lp-primary/50">
+                      <select value={draft.homeTown} onChange={(e) => set({ homeTown: e.target.value })} aria-label="Home town"
+                        className="w-full px-3.5 py-2.5 bg-transparent text-base sm:text-sm focus:outline-none [&>option]:text-black"
+                        style={{ color: draft.homeTown ? 'white' : 'rgba(255,255,255,0.35)' }}>
+                        <option value="">Choose a town</option>
+                        {TOWNS.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        <option value={OTHER_TOWN}>Somewhere else</option>
+                      </select>
                     </div>
                   </Field>
 
