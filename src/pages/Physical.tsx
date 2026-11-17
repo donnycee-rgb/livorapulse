@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Navigation, Plus, Activity, Moon, Flame, Footprints, TrendingUp, TrendingDown, Minus, Award, Target } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -241,7 +242,10 @@ export default function Physical() {
   const todaySleep = physical.sleepHours.find((x) => x.day === day)?.hours ?? 0
 
   const [walkOpen, setWalkOpen] = useState(false)
-  const [tab, setTab] = useState<PhysicalTab>('overview')
+  const { search } = useLocation()
+  const [tab, setTab] = useState<PhysicalTab>(() => (new URLSearchParams(search).get('tab') === 'sleep' ? 'sleep' : 'overview'))
+  // Opened from a sleep notification while the page was already open
+  useEffect(() => { if (new URLSearchParams(search).get('tab') === 'sleep') setTab('sleep') }, [search])
   const [otherOpen, setOtherOpen] = useState(false)
   const [stepsOpen, setStepsOpen] = useState(false)
   const [phoneStepsInput, setPhoneStepsInput] = useState('')

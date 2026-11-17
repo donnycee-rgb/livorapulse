@@ -6,6 +6,8 @@ import { AlertTriangle } from 'lucide-react'
 import Modal from '../ui/Modal'
 import { useAppStore } from '../../store/useAppStore'
 import { useSleepSession } from '../../store/useSleepSession'
+import { pushSupport, remindersAsked } from '../../lib/push'
+import { openRemindersPrompt } from './RemindersPrompt'
 import { fmtDuration, greeting, sleepKind, spanProblem, timesToSpan, toTimeInput, type SleepKind } from '../../lib/sleep'
 
 // One sheet for every way a sleep gets saved:
@@ -73,6 +75,8 @@ function SleepForm({ opening: o, startedAt, onDone }: { opening: Opening; starte
       if (o.mode === 'wake') clearSession()
       toast.success(`${kind === 'nap' ? 'Nap' : 'Sleep'} saved: ${fmtDuration(minutes)}`)
       onDone()
+      // The first sleep saved is the moment to offer reminders (asked once)
+      if (!remindersAsked() && pushSupport() !== 'unsupported') setTimeout(openRemindersPrompt, 600)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't save your sleep")
     } finally {

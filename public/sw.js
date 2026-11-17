@@ -125,3 +125,39 @@ self.addEventListener('fetch', (event) => {
   else if (url.pathname.startsWith('/models/')) event.respondWith(cacheFirst(request, MODELS))
   else event.respondWith(staleWhileRevalidate(request))
 })
+
+// ─── Phone notifications (sleep reminders) ──────────────────────────────────
+// The server sends { title, body, url, tag, actions } through the browser's
+// push service; this shows it even when LivoraPulse is closed. Tapping it (or
+// one of its buttons) opens the app at that place, or focuses an open window.
+
+self.addEventListener('push', (event) => {
+  let msg = { title: 'LivoraPulse', body: '', url: '/dashboard' }
+  try { msg = { ...msg, ...event.data.json() } } catch (_) { /* not JSON: show the default */ }
+  const actions = Array.isArray(msg.actions) ? msg.actions.slice(0, 2) : []
+  event.waitUntil(self.registration.showNotification(msg.title, {
+    body: msg.body,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/badge-96.png',
+    tag: msg.tag,
+    renotify: Boolean(msg.tag),
+    data: { url: msg.url, actions: Object.fromEntries(actions.map((a) => [a.action, a.url])) },
+    actions: actions.map((a) => ({ action: a.action, title: a.title })),
+  }))
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const data = event.notification.data || {}
+  const path = (event.action && data.actions && data.actions[event.action]) || data.url || '/dashboard'
+  const target = new URL(path, self.location.origin).href
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const open = windows.find((w) => new URL(w.url).origin === self.location.origin)
+    if (open) {
+      await open.focus()
+      return open.navigate(target)
+    }
+    return self.clients.openWindow(target)
+  })())
+})

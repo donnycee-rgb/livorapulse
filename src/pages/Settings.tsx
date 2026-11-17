@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
   Sun, Moon, Ruler, Bell, BellOff,
   RefreshCw, Trash2, ClipboardList,
   Clock, CheckCircle2, ChevronRight,
-  AlertTriangle, Droplets, Download, Smartphone,
+  AlertTriangle, Droplets, Download, Smartphone, BellRing, MoonStar, Sunrise, Send,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
@@ -18,6 +18,11 @@ import { apiPut } from '../api/client'
 import { useCycleTracking } from '../lib/cycle'
 import { useInstall } from '../lib/install'
 import { startInstall } from '../components/InstallApp'
+import { openRemindersPrompt } from '../components/sleep/RemindersPrompt'
+import {
+  getReminderSettings, pushStatus, saveReminderSettings, sendTestNotification, turnOffPush, turnOnPush,
+  type PushStatus, type ReminderSettings,
+} from '../lib/push'
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
   return (
@@ -141,6 +146,115 @@ function GoalSlider({
   )
 }
 
+// ---------------------------------------------------------------------------
+// Sleep reminders on the phone
+// ---------------------------------------------------------------------------
+function RemindersSection() {
+  const [status, setStatus] = useState<PushStatus | null>(null)
+  const [settings, setSettings] = useState<ReminderSettings | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    pushStatus().then(setStatus).catch(() => setStatus('unsupported'))
+  }, [])
+  useEffect(() => {
+    if (status === 'on') getReminderSettings().then(setSettings).catch(() => null)
+  }, [status])
+
+  const save = async (patch: Partial<Pick<ReminderSettings, 'bedtime' | 'wakeReminder'>>) => {
+    const before = settings
+    if (settings) setSettings({ ...settings, ...patch })
+    try { setSettings(await saveReminderSettings(patch)) } catch { setSettings(before); toast.error("Couldn't save. Check your connection.") }
+  }
+
+  const toggle = async () => {
+    if (busy || !status) return
+    setBusy(true)
+    try {
+      if (status === 'on') {
+        await turnOffPush()
+        setStatus('off')
+        toast.success('Notifications off on this phone')
+      } else if (status === 'off') {
+        const r = await turnOnPush()
+        if (r === 'on') {
+          setStatus('on')
+          // first time on: a bedtime reminder at a sensible default
+          const s = await getReminderSettings()
+          setSettings(s.bedtime ? s : await saveReminderSettings({ bedtime: '22:30' }))
+          toast.success('Notifications on')
+        } else if (r === 'blocked') setStatus('blocked')
+        else if (r === 'unavailable') toast.error("Notifications aren't available on this browser yet.")
+      } else if (status === 'install-first') {
+        openRemindersPrompt()
+      }
+    } catch {
+      toast.error("Couldn't change notifications. Check your connection.")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const description =
+    status === 'on' ? 'Sleep reminders come to this phone, even when the app is closed'
+    : status === 'blocked' ? 'Blocked for this site. Allow notifications in your browser or phone settings, then come back.'
+    : status === 'install-first' ? 'On iPhone, install LivoraPulse to your home screen first'
+    : status === 'unsupported' ? "This browser can't show notifications"
+    : 'Get sleep reminders on this phone'
+
+  return (
+    <Section title="Reminders">
+      <SettingsRow
+        icon={<BellRing size={15} />}
+        label="Phone notifications"
+        description={description}
+        right={status === 'on' || status === 'off'
+          ? <Toggle enabled={status === 'on'} onToggle={toggle} />
+          : status === 'install-first'
+            ? <button type="button" onClick={toggle} className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-ui-raised text-ui-ink whitespace-nowrap">How</button>
+            : null}
+      />
+      {status === 'on' && settings && (
+        <>
+          <SettingsRow
+            icon={<MoonStar size={15} />}
+            label="Bedtime reminder"
+            description={settings.bedtime ? `Every night at ${settings.bedtime}` : 'Off'}
+            right={
+              <div className="flex items-center gap-2">
+                {settings.bedtime && (
+                  <input type="time" value={settings.bedtime} aria-label="Bedtime reminder time"
+                    onChange={(e) => e.target.value && save({ bedtime: e.target.value })}
+                    className="h-8 w-[122px] rounded-xl bg-ui-raised px-2 text-[13px] font-bold text-ui-ink tabular-nums outline-none" />
+                )}
+                <Toggle enabled={!!settings.bedtime} onToggle={() => save({ bedtime: settings.bedtime ? null : '22:30' })} />
+              </div>
+            }
+          />
+          <SettingsRow
+            icon={<Sunrise size={15} />}
+            label="Morning reminder"
+            description="If you're still marked asleep, a nudge to log your wake-up"
+            right={<Toggle enabled={settings.wakeReminder} onToggle={() => save({ wakeReminder: !settings.wakeReminder })} />}
+          />
+          <SettingsRow
+            icon={<Send size={15} />}
+            label="Send a test"
+            description="Check that notifications reach this phone"
+            right={
+              <button type="button"
+                onClick={() => sendTestNotification().then(() => toast.success('Sent. Look at your notifications.')).catch((e: Error) => toast.error(e.message || "Couldn't send"))}
+                className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-ui-raised text-ui-ink whitespace-nowrap">
+                Send
+              </button>
+            }
+          />
+        </>
+      )}
+    </Section>
+  )
+}
+
 export default function Settings() {
   const navigate = useNavigate()
   const theme = useAppStore((s) => s.preferences.theme)
@@ -260,6 +374,8 @@ export default function Settings() {
           right={<Toggle enabled={cycleTracking} onToggle={toggleCycle} />}
         />
       </Section>
+
+      <RemindersSection />
 
       {/* The app on this phone */}
       <Section title="App">
