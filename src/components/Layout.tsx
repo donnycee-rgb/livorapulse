@@ -10,6 +10,12 @@ import AICoachButton from './AICoachButton'
 import FocusTimerTicker from './FocusTimerTicker'
 import SleepBanner from './sleep/SleepBanner'
 import { SleepSheetHost } from './sleep/SleepSheet'
+import { RemindersPromptHost } from './sleep/RemindersPrompt'
+import { useSleepLinks } from './sleep/useSleepLinks'
+import { startSleepSessionSync } from '../lib/push'
+
+// The server hears about "Going to sleep" for the morning reminder
+startSleepSessionSync()
 import { useStoreHydration } from '../hooks/useStoreHydration'
 import { preloadPages } from '../pages/lazyPages'
 
@@ -23,6 +29,7 @@ import { preloadPages } from '../pages/lazyPages'
  */
 export default function Layout({ children }: PropsWithChildren) {
   const hydrated = useStoreHydration()
+  useSleepLinks()
   const { pathname } = useLocation()
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -52,6 +59,7 @@ export default function Layout({ children }: PropsWithChildren) {
       {/* While asleep: a strip of night sky with "I'm awake" */}
       <SleepBanner />
       <SleepSheetHost />
+      <RemindersPromptHost />
 
       {/* Offline, or logs waiting to upload */}
       <OfflineStatus />

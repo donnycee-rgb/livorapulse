@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { History, MoonStar, Pencil, Sunrise, X } from 'lucide-react'
+import { BellRing, History, MoonStar, Pencil, Sunrise, X } from 'lucide-react'
 
 import { ActionButton } from '../ui/PageHeader'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -9,6 +9,8 @@ import { fmtClock, fmtDuration } from '../../lib/sleep'
 import { Moon, NightSky } from './NightSky'
 import { openSleepSheet } from './SleepSheet'
 import { useElapsedMinutes } from './SleepBanner'
+import { openRemindersPrompt } from './RemindersPrompt'
+import { pushStatus, pushSupport, remindersAsked } from '../../lib/push'
 
 /**
  * The Sleep tab's main card. Asleep: when it started and "I'm awake".
@@ -27,6 +29,13 @@ export default function SleepCard({ nightHours, napMinutes, nightStart, nightEnd
   const elapsed = useElapsedMinutes(asleep ? startedAt : null)
   const [confirmCancel, setConfirmCancel] = useState(false)
   useEffect(() => { if (!confirmCancel) return; const t = setTimeout(() => setConfirmCancel(false), 4000); return () => clearTimeout(t) }, [confirmCancel])
+
+  // A quiet way to the reminders, until they're on (or the person said no)
+  const [offerReminders, setOfferReminders] = useState(false)
+  useEffect(() => {
+    if (remindersAsked() || pushSupport() === 'unsupported') return
+    pushStatus().then((s) => setOfferReminders(s === 'off' || s === 'install-first')).catch(() => null)
+  }, [])
 
   const hasTimes = !!(nightStart && nightEnd)
   const nightMinutes = Math.round(nightHours * 60)
@@ -91,12 +100,22 @@ export default function SleepCard({ nightHours, napMinutes, nightStart, nightEnd
           </>
         )}
       </div>
-      {!asleep && hasTimes && (
-        <button type="button" onClick={() => openSleepSheet({ mode: 'log' })}
-          className="px-5 pb-4 -mt-1 text-[12.5px] font-semibold text-ui-muted hover:text-ui-ink">
-          Log another sleep or a nap
-        </button>
-      )}
+      {(!asleep && hasTimes) || offerReminders ? (
+        <div className="px-5 pb-4 -mt-1 flex flex-wrap gap-x-5 gap-y-2">
+          {!asleep && hasTimes && (
+            <button type="button" onClick={() => openSleepSheet({ mode: 'log' })}
+              className="text-[12.5px] font-semibold text-ui-muted hover:text-ui-ink">
+              Log another sleep or a nap
+            </button>
+          )}
+          {offerReminders && (
+            <button type="button" onClick={() => { setOfferReminders(false); openRemindersPrompt() }}
+              className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-indigo-600 dark:text-indigo-300 hover:underline">
+              <BellRing size={13} /> Remind me at bedtime
+            </button>
+          )}
+        </div>
+      ) : null}
     </section>
   )
 }
