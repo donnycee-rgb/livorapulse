@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Eye, EyeOff, Droplet, Droplets, Moon, Sparkles, Sprout } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useAuthStore } from '../store/useAuthStore'
+import { Eye, EyeOff, Droplets } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { apiGet } from '../api/client'
+import { PHASES, shortDate, useCycleTracking, type Phase } from '../lib/cycle'
 
 interface CycleData {
-  phase: string
+  phase: Phase
+  periodActive?: boolean
   dayOfCycle: number
   daysUntilNextPeriod: number
   nextPeriodDate: string
@@ -16,42 +17,38 @@ interface CycleData {
   daysLate?: number
 }
 
-const PHASE_CONFIG = {
-  menstrual:  { label: 'Menstrual',  color: '#FF6B6B', icon: Droplet, message: 'Rest is productive too — your body is working hard.' },
-  follicular: { label: 'Follicular', color: '#4CAF50', icon: Sprout, message: 'Energy rising — great time for new goals.' },
-  ovulation:  { label: 'Ovulation',  color: '#FFA500', icon: Sparkles, message: 'Peak energy day — push your goals today.' },
-  luteal:     { label: 'Luteal',     color: '#6366F1', icon: Moon, message: 'Wind-down phase — mood dips are normal.' },
-}
-
 export default function CyclePhaseCard() {
-  const gender = useAuthStore((s) => s.user?.profile?.gender)
+  const tracking = useCycleTracking()
   const [data, setData] = useState<CycleData | null>(null)
   const [visible, setVisible] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // ALL hooks must be called before any conditional return
   useEffect(() => {
-    if (gender !== 'female') { setLoading(false); return }
+    if (!tracking) { setLoading(false); return }
     apiGet<{ success: boolean; data: CycleData | null }>('/api/cycle')
       .then(res => setData(res.data))
       .catch(() => null)
       .finally(() => setLoading(false))
-  }, [gender])
+  }, [tracking])
 
   // Conditional returns AFTER all hooks
-  if (gender !== 'female') return null
+  if (!tracking) return null
   if (loading || !data) return null
 
-  const phase = PHASE_CONFIG[data.phase as keyof typeof PHASE_CONFIG]
-  if (!phase) return null
+  const p = PHASES[data.phase]
+  if (!p) return null
+  const phase = { label: p.label, color: p.hex, message: p.line }
 
   // The phase is calculated from the averaged cycle length, so the bar uses it too
   const cycleLength = data.smartCycleLength ?? data.cycleLength
   const message = data.isLate
-    ? 'Your period is later than expected. Cycles vary — log it when it starts.'
+    ? 'Later than expected. Cycles vary; log it when it starts.'
     : data.periodDueToday
-      ? 'Your period is expected today.'
-      : phase.message
+      ? 'Your period may start today.'
+      : data.periodActive
+        ? phase.message
+        : `Next period expected around ${shortDate(data.nextPeriodDate)}.`
 
   return (
     <div className="relative rounded-2xl border overflow-hidden"
@@ -93,9 +90,8 @@ export default function CyclePhaseCard() {
               <div className="text-sm font-bold" style={{ color: phase.color }}>Due<br />today</div>
             ) : (
               <>
-                {/* daysUntilNextPeriod counts full days after today, so the period starts on day +1 */}
-                <div className="text-2xl font-black" style={{ color: phase.color }}>{data.daysUntilNextPeriod + 1}</div>
-                <div className="text-[10px] text-black/35 dark:text-white/30 leading-tight">days to<br />next period</div>
+                <div className="text-2xl font-black" style={{ color: phase.color }}>{data.daysUntilNextPeriod}</div>
+                <div className="text-[10px] text-black/35 dark:text-white/30 leading-tight">day{data.daysUntilNextPeriod === 1 ? '' : 's'} to<br />next period</div>
               </>
             )}
           </div>

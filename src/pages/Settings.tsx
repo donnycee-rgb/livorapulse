@@ -4,7 +4,7 @@ import {
   Sun, Moon, Ruler, Bell, BellOff,
   RefreshCw, Trash2, ClipboardList,
   Clock, CheckCircle2, ChevronRight,
-  AlertTriangle,
+  AlertTriangle, Droplets,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
@@ -14,6 +14,8 @@ import { useAppStore } from '../store/useAppStore'
 import { selectProgressiveGoals, selectStreak } from '../store/selectors'
 import CheckInModal from '../components/CheckInModal'
 import { useAuthStore } from '../store/useAuthStore'
+import { apiPut } from '../api/client'
+import { useCycleTracking } from '../lib/cycle'
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
   return (
@@ -149,6 +151,23 @@ export default function Settings() {
   const resetAll = useAppStore((s) => s.resetAll)
 
   const lastAssessmentAt = useAuthStore((s) => s.lastAssessmentAt)
+  const patchProfile = useAuthStore((s) => s.patchProfile)
+  const cycleTracking = useCycleTracking()
+  const [cycleSaving, setCycleSaving] = useState(false)
+  const toggleCycle = async () => {
+    if (cycleSaving) return
+    const next = !cycleTracking
+    setCycleSaving(true)
+    try {
+      await apiPut('/api/cycle/settings', { tracking: next })
+      patchProfile({ cycleTracking: next })
+      toast.success(next ? 'Cycle tracker on. Find it on the Mood page.' : 'Cycle tracker hidden. Your logs are kept.')
+    } catch {
+      toast.error("Couldn't change that. Check your connection.")
+    } finally {
+      setCycleSaving(false)
+    }
+  }
   const [checkInOpen, setCheckInOpen] = useState(false)
 
   const [resetOpen, setResetOpen] = useState(false)
@@ -226,6 +245,16 @@ export default function Settings() {
               ))}
             </div>
           }
+        />
+      </Section>
+
+      {/* Features that are only for some people */}
+      <Section title="Tracking">
+        <SettingsRow
+          icon={<Droplets size={15} />}
+          label="Cycle tracker"
+          description="Track your period on the Mood page. Only you can see it."
+          right={<Toggle enabled={cycleTracking} onToggle={toggleCycle} />}
         />
       </Section>
 

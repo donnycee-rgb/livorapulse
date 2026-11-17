@@ -31,6 +31,8 @@ export type AuthUser = {
     goalCaloriesPerDay?: number
     hasDisability?: boolean
     gender?: string
+    /** Show the cycle tracker; null/undefined = the default (on for women only) */
+    cycleTracking?: boolean | null
     dateOfBirth?: string
     heightCm?: number | null
     weightKg?: number | null
@@ -55,6 +57,8 @@ type AuthState = {
   setToken: (token: string | null) => void
   setLastAssessmentAt: (ts: number) => void
   setOnboardingComplete: (val: boolean) => void
+  /** Update fields of the signed-in person's profile here (after the server saved them) */
+  patchProfile: (patch: Partial<NonNullable<AuthUser['profile']>>) => void
   logout: () => void
   register: (input: { name: string; email: string; password: string }) => Promise<void>
   login: (input: { email: string; password: string }) => Promise<void>
@@ -96,6 +100,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setOnboardingComplete: (val) => set({ onboardingComplete: val }),
+
+      patchProfile: (patch) => {
+        const user = get().user
+        if (!user) return
+        set({ user: { ...user, profile: { onboardingComplete: true, ...user.profile, ...patch } } })
+      },
 
       logout: () => {
         // Revoke the refresh token on the server too (best effort — sign-out happens either way)
