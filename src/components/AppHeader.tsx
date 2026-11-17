@@ -1,10 +1,12 @@
-import { Bell, Sun, Moon, ChevronDown, Settings, User, LogOut, Laptop, FileText, Lightbulb, Leaf } from 'lucide-react'
+import { Bell, Sun, Moon, ChevronDown, Settings, User, LogOut, Laptop, FileText, Lightbulb, Leaf, Download } from 'lucide-react'
 import { useRef, useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import BrandMark from './BrandMark'
+import { InstallSheetHost, startInstall } from './InstallApp'
+import { useInstall } from '../lib/install'
 
 import { useAppStore } from '../store/useAppStore'
 import { useAuthStore } from '../store/useAuthStore'
@@ -179,6 +181,7 @@ function ProfileDropdown() {
   const logout = useAuthStore((s) => s.logout)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const { installed } = useInstall()
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -243,6 +246,18 @@ function ProfileDropdown() {
                   {label}
                 </button>
               ))}
+
+              {/* Gone once the app is installed */}
+              {!installed && (
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); void startInstall() }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-black/65 dark:text-white/60 hover:bg-black/[0.05] dark:hover:bg-white/[0.07] hover:text-black/85 dark:hover:text-white/85 transition-all duration-150"
+                >
+                  <span className="text-lp-primary"><Download size={14} /></span>
+                  Install app
+                </button>
+              )}
 
               <div className="my-1 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
 
@@ -356,6 +371,7 @@ export default function AppHeader() {
           <ProfileDropdown />
         </div>
       </div>
+      <InstallSheetHost />
     </header>
   )
 }
