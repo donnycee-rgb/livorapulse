@@ -13,6 +13,7 @@ import FocusMinutesBarChart from '../components/charts/FocusMinutesBarChart'
 import StudySessionsBarChart from '../components/charts/StudySessionsBarChart'
 import Input from '../components/ui/Input'
 import FocusTimesGrid from '../components/visuals/FocusTimesGrid'
+import { DurationPicker, FocusGoalSheet } from '../components/focus/FocusPickers'
 import WeekDots from '../components/visuals/WeekDots'
 import SeeDetails from '../components/visuals/SeeDetails'
 import { focusGrid, focusSentence } from '../lib/visualStories'
@@ -242,6 +243,7 @@ export default function Productivity() {
   const [durationMin, setDurationMin] = useState(25)
   const [tab, setTab] = useState<WorkTab>('overview')
   const [label, setLabel] = useState('Deep work')
+  const [goalOpen, setGoalOpen] = useState(false)
 
   const day = getDayKey()
   const focusTimes = useMemo(() => focusGrid(productivity.focusSessions), [productivity.focusSessions])
@@ -287,6 +289,7 @@ export default function Productivity() {
 
   return (
     <div className="space-y-5">
+      <FocusGoalSheet open={goalOpen} onClose={() => setGoalOpen(false)} current={focusGoal} />
 
       {/* Header */}
       <PageHeader icon={BarChart3} tint={HABIT.focus.rgb} title="Work" subtitle={headline} />
@@ -308,6 +311,10 @@ export default function Productivity() {
               <div className="text-[12px] font-semibold" style={{ color: HABIT.focus.hex }}>
                 {todayFocus >= focusGoal ? 'Daily goal reached' : `${fmtGoal(focusGoal - todayFocus)} to your ${fmtGoal(focusGoal)} goal`}
               </div>
+              <button type="button" onClick={() => setGoalOpen(true)}
+                className="mt-1 text-[12px] font-semibold text-ui-muted underline underline-offset-2 decoration-ui-line/40 hover:text-ui-ink">
+                Change goal
+              </button>
             </div>
           </div>
           <div className="space-y-3">
@@ -367,23 +374,7 @@ export default function Productivity() {
                 </div>
                 <div>
                   <div className="text-xs font-semibold text-black/50 dark:text-white/45 uppercase tracking-wider mb-2">Duration</div>
-                  <div className="flex gap-2">
-                    {[25, 45, 60, 90].map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => setDurationMin(m)}
-                        className={clsx(
-                          'flex-1 py-2 rounded-xl text-xs font-bold transition-all duration-150',
-                          durationMin === m
-                            ? 'bg-[#6366F1] text-white shadow-sm'
-                            : 'bg-black/[0.04] dark:bg-white/[0.05] text-black/55 dark:text-white/50 hover:bg-black/[0.08] dark:hover:bg-white/[0.09]',
-                        )}
-                      >
-                        {m}m
-                      </button>
-                    ))}
-                  </div>
+                  <DurationPicker value={durationMin} onChange={setDurationMin} />
                 </div>
               </div>
             )}
