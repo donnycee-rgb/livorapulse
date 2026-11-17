@@ -12,9 +12,9 @@ import SleepBanner from './sleep/SleepBanner'
 import { SleepSheetHost } from './sleep/SleepSheet'
 import { RemindersPromptHost } from './sleep/RemindersPrompt'
 import { useSleepLinks } from './sleep/useSleepLinks'
-import { startSleepSessionSync } from '../lib/push'
+import { startSleepSessionSync } from '../lib/sleepSync'
 
-// The server hears about "Going to sleep" for the morning reminder
+// "Going to sleep" is shared with the server, and so with every device
 startSleepSessionSync()
 import { useStoreHydration } from '../hooks/useStoreHydration'
 import { preloadPages } from '../pages/lazyPages'
