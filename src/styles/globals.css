@@ -164,3 +164,14 @@ input[type='checkbox'],
 input[type='radio'] {
   accent-color: rgb(var(--lp-primary));
 }
+
+/* Sleep: stars twinkle slowly; still for people who prefer reduced motion */
+@keyframes lp-twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 0.95; transform: scale(1); }
+}
+.lp-twinkle { animation: lp-twinkle 4.5s ease-in-out infinite; }
+.lp-moon { filter: drop-shadow(0 0 6px rgba(253, 230, 138, 0.45)); }
+@media (prefers-reduced-motion: reduce) {
+  .lp-twinkle { animation: none; opacity: 0.6; }
+}

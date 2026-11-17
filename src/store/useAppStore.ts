@@ -56,6 +56,8 @@ type PhysicalEntry = {
   trail?: Array<{ lat: number; lng: number }> | null
   timestamp: string
   sleepType?: 'night' | 'nap' | null
+  sleepStart?: string | null
+  sleepEnd?: string | null
   activityType?: string | null
   durationMin?: number
   stepEquivalent?: number
@@ -209,7 +211,13 @@ export function buildSleepToday(entries: PhysicalEntry[]): NonNullable<AppState[
   const mine = entries.filter((e) => e.sleepMinutes > 0 && new Date(e.timestamp).toDateString() === today)
   const night = mine.filter((e) => e.sleepType !== 'nap').sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0]
   const napMinutes = mine.filter((e) => e.sleepType === 'nap').reduce((s, e) => s + e.sleepMinutes, 0)
-  return { date: today, nightHours: night ? Math.round((night.sleepMinutes / 60) * 10) / 10 : 0, napMinutes }
+  return {
+    date: today,
+    nightHours: night ? Math.round((night.sleepMinutes / 60) * 10) / 10 : 0,
+    napMinutes,
+    nightStart: night?.sleepStart ?? null,
+    nightEnd: night?.sleepEnd ?? null,
+  }
 }
 
 function buildWeeklyScreen(entries: DigitalEntry[]): AppState['digital']['weeklyScreenTimeMin'] {
@@ -401,6 +409,8 @@ export type AppActions = {
   addActivity: (input: { steps: number; distanceKm: number; caloriesKcal: number; note?: string; trail?: Array<{ lat: number; lng: number }>; durationSec?: number; startedAt?: string }) => Promise<void>
   updateSleepForToday: (hours: number) => Promise<void>
   addNap: (minutes: number) => Promise<void>
+  /** Sleep with a bedtime and wake-up (epoch ms). Counts for the day of the wake-up. */
+  logSleep: (input: { start: number; end: number; kind: 'night' | 'nap' }) => Promise<void>
   /** Green habits: tick (once a day) or untick */
   toggleHabit: (habit: Habit) => Promise<void>
   /** A trip: how and roughly how far; the server works out CO₂ */
@@ -586,6 +596,46 @@ export const useAppStore = create<AppStore>()(
         } catch {
           set((s) => ({ physical: { ...s.physical, sleepHours: before.sleepHours, sleepToday: before.sleepToday } }))
           throw new Error('Failed to save the nap. Please try again.')
+        }
+      },
+
+      // Sleep with times: last night is set (or corrected), a nap adds. Shown
+      // straight away when it ended today; for an earlier day the server's
+      // numbers are fetched once it's saved.
+      logSleep: async ({ start, end, kind }) => {
+        const minutes = Math.round((end - start) / 60000)
+        const endDate = new Date(end)
+        const today = new Date().toDateString()
+        const endsToday = endDate.toDateString() === today
+        const before = get().physical
+        if (endsToday) {
+          const day = getDayKey()
+          const st = before.sleepToday?.date === today ? before.sleepToday : { date: today, nightHours: 0, napMinutes: 0 }
+          const next = kind === 'night'
+            ? { ...st, nightHours: Math.round((minutes / 60) * 10) / 10, nightStart: new Date(start).toISOString(), nightEnd: endDate.toISOString() }
+            : { ...st, napMinutes: st.napMinutes + minutes }
+          const total = Math.round((next.nightHours + next.napMinutes / 60) * 10) / 10
+          set((s) => ({
+            physical: { ...s.physical, sleepHours: updateByDay(s.physical.sleepHours, day, { hours: total }), sleepToday: next },
+            meta: { lastUpdatedAt: now() },
+          }))
+        }
+        try {
+          const result = await saveLog('/api/activity/physical', {
+            steps: 0, distanceKm: 0, caloriesKcal: 0,
+            sleepMinutes: minutes,
+            sleepType: kind,
+            sleepStart: new Date(start).toISOString(),
+            sleepEnd: endDate.toISOString(),
+            timestamp: endDate.toISOString(),
+          })
+          if (result === 'sent') {
+            scheduleScoreSync()
+            if (!endsToday) void get().hydrateFromApi()
+          }
+        } catch (err) {
+          set((s) => ({ physical: { ...s.physical, sleepHours: before.sleepHours, sleepToday: before.sleepToday } }))
+          throw err instanceof Error ? err : new Error("Couldn't save your sleep. Please try again.")
         }
       },
 
