@@ -21,6 +21,7 @@ import type { MoodEmoji } from '../data/types'
 import { useAppStore } from '../store/useAppStore'
 import { useAuthStore } from '../store/useAuthStore'
 import CycleTracker from '../components/CycleTracker'
+import { useCycleTracking } from '../lib/cycle'
 import { getDayKey } from '../utils/date'
 
 // ---------------------------------------------------------------------------
@@ -488,12 +489,11 @@ function MoodTab() {
 }
 
 // ---------------------------------------------------------------------------
-// Mood page root — the Cycle Tracker tab is only shown to users whose profile
-// gender is female (set during onboarding)
+// Mood page root. The Cycle tracker tab shows when tracking is on: the
+// person's own choice in Settings, or by default for women (lib/cycle.ts)
 // ---------------------------------------------------------------------------
 export default function Mood() {
-  const gender = useAuthStore((s) => s.user?.profile?.gender)
-  const isFemale = gender === 'female'
+  const isFemale = useCycleTracking()
   const [activeTab, setActiveTab] = useState<'mood' | 'cycle'>('mood')
   const tab = isFemale ? activeTab : 'mood'
 
