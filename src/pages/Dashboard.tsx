@@ -29,6 +29,8 @@ import TopInsightCard from '../components/TopInsightCard'
 import HealthFlags from '../components/HealthFlags'
 import ExperimentCheckCard from '../components/ExperimentCheckCard'
 import TodayOutlookCard from '../components/TodayOutlookCard'
+import { InstallNudge } from '../components/InstallApp'
+import { hideNudge, noteUseDay, nudgeHidden, useInstall } from '../lib/install'
 import { useMoodModel } from '../components/WhatHelpsYou'
 
 // ---------------------------------------------------------------------------
@@ -139,6 +141,9 @@ function QuickCheckIn({ water, onWater }: { water: number; onWater: () => void }
 // ---------------------------------------------------------------------------
 export default function Dashboard() {
   const navigate = useNavigate()
+  // "Install the app": only after the app has been used on 3 different days, never once closed or installed
+  const { installed } = useInstall()
+  const [nudge, setNudge] = useState(() => !nudgeHidden() && noteUseDay(getDayKey()) >= 3)
   const user = useAppStore((s) => s.user)
   const score = useAppStore(selectLifePulseScore)
   const insight = useAppStore(selectDailyInsight)
@@ -333,6 +338,8 @@ export default function Dashboard() {
         </span>
         <ChevronRight size={16} className="text-ui-muted flex-shrink-0" />
       </button>
+
+      {nudge && !installed && <InstallNudge onClose={() => { hideNudge(); setNudge(false) }} />}
 
       {/* Running experiment and the top insight — each shows only when it has something to say */}
       <ExperimentCheckCard />

@@ -13,6 +13,8 @@ import { flushOutbox } from './offline/outbox'
 import { useOutboxSync } from './offline/useOutboxSync'
 import { registerServiceWorker } from './offline/registerServiceWorker'
 import './styles/globals.css'
+// Catch the browser's "can install" signal from the very start (see lib/install.ts)
+import './lib/install'
 
 function Root() {
   useThemeSync()

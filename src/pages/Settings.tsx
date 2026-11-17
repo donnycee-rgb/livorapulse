@@ -4,7 +4,7 @@ import {
   Sun, Moon, Ruler, Bell, BellOff,
   RefreshCw, Trash2, ClipboardList,
   Clock, CheckCircle2, ChevronRight,
-  AlertTriangle, Droplets,
+  AlertTriangle, Droplets, Download, Smartphone,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
@@ -16,6 +16,8 @@ import CheckInModal from '../components/CheckInModal'
 import { useAuthStore } from '../store/useAuthStore'
 import { apiPut } from '../api/client'
 import { useCycleTracking } from '../lib/cycle'
+import { useInstall } from '../lib/install'
+import { startInstall } from '../components/InstallApp'
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
   return (
@@ -153,6 +155,7 @@ export default function Settings() {
   const lastAssessmentAt = useAuthStore((s) => s.lastAssessmentAt)
   const patchProfile = useAuthStore((s) => s.patchProfile)
   const cycleTracking = useCycleTracking()
+  const { installed } = useInstall()
   const [cycleSaving, setCycleSaving] = useState(false)
   const toggleCycle = async () => {
     if (cycleSaving) return
@@ -255,6 +258,21 @@ export default function Settings() {
           label="Cycle tracker"
           description="Track your period on the Mood page. Only you can see it."
           right={<Toggle enabled={cycleTracking} onToggle={toggleCycle} />}
+        />
+      </Section>
+
+      {/* The app on this phone */}
+      <Section title="App">
+        <SettingsRow
+          icon={installed ? <Smartphone size={15} /> : <Download size={15} />}
+          label={installed ? 'Installed' : 'Install LivoraPulse'}
+          description={installed ? "You're using the app version." : 'Opens full screen and works without a connection'}
+          right={installed ? null : (
+            <button type="button" onClick={() => void startInstall()}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-lp-primary text-white hover:bg-green-500 transition-all whitespace-nowrap">
+              Install
+            </button>
+          )}
         />
       </Section>
 
