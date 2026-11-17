@@ -10,6 +10,7 @@ import SleepAreaChart from '../components/charts/SleepAreaChart'
 import StepsBarChart from '../components/charts/StepsBarChart'
 import StepsJourney from '../components/visuals/StepsJourney'
 import SleepNightSky from '../components/visuals/SleepNightSky'
+import SleepCard from '../components/sleep/SleepCard'
 import WeekDots from '../components/visuals/WeekDots'
 import RingGauge from '../components/ui/RingGauge'
 import PageTabs from '../components/ui/PageTabs'
@@ -210,61 +211,6 @@ function WeeklySummaryCard({ weeklySteps, sleepHours }: {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Sleep quick logger sidebar card
-// ---------------------------------------------------------------------------
-function SleepLogger({ nightHours, napMinutes, onNight, onNap }: {
-  nightHours: number
-  napMinutes: number
-  onNight: (hours: number) => void
-  onNap: (minutes: number) => void
-}) {
-  const levels = [5, 6, 6.5, 7, 7.5, 8, 8.5, 9]
-  const naps = [20, 30, 60, 90]
-  const total = nightHours + napMinutes / 60
-  const fmtNap = (m: number) => (m >= 60 ? `${m / 60}h` : `${m}m`)
-
-  return (
-    <div className="rounded-3xl p-5 lp-card">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `rgb(${HABIT.sleep.rgb} / 0.16)`, color: HABIT.sleep.hex }}>
-          <Moon size={15} />
-        </div>
-        <div className="min-w-0">
-          <div className="text-sm font-bold text-ui-ink">Sleep today</div>
-          <div className="text-xs text-ui-muted">
-            {total > 0
-              ? `${Math.round(total * 10) / 10}h${napMinutes > 0 ? ` · ${nightHours}h last night + ${fmtNap(napMinutes)} of naps` : ''}`
-              : 'Nothing logged yet'}
-          </div>
-        </div>
-      </div>
-
-      <div className="text-[12px] font-semibold text-ui-muted mb-2">Last night <span className="font-normal">(tap again to correct it)</span></div>
-      <div className="flex flex-wrap gap-1.5">
-        {levels.map((h) => (
-          <button key={h} type="button" onClick={() => onNight(h)}
-            className={clsx('px-3 py-2 rounded-xl text-xs font-bold transition-all duration-150',
-              nightHours === h ? 'text-white shadow-sm' : 'bg-ui-raised text-ui-muted hover:text-ui-ink')}
-            style={nightHours === h ? { backgroundColor: HABIT.sleep.hex } : undefined}>
-            {h}h
-          </button>
-        ))}
-      </div>
-
-      <div className="text-[12px] font-semibold text-ui-muted mt-4 mb-2">Add a nap <span className="font-normal">(each one adds)</span></div>
-      <div className="flex flex-wrap gap-1.5">
-        {naps.map((m) => (
-          <button key={m} type="button" onClick={() => onNap(m)}
-            className="px-3 py-2 rounded-xl text-xs font-bold bg-ui-raised text-ui-ink hover:bg-ui-line/[0.08] transition">
-            +{fmtNap(m)}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'activity', label: 'Activity' },
@@ -281,7 +227,6 @@ export default function Physical() {
   const units = useAppStore((s) => s.preferences.units)
   const physical = useAppStore((s) => s.physical)
   const addActivity = useAppStore((s) => s.addActivity)
-  const updateSleepForToday = useAppStore((s) => s.updateSleepForToday)
 
   const day = getDayKey()
   const goals = useAppStore(selectProgressiveGoals)
@@ -304,11 +249,10 @@ export default function Physical() {
   const [durationInput, setDurationInput] = useState('30')
   const [noteInput, setNoteInput] = useState('')
   const addWorkout = useAppStore((s) => s.addWorkout)
-  const addNap = useAppStore((s) => s.addNap)
   const heightCm = useAuthStore((s) => s.user?.profile?.heightCm)
   const weightKg = useAuthStore((s) => s.user?.profile?.weightKg)
   const todayKey = new Date().toDateString()
-  const sleepToday = physical.sleepToday?.date === todayKey ? physical.sleepToday : { nightHours: 0, napMinutes: 0 }
+  const sleepToday = physical.sleepToday?.date === todayKey ? physical.sleepToday : { nightHours: 0, napMinutes: 0, nightStart: null, nightEnd: null }
   // Other activities' credit toward today's step goal (the score counts it too)
   const todayCredit = physical.activityLog
     .filter((a) => new Date(a.timestamp).toDateString() === todayKey)
@@ -458,10 +402,9 @@ export default function Physical() {
       )}
 
       {tab === 'sleep' && (
-        <div className="grid lg:grid-cols-[300px_1fr] gap-4">
-          <SleepLogger nightHours={sleepToday.nightHours} napMinutes={sleepToday.napMinutes}
-            onNight={(h) => { updateSleepForToday(h).then(() => toast.success(`Last night: ${h}h`)).catch((e: Error) => toast.error(e.message)) }}
-            onNap={(m) => { addNap(m).then(() => toast.success(`Nap added: ${m >= 60 ? `${m / 60}h` : `${m} min`}`)).catch((e: Error) => toast.error(e.message)) }} />
+        <div className="grid lg:grid-cols-[360px_1fr] gap-4 items-start">
+          <SleepCard nightHours={sleepToday.nightHours} napMinutes={sleepToday.napMinutes}
+            nightStart={sleepToday.nightStart} nightEnd={sleepToday.nightEnd} />
           <div className="rounded-3xl p-5 lp-card min-w-0">
             <div className="text-[13px] font-bold text-ui-ink mb-1">Your nights</div>
             <p className="text-[15px] text-ui-muted leading-snug mb-4">

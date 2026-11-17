@@ -8,6 +8,8 @@ import SideNav from './SideNav'
 import PageSkeleton from './PageSkeleton'
 import AICoachButton from './AICoachButton'
 import FocusTimerTicker from './FocusTimerTicker'
+import SleepBanner from './sleep/SleepBanner'
+import { SleepSheetHost } from './sleep/SleepSheet'
 import { useStoreHydration } from '../hooks/useStoreHydration'
 import { preloadPages } from '../pages/lazyPages'
 
@@ -46,6 +48,10 @@ export default function Layout({ children }: PropsWithChildren) {
 
       {/* Header — full width, never scrolls */}
       <AppHeader />
+
+      {/* While asleep: a strip of night sky with "I'm awake" */}
+      <SleepBanner />
+      <SleepSheetHost />
 
       {/* Offline, or logs waiting to upload */}
       <OfflineStatus />

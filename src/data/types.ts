@@ -138,7 +138,7 @@ export type AppState = {
     weeklyCaloriesKcal: WeeklyCalories
     sleepHours: WeeklySleep
     /** Today's sleep split into last night and naps (date = local day it belongs to) */
-    sleepToday?: { date: string; nightHours: number; napMinutes: number }
+    sleepToday?: { date: string; nightHours: number; napMinutes: number; nightStart?: string | null; nightEnd?: string | null }
     activityLog: ActivityLogEntry[]
   }
   digital: {
