@@ -10,6 +10,38 @@ import { ActiveExperimentCard, PastExperimentCard } from '../components/Experime
 import InsightCard from '../components/InsightCard'
 import HealthFlags from '../components/HealthFlags'
 import Skeleton from '../components/ui/Skeleton'
+import { featureMeta } from '../components/insights/InsightVisuals'
+
+/** The top of the page once patterns exist: how many, and which parts of life they touch */
+function FoundSummary({ insights, windowDays }: { insights: Insight[]; windowDays: number }) {
+  const areas = [...new Set(insights.flatMap((i) => [i.driver, i.outcome]))].map(featureMeta)
+  const days = Math.max(...insights.map((i) => i.nDays))
+  return (
+    <section className="lp-card rounded-3xl p-5 max-sm:p-4 relative overflow-hidden" aria-label="Patterns found">
+      <div className="pointer-events-none absolute -top-14 -right-10 w-44 h-44 rounded-full blur-3xl bg-lp-primary/15" />
+      <div className="relative flex items-center gap-4">
+        <div className="w-14 h-14 rounded-2xl bg-lp-primary/15 flex flex-col items-center justify-center flex-shrink-0">
+          <span className="text-[22px] font-black text-lp-primary leading-none tabular-nums">{insights.length}</span>
+        </div>
+        <div className="min-w-0">
+          <div className="text-[16px] font-bold text-ui-ink leading-snug">
+            {insights.length === 1 ? 'pattern' : 'patterns'} found in your last {windowDays} days
+          </div>
+          <div className="text-[12.5px] text-ui-muted">Each one held up when tested on up to {days} days of your own logs.</div>
+        </div>
+      </div>
+      <div className="relative mt-4 flex flex-wrap gap-1.5">
+        {areas.map((a) => (
+          <span key={a.label} className="inline-flex items-center gap-1.5 rounded-full pl-1.5 pr-2.5 py-1 text-[12px] font-semibold text-ui-ink"
+            style={{ background: `rgb(${a.rgb} / 0.12)` }}>
+            <span className="w-5 h-5 rounded-full flex items-center justify-center" style={{ color: a.hex }}><a.Icon size={13} /></span>
+            {a.label}
+          </span>
+        ))}
+      </div>
+    </section>
+  )
+}
 
 /** Shown until the first insights appear: what's been logged and what's still needed */
 function ProgressPanel({ status }: { status: InsightStatus }) {
@@ -119,6 +151,8 @@ export default function Insights() {
           Couldn't load your insights. Check your connection and try again.
         </div>
       )}
+
+      {insights && insights.length > 0 && <FoundSummary insights={insights} windowDays={status?.windowDays ?? 90} />}
 
       <HealthFlags />
       <WhatHelpsYou model={moodModel} />

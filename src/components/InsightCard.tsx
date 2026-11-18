@@ -8,6 +8,7 @@ import { startExperiment } from '../api/experiments'
 import type { Insight, InsightComparison } from '../api/insights'
 import { sendInsightFeedback } from '../api/insights'
 import Modal from './ui/Modal'
+import { GapChart, PairIcons } from './insights/InsightVisuals'
 import { formatMinutesToHM, formatNumber } from '../utils/format'
 
 function formatValue(value: number, c: InsightComparison): string {
@@ -142,10 +143,16 @@ export default function InsightCard({ insight, onDismissed, runningExperimentKey
     <div
       className="lp-card rounded-3xl p-5 max-sm:p-4"
     >
-      <p className="text-sm leading-relaxed text-black/80 dark:text-white/85">{insight.text}</p>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <PairIcons insight={insight} />
+        <span className="text-[11.5px] font-semibold rounded-full px-2.5 py-1 bg-ui-raised text-ui-muted tabular-nums">
+          Based on {insight.nDays} days
+        </span>
+      </div>
+      <p className="mt-3 text-[15px] font-semibold leading-snug text-ui-ink">{insight.text}</p>
 
       <div className="mt-4">
-        <ComparisonBars comparison={insight.comparison} />
+        <GapChart insight={insight} />
       </div>
 
       {testingThis && (
