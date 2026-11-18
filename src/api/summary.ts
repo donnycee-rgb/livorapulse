@@ -12,6 +12,8 @@ export type MetricSummary = {
   min: number | null
   max: number | null
   weekly: { weekStart: string; value: number | null }[]
+  /** Every day of the period (null = not logged); missing in links shared before it was added */
+  daily?: (number | null)[]
   trend: 'higher' | 'lower' | 'steady' | null
   notableDays: number | null
   text: string

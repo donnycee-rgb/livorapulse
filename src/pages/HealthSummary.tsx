@@ -84,7 +84,7 @@ export default function HealthSummary() {
       <div>
         <h1 className="text-[24px] max-sm:text-[22px] font-bold leading-tight tracking-tight text-ui-ink">Health summary</h1>
         <p className="text-sm text-black/45 dark:text-white/40 mt-0.5 max-w-lg">
-          A one-page summary of your sleep, mood, stress, walks and cycle to show a doctor. Download it as a PDF or share a link that expires.
+          Your sleep, mood, stress, walks and cycle with clear charts, ready to show a doctor. Download it as a PDF or share a link that expires.
         </p>
       </div>
 
