@@ -1,3 +1,5 @@
+import { locateMe } from '../lib/walkRoute'
+import { locateMessage } from '../components/visuals/StepsJourney'
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
@@ -5,7 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import {
-  Activity, ArrowRight, Brain, CalendarCheck, Check, ChevronLeft, Dumbbell,
+  Activity, ArrowRight, Brain, CalendarCheck, Check, ChevronLeft, Dumbbell, LocateFixed,
   Footprints, Leaf, Moon, MonitorSmartphone, Scale, Target, UtensilsCrossed,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -138,6 +140,39 @@ function TextBox(props: React.InputHTMLAttributes<HTMLInputElement> & { suffix?:
       <input {...rest}
         className={clsx('flex-1 min-w-0 px-3.5 py-2.5 bg-transparent text-white text-base sm:text-sm focus:outline-none placeholder:text-white/25', className)} />
       {suffix && <span className="pr-3.5 text-white/35 text-sm">{suffix}</span>}
+    </div>
+  )
+}
+
+/** "Use my location": the walking journey starts from the places around you */
+function LocationButton() {
+  const area = useAuthStore((st) => st.user?.profile?.walkArea)
+  const [state, setState] = useState<'idle' | 'busy' | 'no'>('idle')
+  if (area) {
+    return (
+      <p className="flex items-center gap-2 text-sm text-white/80">
+        <Check size={15} className="text-lp-primary" /> Starting from {area}
+      </p>
+    )
+  }
+  return (
+    <div>
+      <button type="button" disabled={state === 'busy'}
+        onClick={async () => {
+          setState('busy')
+          const r = await locateMe()
+          if (r.ok) setState('idle')
+          else { setState('no'); toast(locateMessage(r).replace('You can pick a town instead.', 'No problem: it starts from Nairobi, and you can change it later.')) }
+        }}
+        className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.06] text-sm font-semibold text-white hover:border-white/20 disabled:opacity-60">
+        <LocateFixed size={16} className="text-lp-primary" />
+        {state === 'busy' ? 'Finding places near you…' : 'Use my location'}
+      </button>
+      <p className="mt-1.5 text-[11.5px] text-white/35 leading-relaxed">
+        {state === 'no'
+          ? 'Your journey starts from Nairobi for now.'
+          : 'Shows your weekly walk as a trip past places near you. Only your rough area is used, once. It is not saved.'}
+      </p>
     </div>
   )
 }
@@ -319,6 +354,10 @@ export default function WelcomeSetup() {
                           onClick={() => set({ gender: draft.gender === g.value ? '' : g.value })}>{g.label}</Chip>
                       ))}
                     </div>
+                  </Field>
+
+                  <Field label="Walking journey" hint="Optional">
+                    <LocationButton />
                   </Field>
 
                   <Field label="Height and weight" hint="For accurate calorie targets">
