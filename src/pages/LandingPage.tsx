@@ -45,7 +45,8 @@ const fadeUp = {
   transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
 } as const
 
-// Serif heading with one italic, sage-coloured word — e.g. <Headline>Wellness that fits your <em>life</em></Headline>
+// The italic emerald accent. Kept to 2 headings on the page (the hero's
+// "life" and "Made for Kenya."); every other heading is plain.
 function Accent({ children }: { children: ReactNode }) {
   return <em className="font-serif italic font-normal" style={{ color: C.sage }}>{children}</em>
 }
@@ -220,8 +221,8 @@ function DashboardScreen() {
   const circ = 2 * Math.PI * R
   return (
     <div className="pb-2">
-      <ScreenHeader sub="Good morning, Amina" title="Today's LifePulse" />
-      <div className="mx-3 rounded-2xl p-3 flex items-center gap-3" style={{ background: C.paper }}>
+      <ScreenHeader sub="Good morning, Achieng" title="Today's LifePulse" />
+      <div className="mx-3 rounded-2xl pl-3 pr-4 py-3 flex items-center gap-3" style={{ background: C.paper }}>
         <div className="relative w-[76px] h-[76px] flex-shrink-0">
           <svg viewBox="0 0 76 76" className="w-full h-full -rotate-90">
             <circle cx="38" cy="38" r={R} fill="none" stroke="var(--lp-line)" strokeWidth="7" />
@@ -236,8 +237,9 @@ function DashboardScreen() {
         <div className="space-y-1">
           <span className="inline-flex items-center gap-1 whitespace-nowrap text-[9px] font-semibold px-2 py-0.5 rounded-full"
             style={{ background: C.mint, color: C.green }}><TrendingUp size={9} /> +4 pts</span>
-          <div className="flex items-center gap-1 whitespace-nowrap text-[9px]" style={{ color: C.muted }}>
-            <Flame size={10} className="text-amber-500" /> 14-day streak · 1.2×
+          <div className="text-[9px] leading-snug pr-1" style={{ color: C.muted }}>
+            <div className="flex items-center gap-1 whitespace-nowrap"><Flame size={10} className="text-amber-500" /> 14-day streak</div>
+            <div className="pl-[14px] whitespace-nowrap">1.2× targets</div>
           </div>
         </div>
       </div>
@@ -331,7 +333,7 @@ function FocusScreen() {
       </div>
       <div className="mx-3 mt-2 rounded-2xl p-3 space-y-2" style={{ background: C.paper }}>
         {[
-          { n: 'Revision — Biology', t: '45m', done: true },
+          { n: 'Biology revision', t: '45m', done: true },
           { n: 'Reading', t: '25m', done: true },
           { n: 'Plan tomorrow', t: '15m', done: false },
         ].map(s => (
@@ -428,8 +430,10 @@ function OnboardingScreen() {
 
 // ─── hero carousel ───────────────────────────────────────────────────────────
 type Slide = {
-  eyebrow: string
+  /** What the slide is about; read out for its bar button, not shown */
+  label: string
   before: string
+  /** Shown in the italic accent on the first slide only */
   accent: string
   after?: string
   sub: string
@@ -441,39 +445,39 @@ type Slide = {
 
 const SLIDES: Slide[] = [
   {
-    eyebrow: 'Built for Kenya · Free to start',
+    label: 'Your daily LifePulse Score',
     before: 'Wellness that fits your ',
     accent: 'life',
-    sub: 'Track activity, food, screen time, focus, mood and eco habits — and see it all come together in one daily LifePulse Score.',
+    sub: 'Track activity, food, screen time, focus, mood and eco habits. They add up to one LifePulse Score each day.',
     image: '/images/wellness%20tracking.jpg',
     imageAlt: 'A woman out for a morning run, checking her fitness stats',
     screen: <DashboardScreen />,
     chip: { Icon: TrendingUp, label: 'LifePulse Score', value: '84 / 100' },
   },
   {
-    eyebrow: '54 Kenyan dishes and counting',
+    label: '54 Kenyan dishes',
     before: 'Eat Kenyan. Track ',
     accent: 'smarter',
     after: '.',
-    sub: 'Search ugali, sukuma wiki, githeri or pilau and get real calories and macros — no more guessing with foreign food apps.',
+    sub: 'Search ugali, sukuma wiki, githeri or pilau and get calories and macros for 54 Kenyan dishes, in the portions you actually eat.',
     image: '/images/Nutrition.jpg',
     imageAlt: 'A colourful, healthy bowl of vegetables, grains and chicken',
     screen: <FoodScreen />,
     chip: { Icon: UtensilsCrossed, label: 'Ugali, 100 g', value: '122 kcal' },
   },
   {
-    eyebrow: 'Focus & digital balance',
+    label: 'Focus and screen time',
     before: 'Less scrolling. More ',
     accent: 'doing',
     after: '.',
-    sub: 'Focus sessions, screen-time goals and streaks that reward consistency — so your best habits keep growing.',
+    sub: 'Focus sessions, screen-time goals and streaks that reward showing up every day.',
     image: '/images/Productivity.jpg',
     imageAlt: 'A tidy desk with a computer, notebook and coffee, set up for focused work',
     screen: <FocusScreen />,
     chip: { Icon: Flame, label: 'Focus streak', value: '12 days' },
   },
   {
-    eyebrow: 'Mood, stress & cycle insights',
+    label: 'Mood, stress and cycle',
     before: 'Feel better, ',
     accent: 'week by week',
     after: '.',
@@ -609,14 +613,9 @@ function Hero() {
               const Heading = i === 0 ? 'h1' : 'p'
               return (
                 <div key={i} className="w-full flex-shrink-0 pr-2" aria-hidden={i !== index}>
-                  <span className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full mb-6 max-sm:mb-4"
-                    style={{ background: C.paper, color: C.muted, border: `1px solid ${C.line}` }}>
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: C.green }} />
-                    {s.eyebrow}
-                  </span>
                   <Heading className="font-serif font-normal leading-[1.05] tracking-tight mb-5 max-sm:mb-3"
                     style={{ color: C.ink, fontSize: 'clamp(2.5rem, 5.6vw, 4.6rem)' }}>
-                    {s.before}<Accent>{s.accent}</Accent>{s.after}
+                    {s.before}{i % SLIDES.length === 0 ? <Accent>{s.accent}</Accent> : s.accent}{s.after}
                   </Heading>
                   <p className="text-base sm:text-lg leading-relaxed max-w-md max-sm:text-[15px]" style={{ color: C.muted }}>{s.sub}</p>
                 </div>
@@ -637,18 +636,22 @@ function Hero() {
               See how it works
             </a>
           </div>
+          <p className="mt-4 max-sm:mt-3 text-[13px]" style={{ color: C.faint }}>
+            Free for everyone. Built in Kenya for Kenyan and East African life.
+          </p>
 
           {/* Back, one bar per slide (tap to jump there), forward */}
-          <div className="flex items-center gap-1 mt-6 max-sm:mt-3 -ml-2">
+          <div className="flex items-center gap-1.5 mt-6 max-sm:mt-4">
             <button type="button" onClick={prev} aria-label="Previous highlight"
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 dark:hover:bg-white/10" style={{ color: C.muted }}>
+              className="w-10 h-10 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 dark:hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={{ color: C.ink, border: `1px solid ${C.line}`, outlineColor: C.green }}>
               <ChevronLeft size={18} />
             </button>
             {SLIDES.map((s, i) => (
-              <button key={i} type="button" onClick={() => goTo(i)} aria-label={`Show highlight ${i + 1} of ${SLIDES.length}: ${s.eyebrow}`}
-                aria-current={i === active ? 'true' : undefined}
-                className="h-9 flex items-center px-1">
-                <span className="h-1 rounded-full overflow-hidden block" style={{ width: i === active ? 40 : 16, background: C.line, transition: 'width 400ms' }}>
+              <button key={i} type="button" onClick={() => goTo(i)} aria-label={`Show highlight ${i + 1} of ${SLIDES.length}: ${s.label}`}
+                aria-current={i === active ? 'true' : undefined} title={s.label}
+                className="h-10 flex items-center px-1 group rounded-md focus-visible:outline focus-visible:outline-2" style={{ outlineColor: C.green }}>
+                <span className="h-1.5 rounded-full overflow-hidden block transition-[width,opacity] group-hover:opacity-80" style={{ width: i === active ? 40 : 18, background: C.line, transition: 'width 400ms' }}>
                   {i === active && (playing ? (
                     <motion.span key={`${active}-${index}`} className="block h-full rounded-full" style={{ background: C.btn }}
                       initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: SLIDE_MS / 1000, ease: 'linear' }} />
@@ -659,7 +662,8 @@ function Hero() {
               </button>
             ))}
             <button type="button" onClick={next} aria-label="Next highlight"
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 dark:hover:bg-white/10" style={{ color: C.muted }}>
+              className="w-10 h-10 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 dark:hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={{ color: C.ink, border: `1px solid ${C.line}`, outlineColor: C.green }}>
               <ChevronRight size={18} />
             </button>
           </div>
@@ -708,29 +712,14 @@ const highlights = [
 function Highlights() {
   return (
     <section className="px-4 sm:px-8">
-      {/* Phones: compact 2×2 tiles */}
-      <motion.div {...fadeUp} className="sm:hidden grid grid-cols-2 gap-2.5">
-        {highlights.map(({ Icon, title, desc }) => (
-          <div key={title} className="rounded-2xl p-4" style={{ background: C.paper, border: `1px solid ${C.line}` }}>
-            <span className="w-8 h-8 rounded-full flex items-center justify-center mb-3" style={{ background: C.mint, color: C.green }}>
-              <Icon size={15} />
-            </span>
-            <h3 className="text-[13.5px] font-semibold leading-snug mb-1" style={{ color: C.ink }}>{title}</h3>
-            <p className="text-xs leading-relaxed" style={{ color: C.muted }}>{desc}</p>
-          </div>
-        ))}
-      </motion.div>
-
-      <motion.div {...fadeUp} className="max-sm:hidden max-w-7xl mx-auto rounded-[1.75rem] grid sm:grid-cols-2 lg:grid-cols-4"
-        style={{ background: C.paper, border: `1px solid ${C.line}` }}>
+      <motion.div {...fadeUp} className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4" style={{ borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
         {highlights.map(({ Icon, title, desc }, i) => (
-          <div key={title} className="p-6 sm:p-7"
-            style={{ borderTop: i > 0 ? `1px solid ${C.line}` : 'none' }}>
-            <span className="w-10 h-10 rounded-full flex items-center justify-center mb-4" style={{ border: `1px solid ${C.line}`, color: C.ink }}>
-              <Icon size={17} />
-            </span>
-            <h3 className="text-[15px] font-semibold mb-1" style={{ color: C.ink }}>{title}</h3>
-            <p className="text-sm leading-relaxed" style={{ color: C.muted }}>{desc}</p>
+          <div key={title}
+            className={`py-6 sm:py-7 px-4 sm:px-6 ${i % 2 === 1 ? 'border-l' : ''} ${i >= 2 ? 'max-lg:border-t' : ''} ${i === 2 ? 'lg:border-l' : ''}`}
+            style={{ borderColor: C.line }}>
+            <Icon size={18} className="mb-3" style={{ color: C.green }} aria-hidden="true" />
+            <h3 className="text-[14px] sm:text-[15px] font-semibold mb-1 leading-snug" style={{ color: C.ink }}>{title}</h3>
+            <p className="text-xs sm:text-sm leading-relaxed" style={{ color: C.muted }}>{desc}</p>
           </div>
         ))}
       </motion.div>
@@ -780,12 +769,11 @@ function Dimensions() {
       <div className="max-w-7xl mx-auto rounded-[2rem] p-6 sm:p-10 lg:p-12 max-sm:px-0 max-sm:py-7 grid lg:grid-cols-[0.8fr_1.2fr] gap-10 max-sm:gap-6 max-sm:overflow-hidden"
         style={{ background: C.mint }}>
         <motion.div {...fadeUp} className="lg:pt-4 max-sm:px-5">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: C.sage }}>Six dimensions</span>
-          <h2 className="font-serif font-normal leading-[1.08] mt-3 mb-5" style={{ color: C.ink, fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
-            Care for every <Accent>part</Accent> of your day
+          <h2 className="font-serif font-normal leading-[1.08] mb-5" style={{ color: C.ink, fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
+            Care for every part of your day
           </h2>
           <p className="text-base leading-relaxed mb-8 max-w-sm max-sm:text-[15px] max-sm:mb-5" style={{ color: C.muted }}>
-            Each dimension has its own targets. Together they make up your LifePulse Score — so you can see what's working and what needs a little attention.
+            Six areas, each with its own targets. Together they make your LifePulse Score, so you can see what's working and what needs attention.
           </p>
           <Link to="/login" className="max-sm:hidden inline-flex items-center gap-2 pl-5 pr-2 py-2 rounded-full text-sm font-medium" style={btn}>
             Start tracking
@@ -793,25 +781,19 @@ function Dimensions() {
           </Link>
         </motion.div>
 
-        <div className="sm:hidden -mb-2 px-5 flex items-center justify-between text-xs" style={{ color: C.muted }}>
-          <span>Swipe to see all six</span>
-          <ArrowRight size={14} aria-hidden="true" />
-        </div>
-        <div id="dimensions" className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 scroll-mt-24 max-sm:flex max-sm:gap-3 max-sm:overflow-x-auto max-sm:snap-x max-sm:snap-mandatory max-sm:px-5 max-sm:scroll-px-5 max-sm:pb-1 no-scrollbar">
+        <div id="dimensions" className="grid sm:grid-cols-2 xl:grid-cols-3 gap-x-8 scroll-mt-24 max-sm:px-5">
           {dimensions.map(({ Icon, title, desc, stat, color, preview }, i) => (
             <motion.div key={title} {...fadeUp} transition={{ ...fadeUp.transition, delay: (i % 3) * 0.06 }}
-              className="rounded-3xl p-5 flex flex-col max-sm:w-[76%] max-sm:flex-shrink-0 max-sm:snap-start" style={{ background: C.paper }}>
-              <div className="rounded-2xl p-3 mb-4" style={{ background: C.cream }}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${color}1F`, color }}>
-                    <Icon size={14} />
-                  </span>
-                  <span className="text-[11px] font-semibold" style={{ color: C.ink }}>{stat}</span>
-                </div>
-                {preview}
+              className="py-5 flex flex-col" style={{ borderTop: `1px solid ${C.line}` }}>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="flex items-center gap-2 font-semibold text-[15px] min-w-0" style={{ color: C.ink }}>
+                  <Icon size={16} style={{ color }} aria-hidden="true" /> {title}
+                </span>
+                <span className="text-xs font-semibold tabular-nums whitespace-nowrap flex-shrink-0" style={{ color: C.muted }}>{stat}</span>
               </div>
-              <h3 className="font-semibold text-[15px] mb-1" style={{ color: C.ink }}>{title}</h3>
-              <p className="text-sm leading-relaxed" style={{ color: C.muted }}>{desc}</p>
+              <p className="text-sm leading-relaxed sm:mb-3" style={{ color: C.muted }}>{desc}</p>
+              {/* the mini charts are for wide screens; on phones the six stay a short list */}
+              <div className="mt-auto max-sm:hidden">{preview}</div>
             </motion.div>
           ))}
         </div>
@@ -828,8 +810,8 @@ function Dimensions() {
 
 // ─── how it works ────────────────────────────────────────────────────────────
 const steps = [
-  { title: 'Tell us about yourself', desc: 'Answer 10 quick questions about your body, goals, sleep, activity and mood.' },
-  { title: 'Get your own targets', desc: 'Your step, calorie, screen-time and focus goals are calculated for you.' },
+  { title: 'Answer 10 quick questions', desc: 'Your goals, your body, and a normal day: how active you are, how you sleep, your screen time.' },
+  { title: 'Get your own targets', desc: 'Your step, sleep, screen-time and focus targets are worked out from your answers.' },
   { title: 'Track and grow', desc: 'Log your day, watch your score and let your streak raise the bar.' },
 ]
 
@@ -838,21 +820,16 @@ function HowItWorks() {
     <section id="how-it-works" className="px-4 sm:px-8 pt-16 sm:pt-24 max-sm:pt-12 scroll-mt-20">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-[1.25fr_0.75fr] gap-12 max-sm:gap-8 items-center">
         <motion.div {...fadeUp}>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: C.sage }}>How it works</span>
-          <h2 className="font-serif font-normal leading-[1.08] mt-3 mb-12 max-sm:mb-7" style={{ color: C.ink, fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
-            Better habits in three <Accent>simple</Accent> steps
+          <h2 className="font-serif font-normal leading-[1.08] mb-12 max-sm:mb-7" style={{ color: C.ink, fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
+            Better habits in 3 simple steps
           </h2>
-          <ol className="grid sm:grid-cols-3 gap-8 sm:gap-6 max-sm:gap-5 relative">
-            <span className="hidden sm:block absolute top-5 left-5 right-[16%] h-px" style={{ background: C.line }} aria-hidden="true" />
-            {/* Phones: vertical line joining the step numbers */}
-            <span className="sm:hidden absolute left-5 top-6 bottom-6 w-px" style={{ background: C.line }} aria-hidden="true" />
+          <ol className="grid sm:grid-cols-3 gap-8 sm:gap-8 max-sm:gap-6">
             {steps.map((s, i) => (
-              <li key={s.title} className="relative max-sm:flex max-sm:gap-4 max-sm:items-start">
-                <span className="relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold mb-5 max-sm:mb-0 max-sm:flex-shrink-0"
-                  style={{ background: i === 0 ? C.btn : C.paper, color: i === 0 ? C.btnText : C.ink, border: `1px solid ${i === 0 ? C.btn : C.line}` }}>
+              <li key={s.title} className="pt-4 max-sm:flex max-sm:gap-4 max-sm:items-baseline" style={{ borderTop: `1px solid ${C.line}` }}>
+                <span className="block font-serif text-3xl leading-none mb-3 max-sm:mb-0 max-sm:w-6 max-sm:flex-shrink-0 tabular-nums" style={{ color: C.green }}>
                   {i + 1}
                 </span>
-                <div className="max-sm:pt-2">
+                <div>
                   <h3 className="font-semibold text-[15px] mb-1.5" style={{ color: C.ink }}>{s.title}</h3>
                   <p className="text-sm leading-relaxed" style={{ color: C.muted }}>{s.desc}</p>
                 </div>
@@ -875,64 +852,59 @@ function HowItWorks() {
 // ─── built for africa ────────────────────────────────────────────────────────
 const africaTiles = [
   { Icon: BookOpen, title: '54 local dishes', desc: 'From ugali and githeri to pilau and mishkaki.' },
-  { Icon: Globe2, title: 'Local names work', desc: 'Search the way you speak — wali, maharagwe, mchicha.' },
+  { Icon: Globe2, title: 'Local names work', desc: 'Search the way you speak, like wali, maharagwe or mchicha.' },
   { Icon: Search, title: 'Global fallback', desc: 'Anything else is looked up in Open Food Facts.' },
   { Icon: Sparkles, title: 'A coach that gets it', desc: 'Your AI coach knows Kenyan food, not just salads.' },
 ]
 
 const FOOD_TABLE = [
-  { name: 'Ugali', serving: '1 medium piece', kcal: 183 },
-  { name: 'Sukuma Wiki', serving: '1 cup cooked', kcal: 49 },
-  { name: 'Githeri', serving: '1 cup', kcal: 341 },
-  { name: 'Chapati', serving: '1 chapati', kcal: 142 },
-  { name: 'Nyama Choma', serving: '1 serving', kcal: 323 },
-  { name: 'Pilau', serving: '1 cup cooked', kcal: 350 },
+  { name: 'Ugali', serving: '1 medium serving', kcal: 183 },
+  { name: 'Sukuma Wiki', serving: '1 cup, cooked', kcal: 49 },
+  { name: 'Githeri', serving: '1 cup, cooked', kcal: 341 },
+  { name: 'Chapati', serving: '1 medium chapati', kcal: 142 },
+  { name: 'Nyama Choma', serving: '1 medium serving', kcal: 323 },
+  { name: 'Pilau', serving: '1 cup, cooked', kcal: 350 },
 ]
 
 function BuiltForAfrica() {
   return (
     <section id="built-for-africa" className="px-4 sm:px-8 pt-16 sm:pt-24 max-sm:pt-12 scroll-mt-20">
       <div className="max-w-7xl mx-auto rounded-[2rem] overflow-hidden grid lg:grid-cols-2" style={{ background: C.block }}>
-        <motion.div {...fadeUp} className="p-6 sm:p-10 lg:p-12 max-sm:order-2 max-sm:p-4 max-sm:pt-0 flex items-center">
-          <div className="w-full rounded-3xl p-5 sm:p-6 max-sm:p-4" style={{ background: C.cream }}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="text-[11px]" style={{ color: C.faint }}>From the LivoraPulse food database</div>
-                <div className="font-semibold" style={{ color: C.ink }}>Popular Kenyan meals</div>
-              </div>
-              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full" style={{ background: C.mint, color: C.green }}>per serving</span>
+        <motion.div {...fadeUp} className="p-6 sm:p-10 lg:p-12 max-sm:order-2 max-sm:p-5 max-sm:pt-0 flex items-center">
+          <div className="w-full">
+            <div className="flex items-baseline justify-between pb-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.16)' }}>
+              <div className="font-semibold text-white">Popular Kenyan meals</div>
+              <span className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>kcal per serving</span>
             </div>
-            <ul className="divide-y" style={{ borderColor: C.line }}>
+            <ul>
               {FOOD_TABLE.map(f => (
-                <li key={f.name} className="flex items-center gap-3 py-3 max-sm:py-2.5" style={{ borderColor: C.line }}>
-                  <span className="w-9 h-9 max-sm:w-8 max-sm:h-8 rounded-xl flex items-center justify-center max-sm:flex-shrink-0" style={{ background: C.paper, color: C.green }}>
-                    <UtensilsCrossed size={14} />
-                  </span>
+                <li key={f.name} className="flex items-baseline gap-3 py-3 max-sm:py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-sm font-medium" style={{ color: C.ink }}>{f.name}</span>
-                    <span className="block text-xs" style={{ color: C.faint }}>{f.serving}</span>
+                    <span className="block text-sm font-medium text-white">{f.name}</span>
+                    <span className="block text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>{f.serving}</span>
                   </span>
-                  <span className="text-sm font-semibold tabular-nums" style={{ color: C.ink }}>{f.kcal} kcal</span>
+                  <span className="text-sm font-semibold tabular-nums text-white">{f.kcal}</span>
                 </li>
               ))}
             </ul>
+            <p className="mt-3 text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>From the LivoraPulse food database.</p>
           </div>
         </motion.div>
 
         <motion.div {...fadeUp} className="p-6 sm:p-10 lg:p-12 lg:pl-4 max-sm:order-1 max-sm:p-5 max-sm:pt-7 flex flex-col justify-center">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'rgba(255,255,255,0.55)' }}>Built for Africa</span>
-          <h2 className="font-serif font-normal leading-[1.08] mt-3 mb-5 text-white" style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
-            More than a calorie counter. <em className="font-serif italic" style={{ color: C.blockAccent }}>Made for Kenya.</em>
+          <h2 className="font-serif font-normal leading-[1.08] mb-5 text-white" style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
+            Log ugali the way you eat it. <em className="font-serif italic" style={{ color: C.blockAccent }}>Made for Kenya.</em>
           </h2>
-          <p className="text-base leading-relaxed mb-8 max-w-md max-sm:text-[15px] max-sm:mb-5" style={{ color: 'rgba(255,255,255,0.68)' }}>
-            Most wellness apps don't know what ugali is. LivoraPulse was built around the food, routines and realities of life in Kenya and East Africa.
+          <p className="text-base leading-relaxed mb-8 max-w-md max-sm:text-[15px] max-sm:mb-5" style={{ color: 'rgba(255,255,255,0.72)' }}>
+            LivoraPulse knows githeri, pilau and nyama choma, in the portions they're served here. It's built around the food and daily routines of Kenya and East Africa.
           </p>
-          <div className="grid grid-cols-2 gap-3 max-sm:gap-2.5">
+          <div className="grid grid-cols-2 gap-x-6">
             {africaTiles.map(({ Icon, title, desc }) => (
-              <div key={title} className="rounded-2xl p-4 max-sm:p-3.5" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <Icon size={18} className="mb-3 max-sm:mb-2" style={{ color: C.blockAccent }} />
-                <h3 className="text-sm font-semibold text-white mb-1">{title}</h3>
-                <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>{desc}</p>
+              <div key={title} className="py-4 max-sm:py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-white mb-1">
+                  <Icon size={15} style={{ color: C.blockAccent }} aria-hidden="true" /> {title}
+                </h3>
+                <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.64)' }}>{desc}</p>
               </div>
             ))}
           </div>
@@ -962,22 +934,21 @@ function Score() {
         </motion.div>
 
         <motion.div {...fadeUp} className="order-1 lg:order-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: C.sage }}>Your LifePulse Score</span>
-          <h2 className="font-serif font-normal leading-[1.08] mt-3 mb-5" style={{ color: C.ink, fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
-            One score that <Accent>grows with you</Accent>
+          <h2 className="font-serif font-normal leading-[1.08] mb-5" style={{ color: C.ink, fontSize: 'clamp(2rem, 4vw, 3.2rem)' }}>
+            One score that grows with you
           </h2>
           <p className="text-base leading-relaxed mb-8 max-w-lg max-sm:text-[15px] max-sm:mb-5" style={{ color: C.muted }}>
-            Every day your six dimensions roll up into one score out of 100. Keep a streak going and your targets rise gradually — so you're always moving forward, never starting over.
+            Every day your six areas add up to one score out of 100. Keep a streak going and your daily targets rise a little at a time.
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-sm:gap-2.5 max-w-xl">
+          <div className="grid grid-cols-4 max-w-xl" style={{ borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
             {streakTiers.map((t, i) => (
-              <div key={t.days} className="rounded-2xl p-4 max-sm:p-3.5" style={{ background: i === 1 ? C.block : C.paper, border: `1px solid ${i === 1 ? C.block : C.line}` }}>
-                <div className="text-xs mb-1" style={{ color: i === 1 ? 'rgba(255,255,255,0.65)' : C.faint }}>{t.days} streak</div>
-                <div className="font-serif text-2xl" style={{ color: i === 1 ? '#fff' : C.ink }}>{t.mult}</div>
+              <div key={t.days} className={`py-4 max-sm:py-3 px-4 max-sm:px-2.5 ${i > 0 ? 'border-l' : ''}`} style={{ borderColor: C.line }}>
+                <div className="text-xs mb-1" style={{ color: C.faint }}>{t.days}</div>
+                <div className="font-serif text-2xl max-sm:text-xl" style={{ color: i === 1 ? C.green : C.ink }}>{t.mult}</div>
               </div>
             ))}
           </div>
-          <p className="text-xs mt-3" style={{ color: C.faint }}>Streak multiplier applied to your daily targets.</p>
+          <p className="text-xs mt-3" style={{ color: C.faint }}>Streak length and the multiplier applied to your daily targets.</p>
         </motion.div>
       </div>
     </section>
@@ -993,10 +964,10 @@ function ClosingCta() {
         <Leaf className="absolute -right-6 -bottom-8 w-56 h-56 opacity-[0.1]" style={{ color: C.btn }} aria-hidden="true" />
         <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8 max-sm:gap-6">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: C.sage }}>Your health, your way</span>
-            <h2 className="font-serif font-normal leading-[1.08] mt-3" style={{ color: C.ink, fontSize: 'clamp(2rem, 4.4vw, 3.6rem)' }}>
-              Start feeling better <Accent>today</Accent>
+            <h2 className="font-serif font-normal leading-[1.08]" style={{ color: C.ink, fontSize: 'clamp(2rem, 4.4vw, 3.6rem)' }}>
+              Start feeling better today
             </h2>
+            <p className="mt-3 text-base max-w-md" style={{ color: C.muted }}>Setup takes about 2 minutes.</p>
           </div>
           <div className="flex flex-col items-start md:items-end gap-2">
             <Link to="/login" className="inline-flex items-center gap-2 pl-5 pr-2 py-2 rounded-full text-sm font-medium transition-transform hover:scale-[1.02]"
@@ -1021,7 +992,7 @@ function Footer() {
           <div className="max-sm:col-span-2">
             <Logo />
             <p className="text-sm leading-relaxed mt-4 max-w-xs" style={{ color: C.muted }}>
-              Tracking every dimension of your wellness — built for Kenya and East Africa.
+              Sleep, food, activity, focus and mood in one daily score. Built for Kenya and East Africa.
             </p>
           </div>
           <div>

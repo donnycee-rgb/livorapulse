@@ -57,7 +57,7 @@ body {
   --lp-paper: #ffffff;
   --lp-ink: #111827;
   --lp-muted: rgba(17, 24, 39, 0.64);
-  --lp-faint: rgba(17, 24, 39, 0.45);
+  --lp-faint: rgba(17, 24, 39, 0.62); /* 4.8:1 on the page; small labels need 4.5:1 */
   --lp-line: rgba(0, 0, 0, 0.08);
   --lp-btn: #2e7d32;
   --lp-btn-text: #ffffff;
@@ -76,7 +76,7 @@ html.dark .landing {
   --lp-paper: #0d1526;
   --lp-ink: #e5e7eb;
   --lp-muted: rgba(229, 231, 235, 0.66);
-  --lp-faint: rgba(229, 231, 235, 0.45);
+  --lp-faint: rgba(229, 231, 235, 0.58); /* 5:1+ on the dark page */
   --lp-line: rgba(255, 255, 255, 0.08);
   --lp-btn: #4caf50;
   --lp-btn-text: #050b18;
