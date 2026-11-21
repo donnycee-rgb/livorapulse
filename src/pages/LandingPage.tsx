@@ -1022,6 +1022,15 @@ function Footer() {
 
 // ─── page ────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  // Arriving from another page with a section in the address (the sign-in
+  // page's "See how it works" goes to /#how-it-works): scroll to it
+  useEffect(() => {
+    const id = window.location.hash.slice(1)
+    if (!id) return
+    const t = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 150)
+    return () => window.clearTimeout(t)
+  }, [])
+
   return (
     <div className="landing min-h-screen font-sans overflow-x-hidden transition-colors duration-300" style={{ background: C.cream, color: C.ink }}>
       <Navbar />
