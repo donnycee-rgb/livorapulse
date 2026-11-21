@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import BrandMark from '../components/BrandMark'
-import { ArrowLeft, Eye, EyeOff, Lock, Mail, ShieldCheck, User } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Home, Lock, Mail, ShieldCheck, User } from 'lucide-react'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -26,9 +26,11 @@ function readRemembered(): string {
 // ---------------------------------------------------------------------------
 // Small pieces
 // ---------------------------------------------------------------------------
+/** The logo. It goes to the home (landing) page, as people expect a logo to. */
 export function Wordmark({ sub = true }: { sub?: boolean }) {
   return (
-    <div className="flex items-center gap-2.5">
+    <Link to="/" aria-label="LivoraPulse home" title="Go to the LivoraPulse home page"
+      className="inline-flex items-center gap-2.5 rounded-xl -m-1 p-1 transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3D9A41]">
       <BrandMark />
       <div className="leading-none">
         <div className="text-[15px] font-bold tracking-tight text-black/85 dark:text-white/90">
@@ -36,7 +38,17 @@ export function Wordmark({ sub = true }: { sub?: boolean }) {
         </div>
         {sub && <div className="text-[11px] text-black/40 dark:text-white/40 mt-1">Wellness built for Kenya</div>}
       </div>
-    </div>
+    </Link>
+  )
+}
+
+/** A small, plain way back to the home page, next to the logo */
+export function HomeLink({ label = 'Home' }: { label?: string }) {
+  return (
+    <Link to="/"
+      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-[13px] font-semibold text-black/60 dark:text-white/60 border border-black/[0.1] dark:border-white/[0.12] hover:text-black/85 dark:hover:text-white/90 hover:border-black/25 dark:hover:border-white/25 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3D9A41]">
+      <Home size={14} aria-hidden /> {label}
+    </Link>
   )
 }
 
@@ -384,7 +396,12 @@ function BrandSide({ mode }: { mode: Mode }) {
   return (
     <aside className="hidden lg:flex relative flex-col justify-between p-12 overflow-hidden bg-[#EEF6EF] dark:bg-[#0b1a12]">
       <div className="pointer-events-none absolute -top-32 -right-32 w-[28rem] h-[28rem] rounded-full bg-white/60 dark:bg-[#3D9A41]/10 blur-3xl" />
-      <div className="relative"><Wordmark /></div>
+      <div className="relative flex items-center justify-between gap-4">
+        <Wordmark />
+        <Link to="/" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-black/55 dark:text-white/55 hover:text-black/85 dark:hover:text-white/90 transition-colors">
+          <ArrowLeft size={15} aria-hidden /> Back to home
+        </Link>
+      </div>
 
       <div className="relative space-y-8">
         <div>
@@ -403,9 +420,14 @@ function BrandSide({ mode }: { mode: Mode }) {
         <PreviewCard />
       </div>
 
-      <p className="relative flex items-center gap-2 text-xs text-black/45 dark:text-white/40">
-        <ShieldCheck size={14} style={{ color: ACCENT }} /> Free to use. Your data belongs to you.
-      </p>
+      <div className="relative flex items-center justify-between gap-4 flex-wrap">
+        <p className="flex items-center gap-2 text-xs text-black/50 dark:text-white/45">
+          <ShieldCheck size={14} style={{ color: ACCENT }} /> Free to use. Your data belongs to you.
+        </p>
+        <Link to="/#how-it-works" className="group inline-flex items-center gap-1.5 text-[13px] font-semibold hover:underline underline-offset-4" style={{ color: ACCENT }}>
+          New here? See how it works <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" aria-hidden />
+        </Link>
+      </div>
     </aside>
   )
 }
@@ -428,7 +450,10 @@ export default function AuthPage() {
 
       <main className="flex flex-col items-center justify-center px-6 py-10 max-sm:px-4 max-sm:py-8 max-sm:justify-start">
         <div className="w-full max-w-[420px]">
-          <div className="lg:hidden mb-8 max-sm:mb-6"><Wordmark /></div>
+          <div className="lg:hidden mb-8 max-sm:mb-6 flex items-center justify-between gap-3">
+            <Wordmark />
+            <HomeLink />
+          </div>
 
           <div className="lp-card rounded-3xl p-8 max-sm:p-5">
             {googleFailed && mode !== 'forgot' && (
