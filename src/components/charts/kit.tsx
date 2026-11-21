@@ -153,7 +153,15 @@ export function AreaTrend<D extends { day: string }>({
             <Area key={s.key} type="monotone" dataKey={s.key} name={s.label}
               stroke={pick(s.color, dark)} strokeWidth={2.5} fill={`url(#a-${uid}-${s.key})`}
               connectNulls={false}
-              dot={false}
+              // A logged day between two unlogged ones has no line to sit on: draw it as a dot
+              dot={(p: { key?: string; cx?: number; cy?: number; index?: number }) => {
+                const at = (i: number) => (data[i] as Record<string, unknown> | undefined)?.[s.key]
+                const i = p.index ?? -1
+                const alone = at(i) != null && at(i - 1) == null && at(i + 1) == null
+                return alone && p.cx != null && p.cy != null
+                  ? <circle key={p.key} cx={p.cx} cy={p.cy} r={4} fill={pick(s.color, dark)} stroke={c.surface} strokeWidth={2} />
+                  : <g key={p.key} />
+              }}
               activeDot={{ r: 5, strokeWidth: 2, stroke: c.surface, fill: pick(s.color, dark) }}
               isAnimationActive={animate} animationDuration={1100} animationBegin={i * 150} animationEasing="ease-out" />
           ))}
