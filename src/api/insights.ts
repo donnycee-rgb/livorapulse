@@ -39,6 +39,23 @@ export async function fetchInsights(): Promise<Insight[]> {
   return (await apiGet<Envelope<Insight[]>>('/api/insights')).data
 }
 
+/** The person's own numbers so far, before any pattern is tested (nothing estimated) */
+export type EarlyGroup = { label: string; value: number; days: number }
+export type EarlyLook = {
+  daysLogged: number
+  averages: {
+    sleepMinutes: { value: number; days: number } | null
+    mood: { value: number; days: number } | null
+    stress: { value: number; days: number } | null
+    steps: { value: number; days: number } | null
+  }
+  comparisons: { key: string; title: string; unit: 'score'; a: EarlyGroup; b: EarlyGroup }[]
+}
+
+export async function fetchEarlyLook(): Promise<EarlyLook> {
+  return (await apiGet<Envelope<EarlyLook>>('/api/insights/early')).data
+}
+
 export async function fetchInsightStatus(): Promise<InsightStatus> {
   return (await apiGet<Envelope<InsightStatus>>('/api/insights/status')).data
 }

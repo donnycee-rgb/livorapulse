@@ -14,7 +14,15 @@ export type MoodEffect = {
 
 export type MoodModel = {
   minMoodDays: number
+  /** Days with mood logged that the model can use */
   moodDays: number
+  /**
+   * Why nothing is shown yet: 'you' (more mood days needed), 'people' (it
+   * learns from everyone's data and is waiting for more people to be logging),
+   * 'tonight' (ready; the nightly update adds it); null when results are there.
+   * Missing from an older server.
+   */
+  waitingFor?: 'you' | 'people' | 'tonight' | null
   effects: MoodEffect[]
   /** usesSleep: last night's sleep was logged and is part of the forecast */
   forecast: { date: string; mean: number; lower: number; upper: number; usesSleep?: boolean } | null
