@@ -81,8 +81,27 @@ const MOOD_LEVELS: Array<{
 // Score impact sidebar card
 // ---------------------------------------------------------------------------
 function ScoreImpactCard({ emoji, stressScore }: {
-  emoji: MoodEmoji; stressScore: number
+  emoji: MoodEmoji | null; stressScore: number | null
 }) {
+  if (emoji === null || stressScore === null) {
+    return (
+      <div className="rounded-3xl p-4 lp-card">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-9 h-9 rounded-xl bg-lp-alert/15 flex items-center justify-center">
+            <Target size={14} className="text-lp-alert" />
+          </div>
+          <span className="text-sm font-semibold text-black/70 dark:text-white/70">Score Impact</span>
+        </div>
+        <p className="text-sm text-ui-muted leading-relaxed">
+          {emoji === null && stressScore === null
+            ? 'Log your mood and stress for today to see how they count towards your score.'
+            : emoji === null
+              ? 'Log your mood for today to see how it counts towards your score.'
+              : 'Log your stress for today to see how it counts towards your score.'}
+        </p>
+      </div>
+    )
+  }
   // Same formula as the server's mood score (ScoreService.moodScore):
   // 60% how you feel, 40% calm. Stress here is 1–5; the server stores it as 2–10.
   const level = MOOD_LEVELS.find(m => m.emoji === emoji) ?? MOOD_LEVELS[2]
@@ -220,11 +239,11 @@ function WeeklySummaryCard({ moodByDay, stressByDay }: {
 // Wellness tip sidebar card
 // ---------------------------------------------------------------------------
 function WellnessTipCard({ stressScore, emoji }: {
-  stressScore: number; emoji: MoodEmoji
+  stressScore: number | null; emoji: MoodEmoji | null
 }) {
   const tips = [
     {
-      condition: stressScore >= 4,
+      condition: stressScore !== null && stressScore >= 4,
       title: 'High stress detected',
       text: 'A 10-minute walk or a short breathing exercise can reduce cortisol levels significantly. Your physical activity and focus scores both improve when stress is managed.',
       color: '#FF6B6B',
@@ -285,13 +304,19 @@ function MoodTab() {
   const setMoodEmoji = useAppStore((s) => s.setMoodEmoji)
   const setStressScore = useAppStore((s) => s.setStressScore)
 
-  const currentLevel = MOOD_LEVELS.find(m => m.emoji === mood.today.emoji) ?? MOOD_LEVELS[2]
-  const stressScore = mood.today.stressScore
+  // Only what was logged today counts as today's answer. Yesterday's value
+  // must not show as selected, or it looks logged when it isn't.
+  const day = getDayKey()
+  const todayEmoji = mood.moodByDay.find((d) => d.day === day)?.emoji != null ? mood.today.emoji : null
+  const stressScore = mood.stressByDay.find((d) => d.day === day)?.score != null ? mood.today.stressScore : null
+  const currentLevel = todayEmoji ? MOOD_LEVELS.find(m => m.emoji === todayEmoji) ?? null : null
   const [tab, setTab] = useState<MoodSection>('overview')
 
   const headline = useMemo(() => {
-    const level = MOOD_LEVELS.find(m => m.emoji === mood.today.emoji)
-    if (!level) return 'Log your mood to start tracking your mental wellbeing.'
+    const level = currentLevel
+    if (!level && stressScore === null) return 'How are you today? Log your mood and stress below.'
+    if (!level) return `Stress: ${stressScore}/5. Log your mood too.`
+    if (stressScore === null) return `Mood: ${level.label}. Log your stress too.`
     if (stressScore >= 4 && (level.emoji === '😕' || level.emoji === '😣')) {
       return `Mood: ${level.label} · Stress: ${stressScore}/5. A tough day. A short walk or a break can help.`
     }
@@ -299,7 +324,7 @@ function MoodTab() {
       return `Mood: ${level.label} · Stress: ${stressScore}/5. A good day so far.`
     }
     return `Mood: ${level.label} · Stress: ${stressScore}/5. Log daily to see your weekly pattern.`
-  }, [mood.today.emoji, stressScore])
+  }, [currentLevel, stressScore])
 
   const stressLevels = [
     { score: 1, label: 'Very low', color: '#4CAF50', desc: 'Calm and at ease' },
@@ -323,27 +348,47 @@ function MoodTab() {
           {/* Today's stats */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-3xl p-4 lp-tile" style={{ ['--tint' as string]: HABIT.mood.rgb }}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
-                style={{ backgroundColor: currentLevel.bg }}>
-                <currentLevel.Icon size={17} style={{ color: currentLevel.color }} />
-              </div>
-              <div className="text-[10px] font-bold text-black/35 dark:text-white/30 uppercase tracking-wider">Mood today</div>
-              <div className="mt-1 text-xl font-black leading-none" style={{ color: currentLevel.color }}>
-                {currentLevel.label}
-              </div>
-              <div className="mt-1 text-xs text-black/45 dark:text-white/40">{currentLevel.description}</div>
+              {currentLevel ? (
+                <>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
+                    style={{ backgroundColor: currentLevel.bg }}>
+                    <currentLevel.Icon size={17} style={{ color: currentLevel.color }} />
+                  </div>
+                  <div className="text-[10px] font-bold text-black/35 dark:text-white/30 uppercase tracking-wider">Mood today</div>
+                  <div className="mt-1 text-xl font-black leading-none" style={{ color: currentLevel.color }}>
+                    {currentLevel.label}
+                  </div>
+                  <div className="mt-1 text-xs text-black/45 dark:text-white/40">{currentLevel.description}</div>
+                </>
+              ) : (
+                <>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-ui-raised">
+                    <Smile size={17} className="text-ui-muted" />
+                  </div>
+                  <div className="text-[10px] font-bold text-black/35 dark:text-white/30 uppercase tracking-wider">Mood today</div>
+                  <div className="mt-1 text-xl font-black leading-none text-ui-muted">Not logged</div>
+                  <div className="mt-1 text-xs text-black/45 dark:text-white/40">Tap how you feel below</div>
+                </>
+              )}
             </div>
 
             <div className="rounded-3xl p-4 lp-tile" style={{ ['--tint' as string]: HABIT.stress.rgb }}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
-                style={{ backgroundColor: (currentStress?.color ?? '#FFA500') + '18' }}>
-                <Wind size={17} style={{ color: currentStress?.color ?? '#FFA500' }} />
+              <div className={clsx('w-9 h-9 rounded-xl flex items-center justify-center mb-3', !currentStress && 'bg-ui-raised')}
+                style={currentStress ? { backgroundColor: currentStress.color + '18' } : undefined}>
+                <Wind size={17} className={currentStress ? undefined : 'text-ui-muted'} style={currentStress ? { color: currentStress.color } : undefined} />
               </div>
-              <div className="text-[10px] font-bold text-black/35 dark:text-white/30 uppercase tracking-wider">Stress level</div>
-              <div className="mt-1 text-xl font-black leading-none" style={{ color: currentStress?.color ?? '#FFA500' }}>
-                {stressScore} / 5
-              </div>
-              <div className="mt-1 text-xs text-black/45 dark:text-white/40">{currentStress?.label ?? 'Moderate'}</div>
+              <div className="text-[10px] font-bold text-black/35 dark:text-white/30 uppercase tracking-wider">Stress today</div>
+              {currentStress ? (
+                <>
+                  <div className="mt-1 text-xl font-black leading-none" style={{ color: currentStress.color }}>{currentStress.score} / 5</div>
+                  <div className="mt-1 text-xs text-black/45 dark:text-white/40">{currentStress.label}</div>
+                </>
+              ) : (
+                <>
+                  <div className="mt-1 text-xl font-black leading-none text-ui-muted">Not logged</div>
+                  <div className="mt-1 text-xs text-black/45 dark:text-white/40">Tap a level below</div>
+                </>
+              )}
             </div>
           </div>
 
@@ -355,7 +400,7 @@ function MoodTab() {
             <div className="text-xs text-black/40 dark:text-white/35 mb-4">Tap a level to log your current mood</div>
             <div className="grid grid-cols-5 gap-2">
               {MOOD_LEVELS.map((level) => {
-                const active = mood.today.emoji === level.emoji
+                const active = todayEmoji === level.emoji
                 return (
                   <motion.button
                     key={level.emoji}
@@ -458,8 +503,8 @@ function MoodTab() {
           </div>
           </div>
           <div className="grid md:grid-cols-2 gap-4 [&>*]:h-full">
-            <ScoreImpactCard emoji={mood.today.emoji} stressScore={stressScore} />
-            <WellnessTipCard stressScore={stressScore} emoji={mood.today.emoji} />
+            <ScoreImpactCard emoji={todayEmoji} stressScore={stressScore} />
+            <WellnessTipCard stressScore={stressScore} emoji={todayEmoji} />
           </div>
         </div>
       )}
