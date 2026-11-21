@@ -59,6 +59,8 @@ export const PHASES: Record<Phase, { label: string; hex: string; rgb: string; li
 
 export type CycleStatus = {
   lastPeriodStart: string
+  /** Last logged day of that period (older servers leave it out) */
+  lastPeriodEnd?: string
   dayOfCycle: number
   phase: Phase
   periodActive: boolean
