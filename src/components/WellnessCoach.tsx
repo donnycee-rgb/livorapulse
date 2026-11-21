@@ -247,7 +247,7 @@ export default function WellnessCoach({ open, onClose }: WellnessCoachProps) {
                       Your Wellness Coach
                     </div>
                     <div className="text-xs text-black/40 dark:text-white/35 mt-1 leading-relaxed max-w-[240px]">
-                      I know your steps, meals, mood, sleep, water, streak and more — ask me anything.
+                      I can see your steps, meals, mood, sleep, water and streak. Ask me anything.
                     </div>
                   </div>
                   <div className="w-full space-y-1.5">

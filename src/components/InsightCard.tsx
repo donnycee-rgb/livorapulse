@@ -71,7 +71,7 @@ function TryItDialog({ insight, open, onClose, onStarted }: {
     try {
       const trimmed = change.trim()
       onStarted(await startExperiment(insight.id, trimmed && trimmed !== insight.suggestion ? trimmed : undefined))
-      toast.success('Experiment started — day 1 is today')
+      toast.success('Experiment started. Today is day 1.')
       onClose()
     } catch (e) {
       toast.error(e instanceof Error && e.message ? e.message : "Couldn't start the experiment. Please try again.")
@@ -127,7 +127,7 @@ export default function InsightCard({ insight, onDismissed, runningExperimentKey
       await sendInsightFeedback(insight.id, value)
       setFeedback(value)
       if (value === 'not-true') {
-        toast.success("Got it — we won't show this one again")
+        toast.success("Got it. We won't show this one again.")
         onDismissed?.(insight.id)
       } else {
         toast.success('Thanks for the feedback')

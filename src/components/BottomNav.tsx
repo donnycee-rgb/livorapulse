@@ -1,4 +1,4 @@
-import { Activity, BarChart3, MonitorSmartphone, Smile, Home, UtensilsCrossed } from 'lucide-react'
+import { Activity, MonitorSmartphone, Smile, Home, Timer, UtensilsCrossed } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import clsx from 'clsx'
 
@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { to: '/physical',    label: 'Physical',  Icon: Activity          },
   { to: '/nutrition',   label: 'Nutrition', Icon: UtensilsCrossed   },
   { to: '/digital',     label: 'Digital',   Icon: MonitorSmartphone },
-  { to: '/productivity',label: 'Work',      Icon: BarChart3         },
+  { to: '/productivity',label: 'Focus',     Icon: Timer             },
   { to: '/mood',        label: 'Mood',      Icon: Smile             },
 ]
 

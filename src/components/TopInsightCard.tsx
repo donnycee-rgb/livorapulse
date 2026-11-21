@@ -66,7 +66,7 @@ export default function TopInsightCard() {
         </div>
       ) : (
         <p className="text-sm leading-relaxed text-black/60 dark:text-white/55">
-          {next?.message ?? 'Looking for patterns in your data — nothing clear enough to show yet.'}
+          {next?.message ?? 'Looking for patterns in your data. Nothing clear enough to show yet.'}
         </p>
       )}
     </button>

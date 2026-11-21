@@ -148,13 +148,14 @@ html.dark .lp-card {
 
 /* A tile tinted with its habit colour: set --tint to "r g b" inline */
 .lp-tile {
-  background: linear-gradient(160deg, rgb(var(--tint) / 0.14) 0%, rgb(var(--tint) / 0.05) 100%);
-  border: 1px solid rgb(var(--tint) / 0.18);
+  /* A neutral card with only a hint of the habit's colour; the icon and the
+     progress bar carry the colour, so six tiles side by side stay calm */
+  background: linear-gradient(160deg, rgb(var(--tint) / 0.05) 0%, transparent 60%), rgb(var(--ui-card));
+  border: 1px solid rgb(var(--ui-line) / 0.08);
 }
 html.dark .lp-tile {
-  background: linear-gradient(160deg, rgb(var(--tint) / 0.22) 0%, rgb(var(--tint) / 0.06) 100%);
-  border-color: rgb(var(--tint) / 0.25);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  background: linear-gradient(160deg, rgb(var(--tint) / 0.08) 0%, transparent 60%), rgb(var(--ui-card));
+  border-color: rgb(var(--ui-line) / 0.1);
 }
 
 /* Soft green glow, dark mode only */

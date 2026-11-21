@@ -432,8 +432,8 @@ export default function Settings() {
           icon={<ClipboardList size={15} />}
           label="Weekly check-in"
           description={canRetake
-            ? `Last: ${lastAssessmentLabel} — eligible`
-            : `Available in ${daysUntilRetake}d — last ${lastAssessmentLabel}`
+            ? `Last done ${lastAssessmentLabel}. Ready to take again.`
+            : `Available in ${daysUntilRetake} days. Last done ${lastAssessmentLabel}.`
           }
           right={
             canRetake ? (

@@ -89,15 +89,15 @@ function ScoreImpactCard({ focusMin }: { focusMin: number }) {
       </div>
       <div className="flex items-baseline gap-2 mb-1">
         <span className="text-3xl font-black text-black/85 dark:text-white/90">{prodScore}</span>
-        <span className="text-xs text-black/35 dark:text-white/30">/ 100 productivity score</span>
+        <span className="text-xs text-black/35 dark:text-white/30">/ 100 focus score</span>
       </div>
       {prodScore >= 100 ? (
-        <p className="text-xs text-lp-primary font-semibold mt-2">Productivity goal reached today!</p>
+        <p className="text-xs text-lp-primary font-semibold mt-2">Focus goal reached today.</p>
       ) : (
         <p className="text-xs text-black/50 dark:text-white/45 leading-relaxed mt-2">
           {needed > 0
             ? `${needed} more minutes of focus today could add up to `
-            : 'Keep going — '
+            : 'Keep going. '
           }
           <span className="font-bold text-[#6366F1]">+{gain} points</span> to your overall score.
         </p>
@@ -156,7 +156,7 @@ function WeeklySummaryCard({ focusByDay, studyByDay }: {
         {bestDay && bestDay.minutes > 0 && (
           <div className="flex items-center justify-between">
             <span className="text-xs text-black/45 dark:text-white/40">Best day</span>
-            <span className="text-sm font-bold text-[#6366F1]">{bestDay.day} — {bestDay.minutes}m</span>
+            <span className="text-sm font-bold text-[#6366F1]">{bestDay.day}: {bestDay.minutes}m</span>
           </div>
         )}
       </div>
@@ -205,7 +205,7 @@ function ProductivityTipCard({ focusMin }: { focusMin: number }) {
     { condition: focusMin === 0, text: 'Start with a short 25-minute session. Even one focused block a day adds up significantly over a week.' },
     { condition: focusMin > 0 && focusMin < focusGoal / 2, text: `Good start. Aim for your ${fmtGoal(focusGoal)} of focus today for a meaningful score boost.` },
     { condition: focusMin >= focusGoal / 2 && focusMin < focusGoal, text: `Solid progress. ${focusGoal - focusMin} more minutes reaches your daily focus goal.` },
-    { condition: focusMin >= focusGoal, text: 'Excellent focus today. Consider taking a proper break — sustained focus works best with recovery time.' },
+    { condition: focusMin >= focusGoal, text: 'Excellent focus today. Take a proper break: focus lasts longer with rest in between.' },
   ]
   const tip = tips.find(t => t.condition) ?? tips[0]
 
@@ -279,8 +279,8 @@ export default function Productivity() {
   )
 
   const headline = useMemo(() => {
-    if (todayFocus === 0) return 'No focus sessions logged yet — start a session to build your productivity score.'
-    if (todayFocus >= focusGoal) return `${todayFocus} minutes of focused work today — excellent productivity.`
+    if (todayFocus === 0) return 'No focus sessions yet today. Start one to build your focus score.'
+    if (todayFocus >= focusGoal) return `${todayFocus} minutes of focused work today. Excellent.`
     if (todayFocus >= focusGoal * 0.5) return `${todayFocus} minutes of focus today. One more session would push you above your ${focusGoal}-minute goal.`
     return `${todayFocus} minutes logged. ${focusGoal - todayFocus} more minutes to hit your ${focusGoal}-minute daily goal.`
   }, [todayFocus, focusGoal])
@@ -292,7 +292,7 @@ export default function Productivity() {
       <FocusGoalSheet open={goalOpen} onClose={() => setGoalOpen(false)} current={focusGoal} />
 
       {/* Header */}
-      <PageHeader icon={BarChart3} tint={HABIT.focus.rgb} title="Work" subtitle={headline} />
+      <PageHeader icon={Timer} tint={HABIT.focus.rgb} title="Focus" subtitle={headline} />
 
       {/* Today: focus minutes as a ring, sessions beside it */}
       <section className="lp-card rounded-3xl p-5 relative overflow-hidden" aria-label="Focus today">
@@ -303,7 +303,7 @@ export default function Productivity() {
           <div className="relative flex items-center gap-5">
             <RingGauge value={todayFocus / focusGoal} color={HABIT.focus.hex} size={112} stroke={10}
               label={`${todayFocus} of ${focusGoal} focus minutes`}>
-              <Briefcase size={28} style={{ color: HABIT.focus.hex }} />
+              <Timer size={28} style={{ color: HABIT.focus.hex }} />
             </RingGauge>
             <div className="min-w-0 flex-1">
               <div className="text-[12px] font-semibold text-ui-muted">Focus today</div>

@@ -63,7 +63,7 @@ function ProgressPanel({ status }: { status: InsightStatus }) {
           <p className="text-sm text-black/55 dark:text-white/50 mt-1 leading-relaxed">
             {next
               ? next.message
-              : `You have enough data. Nothing stands out strongly enough yet — LivoraPulse only shows a pattern when it's clear in your last ${status.windowDays} days. Keep logging and check back.`}
+              : `You have enough data. Nothing stands out clearly yet. LivoraPulse only shows a pattern when it holds up in your last ${status.windowDays} days. Keep logging and check back.`}
           </p>
         </div>
       </div>

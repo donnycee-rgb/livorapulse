@@ -434,7 +434,7 @@ export default function Profile() {
             <div className="mt-4 pt-4 border-t border-black/[0.05] dark:border-white/[0.05] space-y-2">
               {[
                 { label: 'Physical', value: dimensionScores.physical, color: '#4CAF50' },
-                { label: 'Productivity', value: dimensionScores.productivity, color: '#6366F1' },
+                { label: 'Focus', value: dimensionScores.productivity, color: '#6366F1' },
                 { label: 'Eco', value: dimensionScores.eco, color: '#34A853' },
               ].map((d) => (
                 <div key={d.label}>
@@ -473,7 +473,7 @@ export default function Profile() {
                 ? 'Log data today to start your streak.'
                 : streak < 7
                 ? `${7 - streak} more days to earn the Streak Master badge.`
-                : `Impressive — you have maintained a ${streak}-day streak!`
+                : `A ${streak}-day streak. Impressive.`
               }
             </p>
           </div>

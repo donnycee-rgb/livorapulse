@@ -261,7 +261,7 @@ export default function WelcomeSetup() {
   const titles = [
     { title: `Welcome, ${firstName}! What do you want to work on?`, sub: `Pick up to ${MAX_GOALS}. The first one you pick counts most. You can change them any time.` },
     { title: 'A bit about you', sub: 'This helps us set realistic targets. Everything here is optional.' },
-    { title: 'Your typical day', sub: 'Be honest — we start from where you are, not where you think you should be.' },
+    { title: 'Your typical day', sub: 'Answer for a normal day. Your targets start from where you are now.' },
     { title: 'Your daily targets are ready', sub: 'Personalised from your answers. They adjust as your streak grows.' },
   ]
 
@@ -489,7 +489,7 @@ export default function WelcomeSetup() {
             {step === 2 && (
               <button type="button" onClick={() => save(true)} disabled={saving}
                 className="w-full text-center text-xs text-white/40 hover:text-white/70 transition-colors disabled:opacity-50">
-                Skip for now — use standard targets
+                Skip for now and use standard targets
               </button>
             )}
 

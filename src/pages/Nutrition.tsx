@@ -381,7 +381,7 @@ function AddFoodModal({ open, onClose, onSave, scanInterrupted = false }: {
               {/* Results */}
               {!searching && results.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-[11px] text-black/35 dark:text-white/30">{results.length} results — tap to select</p>
+                  <p className="text-[11px] text-black/35 dark:text-white/30">{results.length} results. Tap one to add it.</p>
                   <div className="max-h-48 overflow-y-auto space-y-1.5">
                     {results.map((r, i) => (
                       <button key={i} type="button" onClick={() => setSelected(r)}
