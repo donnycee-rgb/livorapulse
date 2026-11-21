@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import {
-  CalendarDays, ChevronLeft, ChevronRight, Droplet, Droplets, Info, Minus, Plus, Repeat, Sparkles, Timer,
+  CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Droplet, Droplets, Info, Minus, Plus, Repeat, Sparkles, Timer,
 } from 'lucide-react'
 
 import { apiGet, apiPut } from '../api/client'
@@ -127,6 +127,37 @@ export default function CycleTracker() {
     }
   }
 
+  /**
+   * "My period ended": it stops showing as going on, here and on her other
+   * devices. Its last day is the last one logged; logging a later day reopens it.
+   */
+  const endPeriod = async (undo = false) => {
+    const lastDay = status?.lastPeriodEnd
+    if (!undo && !lastDay) return
+    try {
+      const result = await saveLog('/api/cycle/period-ended', undo ? { ended: false } : { lastDay })
+      if (undo) {
+        toast.dismiss('period-ended')
+        if (result === 'sent') await loadAll()
+        return
+      }
+      setStatus((s) => (s ? { ...s, periodActive: false } : s))
+      toast((t) => (
+        <span className="flex items-center gap-3 text-sm">
+          <span>Period ended {lastDay === today ? 'today' : `on ${shortDate(lastDay!)}`}.</span>
+          <button type="button" className="font-semibold underline underline-offset-2"
+            onClick={() => { toast.dismiss(t.id); void endPeriod(true) }}>Undo</button>
+        </span>
+      ), { id: 'period-ended', duration: 6000 })
+      if (result === 'sent') {
+        scheduleScoreSync()
+        await loadAll()
+      }
+    } catch {
+      toast.error("Couldn't save. Check your connection.")
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-4" aria-busy>
@@ -143,7 +174,8 @@ export default function CycleTracker() {
 
   return (
     <div className="space-y-4">
-      <Hero status={status} today={today} onLogToday={() => setEditing(today)} onCalendar={() => setTab('calendar')} />
+      <Hero status={status} today={today} onLogToday={() => setEditing(today)} onCalendar={() => setTab('calendar')}
+        onEnded={status?.lastPeriodEnd ? () => void endPeriod() : undefined} />
 
       <PageTabs label="Cycle tracker" value={tab} onChange={setTab}
         tabs={[{ key: 'today', label: 'Today' }, { key: 'calendar', label: 'Calendar' }, { key: 'history', label: 'History' }] as const} />
@@ -195,11 +227,13 @@ export default function CycleTracker() {
 
 // ── Hero: where today falls ─────────────────────────────────────────────────
 
-function Hero({ status, today, onLogToday, onCalendar }: {
+function Hero({ status, today, onLogToday, onCalendar, onEnded }: {
   status: CycleStatus | null
   today: string
   onLogToday: () => void
   onCalendar: () => void
+  /** Shown while a period is going on */
+  onEnded?: () => void
 }) {
   if (!status) {
     return (
@@ -268,7 +302,9 @@ function Hero({ status, today, onLogToday, onCalendar }: {
             <ActionButton icon={status.periodActive ? Droplet : Plus} primary onClick={onLogToday}>
               {status.periodActive ? 'Log today' : 'My period started'}
             </ActionButton>
-            <ActionButton icon={CalendarDays} onClick={onCalendar}>Calendar</ActionButton>
+            {status.periodActive && onEnded
+              ? <ActionButton icon={CheckCircle2} onClick={onEnded}>My period ended</ActionButton>
+              : <ActionButton icon={CalendarDays} onClick={onCalendar}>Calendar</ActionButton>}
           </div>
         </div>
       </div>
