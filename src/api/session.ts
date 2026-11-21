@@ -50,7 +50,7 @@ export function clearTokens(): void {
 export class OfflineError extends Error {
   readonly offline = true
   constructor() {
-    super("Can't reach LivoraPulse — check your internet connection.")
+    super("Can't reach LivoraPulse. Check your internet connection.")
   }
 }
 

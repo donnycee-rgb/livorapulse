@@ -51,7 +51,7 @@ const SCREEN: Option<number>[] = [
   { value: 3, label: '2–4 hours', description: 'Moderate usage' },
   { value: 5, label: '4–6 hours', description: 'Above average usage' },
   { value: 7, label: '6–8 hours', description: 'High screen usage' },
-  { value: 9, label: '8+ hours', description: 'Very high — mostly on screens' },
+  { value: 9, label: '8+ hours', description: 'Very high, mostly on screens' },
 ]
 const ECO: Option<string>[] = [
   { value: 'rarely', label: 'Rarely', description: "I don't think much about my environmental impact" },
@@ -118,7 +118,7 @@ export default function CheckInModal({ open, onClose }: { open: boolean; onClose
       ])
       void useAppStore.getState().syncDashboardScore()
       const g = res.data.goals
-      toast.success(`Goals updated — ${g.goalStepsPerDay.toLocaleString()} steps, ${g.goalCaloriesPerDay.toLocaleString()} kcal, ${g.goalFocusMinutes} min focus`)
+      toast.success(`Goals updated: ${g.goalStepsPerDay.toLocaleString()} steps, ${g.goalCaloriesPerDay.toLocaleString()} kcal, ${g.goalFocusMinutes} min focus`)
       close()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not save your check-in. Try again.')

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
-  Home, Activity, MonitorSmartphone, BarChart3,
+  Home, Activity, MonitorSmartphone, Timer,
   Leaf, Heart, User, Settings, ChevronRight, UtensilsCrossed, Lightbulb, FileText,
 } from 'lucide-react'
 import clsx from 'clsx'
@@ -22,7 +22,7 @@ const NAV_SECTIONS = [
       { to: '/physical',     label: 'Physical',     Icon: Activity          },
       { to: '/nutrition',    label: 'Nutrition',    Icon: UtensilsCrossed   },
       { to: '/digital',      label: 'Digital',      Icon: MonitorSmartphone },
-      { to: '/productivity', label: 'Productivity', Icon: BarChart3         },
+      { to: '/productivity', label: 'Focus',        Icon: Timer             },
       { to: '/environment',  label: 'Green habits', Icon: Leaf              },
       { to: '/mood',         label: 'Mood',         Icon: Heart             },
     ],

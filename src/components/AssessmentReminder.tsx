@@ -38,7 +38,7 @@ export default function AssessmentReminder() {
           </div>
           <div className="text-xs text-black/45 dark:text-white/40 mt-0.5">
             {lastAssessmentAt
-              ? `Last done ${daysAgo} day${daysAgo === 1 ? '' : 's'} ago — 6 quick questions to keep your goals right`
+              ? `Last done ${daysAgo} day${daysAgo === 1 ? '' : 's'} ago. 6 quick questions keep your goals right.`
               : '6 quick questions to keep your goals right for you'}
           </div>
         </div>

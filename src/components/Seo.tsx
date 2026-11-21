@@ -15,7 +15,7 @@ type PageSeo = { title: string; description: string; index: boolean }
 // Public pages that search engines should index
 const publicPages: Record<string, PageSeo> = {
   '/': {
-    title: 'LivoraPulse — Wellness Tracker Built for Kenya & Africa',
+    title: 'LivoraPulse: Wellness Tracker Built for Kenya & Africa',
     description: DEFAULT_DESCRIPTION,
     index: true,
   },

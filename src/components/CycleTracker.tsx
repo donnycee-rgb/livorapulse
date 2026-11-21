@@ -9,6 +9,7 @@ import { apiGet, apiPut } from '../api/client'
 import { saveLog } from '../offline/outbox'
 import { scheduleScoreSync } from '../store/useAppStore'
 import RingGauge from './ui/RingGauge'
+import PageTabs from './ui/PageTabs'
 import Modal from './ui/Modal'
 import { ActionButton, MiniStat } from './ui/PageHeader'
 import { BarTrend } from './charts/kit'
@@ -46,17 +47,19 @@ export default function CycleTracker() {
 
   /** Days and marks for a range; merged into what's already here */
   const loadRange = useCallback(async (from: string, to: string) => {
-    const res = await apiGet<{ data: { days: PeriodDay[]; marks: Record<string, DayMark> } }>(`/api/cycle/days?from=${from}&to=${to}`)
+    const res = await apiGet<{ data: { days: PeriodDay[]; marks: Record<string, DayMark> } | null }>(`/api/cycle/days?from=${from}&to=${to}`)
+    // An empty answer (an older server, or nothing back) means nothing logged, never a crash
+    const data = { days: res.data?.days ?? [], marks: res.data?.marks ?? {} }
     setDays((prev) => {
       const next = { ...prev }
       for (const k of Object.keys(next)) if (k >= from && k <= to) delete next[k]
-      for (const d of res.data.days) next[d.date] = d
+      for (const d of data.days) next[d.date] = d
       return next
     })
     setMarks((prev) => {
       const next = { ...prev }
       for (const k of Object.keys(next)) if (k >= from && k <= to) delete next[k]
-      return { ...next, ...res.data.marks }
+      return { ...next, ...data.marks }
     })
   }, [])
 
@@ -142,7 +145,8 @@ export default function CycleTracker() {
     <div className="space-y-4">
       <Hero status={status} today={today} onLogToday={() => setEditing(today)} onCalendar={() => setTab('calendar')} />
 
-      <Segmented value={tab} onChange={setTab} />
+      <PageTabs label="Cycle tracker" value={tab} onChange={setTab}
+        tabs={[{ key: 'today', label: 'Today' }, { key: 'calendar', label: 'Calendar' }, { key: 'history', label: 'History' }] as const} />
 
       {tab === 'today' && (
         <div className="grid gap-4 md:grid-cols-2 items-start">
@@ -277,27 +281,6 @@ function Hero({ status, today, onLogToday, onCalendar }: {
           label="Fertile days (est.)" />
       </div>
     </section>
-  )
-}
-
-// ── Tabs inside the tracker (smaller than the page tabs above it) ───────────
-
-function Segmented({ value, onChange }: { value: Tab; onChange: (t: Tab) => void }) {
-  const tabs: Array<{ key: Tab; label: string }> = [
-    { key: 'today', label: 'Today' },
-    { key: 'calendar', label: 'Calendar' },
-    { key: 'history', label: 'History' },
-  ]
-  return (
-    <div role="tablist" aria-label="Cycle tracker" className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-ui-raised max-w-sm">
-      {tabs.map((t) => (
-        <button key={t.key} type="button" role="tab" aria-selected={value === t.key} onClick={() => onChange(t.key)}
-          className={clsx('h-9 rounded-xl text-[13px] font-semibold transition-colors',
-            value === t.key ? 'bg-ui-card text-ui-ink shadow-sm' : 'text-ui-muted hover:text-ui-ink')}>
-          {t.label}
-        </button>
-      ))}
-    </div>
   )
 }
 

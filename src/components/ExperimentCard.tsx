@@ -83,7 +83,7 @@ export function ActiveExperimentCard({ exp, onChange, compact = false }: ActiveP
     setBusy(true)
     try {
       onChange(await experimentCheckIn(exp.id, did, day))
-      if (day === 'today') toast.success(did ? 'Nice — logged for today' : "Logged. Tomorrow's a new day")
+      if (day === 'today') toast.success(did ? 'Logged for today. Nice.' : "Logged. Tomorrow's a new day.")
     } catch {
       toast.error("Couldn't save your answer. Please try again.")
     } finally {

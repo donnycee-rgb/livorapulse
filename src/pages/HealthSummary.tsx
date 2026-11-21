@@ -63,7 +63,7 @@ export default function HealthSummary() {
       await navigator.clipboard.writeText(url)
       toast.success('Link copied')
     } catch {
-      toast.error('Copy failed — select the link and copy it instead')
+      toast.error("Couldn't copy. Select the link and copy it instead.")
     }
   }
 

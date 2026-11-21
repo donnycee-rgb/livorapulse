@@ -25,7 +25,7 @@ import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 
 import { useAppStore } from '../store/useAppStore'
-import { selectProgressiveGoals } from '../store/selectors'
+import { selectDimensionScores, selectLoggedDimensions, selectProgressiveGoals } from '../store/selectors'
 import { getDayKey } from '../utils/date'
 import { formatMinutesToHM } from '../utils/format'
 import type { AppCategory } from '../data/types'
@@ -111,7 +111,7 @@ function AppOnlyCard() {
       <div className="flex-1 min-w-0 max-sm:basis-[calc(100%-3.25rem)]">
         <div className="text-sm font-semibold text-black/55 dark:text-white/50">Auto screen time tracking</div>
         <div className="text-xs text-black/35 dark:text-white/30 mt-0.5 leading-relaxed">
-          Automatic per-app tracking is available on the LivoraPulse Android app — it reads screen time directly from your device.
+          Automatic per-app tracking will come with the LivoraPulse Android app, which can read screen time from your phone.
         </div>
       </div>
       <div className="flex-shrink-0 max-sm:ml-[3.25rem]">
@@ -145,7 +145,7 @@ function FocusModeCard({ enabled, onToggle }: { enabled: boolean; onToggle: () =
           <div>
             <div className="text-sm font-semibold text-black/75 dark:text-white/70">Focus Mode</div>
             <div className="text-xs text-black/40 dark:text-white/35 mt-0.5">
-              {enabled ? 'Active — distractions reduced, focus score boosted' : 'Reduces distractions and boosts your focus score'}
+              {enabled ? 'On. Fewer distractions, and your focus score gets a boost.' : 'Cuts distractions and gives your focus score a boost'}
             </div>
           </div>
         </div>
@@ -173,10 +173,15 @@ function FocusModeCard({ enabled, onToggle }: { enabled: boolean; onToggle: () =
 // Score impact sidebar card
 // ---------------------------------------------------------------------------
 function ScoreImpactCard({ screenMin }: { screenMin: number }) {
-  const LIMIT = 240
-  const digitalScore = Math.round(Math.max(0, Math.min(100, 110 - (screenMin / LIMIT) * 100)))
-  const overLimit = Math.max(0, screenMin - LIMIT)
-  const remaining = Math.max(0, LIMIT - screenMin)
+  // The server's digital score and the person's own daily limit. Nothing
+  // logged yet: no score, rather than a perfect 100 that hasn't been earned.
+  const limit = useAppStore((s) => selectProgressiveGoals(s).goalScreenMinutes)
+  const serverScore = useAppStore((s) => selectDimensionScores(s).digital)
+  const loggedToday = useAppStore((s) => selectLoggedDimensions(s).digital)
+  const hasData = screenMin > 0 || loggedToday
+  const digitalScore = hasData ? Math.round(serverScore) : null
+  const overLimit = Math.max(0, screenMin - limit)
+  const remaining = Math.max(0, limit - screenMin)
 
   return (
     <div className="rounded-3xl p-4 lp-card">
@@ -187,7 +192,7 @@ function ScoreImpactCard({ screenMin }: { screenMin: number }) {
         <span className="text-sm font-semibold text-black/70 dark:text-white/70">Score Impact</span>
       </div>
       <div className="flex items-baseline gap-2 mb-1">
-        <span className="text-3xl font-black text-black/85 dark:text-white/90">{digitalScore}</span>
+        <span className="text-3xl font-black text-black/85 dark:text-white/90">{digitalScore ?? '–'}</span>
         <span className="text-xs text-black/35 dark:text-white/30">/ 100 digital score</span>
       </div>
       {screenMin === 0 ? (
@@ -196,11 +201,11 @@ function ScoreImpactCard({ screenMin }: { screenMin: number }) {
         </p>
       ) : overLimit > 0 ? (
         <p className="text-xs text-lp-alert/80 leading-relaxed mt-2">
-          You are <span className="font-bold">{formatMinutesToHM(overLimit)} over</span> the 4-hour daily limit. This is reducing your overall score.
+          You are <span className="font-bold">{formatMinutesToHM(overLimit)} over</span> your {formatMinutesToHM(limit)} daily limit. This lowers your overall score.
         </p>
       ) : (
         <p className="text-xs text-black/50 dark:text-white/45 leading-relaxed mt-2">
-          <span className="font-bold text-lp-primary">{formatMinutesToHM(remaining)}</span> remaining before hitting the 4-hour daily limit.
+          <span className="font-bold text-lp-primary">{formatMinutesToHM(remaining)}</span> left before your {formatMinutesToHM(limit)} daily limit.
         </p>
       )}
       <div className="mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.05]">
@@ -208,9 +213,9 @@ function ScoreImpactCard({ screenMin }: { screenMin: number }) {
         <div className="h-1.5 rounded-full bg-black/[0.06] dark:bg-white/[0.06] overflow-hidden">
           <motion.div
             className="h-full rounded-full"
-            style={{ backgroundColor: digitalScore >= 70 ? '#4CAF50' : digitalScore >= 50 ? '#FFA500' : '#FF6B6B' }}
+            style={{ backgroundColor: (digitalScore ?? 0) >= 70 ? '#4CAF50' : (digitalScore ?? 0) >= 50 ? '#FFA500' : '#FF6B6B' }}
             initial={{ width: 0 }}
-            animate={{ width: `${digitalScore}%` }}
+            animate={{ width: `${digitalScore ?? 0}%` }}
             transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
           />
         </div>
@@ -387,10 +392,10 @@ export default function Digital() {
 
   const headline = useMemo(() => {
     if (todayScreen === 0) return 'No screen time logged yet today.'
-    if (todayScreen <= 60) return `Only ${formatMinutesToHM(todayScreen)} of screen time today — excellent digital balance.`
-    if (todayScreen <= 120) return `${formatMinutesToHM(todayScreen)} of screen time today — well within your daily limit.`
-    if (todayScreen <= screenGoal) return `${formatMinutesToHM(todayScreen)} of screen time today — ${formatMinutesToHM(screenGoal - todayScreen)} left before your daily limit.`
-    return `${formatMinutesToHM(todayScreen)} today — you are ${formatMinutesToHM(todayScreen - screenGoal)} over your daily limit.`
+    if (todayScreen <= 60) return `Only ${formatMinutesToHM(todayScreen)} of screen time today. Excellent balance.`
+    if (todayScreen <= 120) return `${formatMinutesToHM(todayScreen)} of screen time today, well within your limit.`
+    if (todayScreen <= screenGoal) return `${formatMinutesToHM(todayScreen)} of screen time today. ${formatMinutesToHM(screenGoal - todayScreen)} left before your limit.`
+    return `${formatMinutesToHM(todayScreen)} today. That's ${formatMinutesToHM(todayScreen - screenGoal)} over your daily limit.`
   }, [todayScreen])
 
   const overLimit = todayScreen > screenGoal

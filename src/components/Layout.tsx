@@ -78,7 +78,7 @@ export default function Layout({ children }: PropsWithChildren) {
 
           {/* Main content — takes the remaining width, centred within it */}
           <main className="flex-1 min-w-0">
-            <div className="max-w-[1200px] mx-auto px-5 py-5 md:py-6 pb-24 md:pb-6 max-sm:px-4 max-sm:pt-4 max-sm:pb-28">
+            <div className="max-w-[1200px] mx-auto px-5 py-5 md:py-6 pb-24 md:pb-6 max-sm:px-4 max-sm:pt-4 max-sm:pb-40">
               {hydrated ? (
                 <Suspense fallback={<PageSkeleton />}>
                   {/* A CSS fade per page: no waiting for the old page to animate out */}

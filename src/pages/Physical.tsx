@@ -266,11 +266,11 @@ export default function Physical() {
   const recent = useMemo(() => physical.activityLog.slice(0, 5), [physical.activityLog])
 
   const headline = useMemo(() => {
-    if (todaySteps >= 10000) return `Outstanding — ${formatNumber(todaySteps)} steps today. Daily goal exceeded.`
-    if (todaySteps >= stepGoal) return `Great progress — ${formatNumber(todaySteps)} steps. Daily goal reached.`
-    if (todaySteps >= 5000) return `${formatNumber(todaySteps)} steps so far — ${formatNumber(stepGoal - todaySteps)} more to hit your goal.`
-    if (todaySteps > 0) return `${formatNumber(todaySteps)} steps logged. Keep going — ${formatNumber(stepGoal - todaySteps)} steps to go.`
-    return 'No activity logged yet today — tap Start Walk to begin.'
+    if (todaySteps >= 10000) return `${formatNumber(todaySteps)} steps today. Well past your goal.`
+    if (todaySteps >= stepGoal) return `${formatNumber(todaySteps)} steps. Daily goal reached.`
+    if (todaySteps >= 5000) return `${formatNumber(todaySteps)} steps so far. ${formatNumber(stepGoal - todaySteps)} more to reach your goal.`
+    if (todaySteps > 0) return `${formatNumber(todaySteps)} steps logged. ${formatNumber(stepGoal - todaySteps)} to go.`
+    return 'No activity logged yet today. Tap Start walk to begin.'
   }, [todaySteps])
 
   return (

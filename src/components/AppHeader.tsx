@@ -308,14 +308,9 @@ export default function AppHeader() {
           aria-label="Go to dashboard"
         >
           <BrandMark />
-          <div className="flex flex-col items-start leading-none">
-            <span className="text-[15px] font-black text-black/85 dark:text-white/90 tracking-tight group-hover:text-lp-primary transition-colors duration-200">
-              Livora<span className="text-lp-primary">Pulse</span>
-            </span>
-            <span className="text-[9px] font-semibold text-black/25 dark:text-white/20 uppercase tracking-widest mt-0.5">
-              Wellness OS
-            </span>
-          </div>
+          <span className="text-[16px] font-black text-black/85 dark:text-white/90 tracking-tight leading-none group-hover:text-lp-primary transition-colors duration-200">
+            Livora<span className="text-lp-primary">Pulse</span>
+          </span>
         </button>
 
         {/* Center — score + streak */}

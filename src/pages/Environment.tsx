@@ -345,8 +345,9 @@ export default function Environment() {
       {/* How the numbers work, in a sentence */}
       <p className="flex items-start gap-2 text-[11.5px] text-ui-muted px-1">
         <Info size={13} className="mt-0.5 flex-shrink-0" />
-        Habits are counted, not turned into kilograms. Trip CO₂ compares your trip with an average petrol car
-        (about 0.17 kg per km; matatu 0.10, boda boda 0.11), so the numbers are estimates.
+        Each habit counts once a day toward your green score. For trips, the CO₂ saved is what an average petrol car
+        would give off over the same distance (about 0.17 kg per km), minus your way of getting there (matatu about 0.10,
+        boda boda about 0.11, walking and cycling 0). These are estimates.
       </p>
     </div>
   )

@@ -273,7 +273,7 @@ export default function WalkTracker({ open, onClose }: WalkTrackerProps) {
       try {
         const perm = await (DeviceMotionEvent as unknown as { requestPermission: () => Promise<string> }).requestPermission()
         if (perm !== 'granted') {
-          setPermissionError('Motion permission denied — step counting unavailable.')
+          setPermissionError("Motion access was blocked, so steps can't be counted on this walk.")
         }
       } catch {
         setPermissionError('Could not request motion permission.')

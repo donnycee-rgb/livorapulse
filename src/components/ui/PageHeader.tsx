@@ -31,12 +31,12 @@ export function MiniStat({ icon: Icon, tint, value, label }: {
   label: string
 }) {
   return (
-    <div className="rounded-2xl bg-ui-raised p-3 min-w-0">
-      <span className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `rgb(${tint} / 0.16)`, color: `rgb(${tint})` }}>
-        <Icon size={15} strokeWidth={2.2} />
-      </span>
-      <div className="mt-2 text-[16px] font-bold text-ui-ink leading-tight tabular-nums truncate">{value}</div>
-      <div className="text-[11px] text-ui-muted truncate">{label}</div>
+    <div className="min-w-0 pt-3 border-t border-ui-line/[0.1]">
+      <div className="flex items-center gap-1.5 text-[11.5px] text-ui-muted min-w-0">
+        <Icon size={14} strokeWidth={2.2} className="flex-shrink-0" style={{ color: `rgb(${tint})` }} aria-hidden />
+        <span className="truncate">{label}</span>
+      </div>
+      <div className="mt-1 text-[17px] font-bold text-ui-ink leading-tight tabular-nums truncate">{value}</div>
     </div>
   )
 }

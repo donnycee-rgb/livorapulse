@@ -232,13 +232,13 @@ function WellnessTipCard({ stressScore, emoji }: {
     {
       condition: emoji === '😄' || emoji === '🙂',
       title: 'Great mental state',
-      text: 'You are in a positive mental state — an ideal time for deep work, creative tasks, or learning something new. Your productivity score benefits from this.',
+      text: 'You are in a good frame of mind. A good time for deep work, creative tasks or learning something new.',
       color: '#4CAF50',
     },
     {
       condition: stressScore === 3,
       title: 'Moderate stress',
-      text: 'Moderate stress is normal. Regular logging helps you spot patterns — many users find stress peaks mid-week and drops on weekends.',
+      text: 'Moderate stress is normal. Logging it daily shows your own pattern, for example whether it rises mid-week.',
       color: '#FFA500',
     },
     {
@@ -293,12 +293,12 @@ function MoodTab() {
     const level = MOOD_LEVELS.find(m => m.emoji === mood.today.emoji)
     if (!level) return 'Log your mood to start tracking your mental wellbeing.'
     if (stressScore >= 4 && (level.emoji === '😕' || level.emoji === '😣')) {
-      return `Mood: ${level.label} · Stress: ${stressScore}/5 — a tough day. Consider a short walk or break.`
+      return `Mood: ${level.label} · Stress: ${stressScore}/5. A tough day. A short walk or a break can help.`
     }
     if (stressScore <= 2 && (level.emoji === '😄' || level.emoji === '🙂')) {
-      return `Mood: ${level.label} · Stress: ${stressScore}/5 — you are in a great mental state today.`
+      return `Mood: ${level.label} · Stress: ${stressScore}/5. A good day so far.`
     }
-    return `Mood: ${level.label} · Stress: ${stressScore}/5 — keep logging daily to see your weekly patterns.`
+    return `Mood: ${level.label} · Stress: ${stressScore}/5. Log daily to see your weekly pattern.`
   }, [mood.today.emoji, stressScore])
 
   const stressLevels = [
@@ -416,7 +416,7 @@ function MoodTab() {
                     type="button"
                     onClick={() => {
                       setStressScore(s.score)
-                      toast.success(`Stress level set to ${s.score}/5 — ${s.label}`)
+                      toast.success(`Stress: ${s.score}/5, ${s.label.toLowerCase()}`)
                     }}
                     className={clsx(
                       'relative flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all duration-150 group',

@@ -1,4 +1,4 @@
-import { Activity, BarChart3, FileText, Home, Leaf, Lightbulb, MonitorSmartphone, Settings, Smile, User } from 'lucide-react'
+import { Activity, FileText, Home, Leaf, Lightbulb, MonitorSmartphone, Settings, Smile, Timer, User } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export type RouteMeta = {
@@ -15,7 +15,7 @@ export const routes: RouteMeta[] = [
   { path: '/summary', title: 'Health summary', navLabel: 'Health summary', Icon: FileText },
   { path: '/physical', title: 'Physical Activity', navLabel: 'Physical', Icon: Activity },
   { path: '/digital', title: 'Digital Usage', navLabel: 'Digital', Icon: MonitorSmartphone },
-  { path: '/productivity', title: 'Productivity', navLabel: 'Productivity', Icon: BarChart3 },
+  { path: '/productivity', title: 'Focus', navLabel: 'Focus', Icon: Timer },
   { path: '/environment', title: 'Green habits', navLabel: 'Green habits', Icon: Leaf },
   { path: '/mood', title: 'Mood & Mindset', navLabel: 'Mood', Icon: Smile },
   { path: '/profile', title: 'Profile', navLabel: 'Profile', Icon: User },
@@ -27,9 +27,9 @@ export function getTitleForPath(pathname: string) {
   if (exact) return exact.title
 
   // Auth pages
-  if (pathname === '/login') return 'LivoraPulse — Sign In'
-  if (pathname === '/register') return 'LivoraPulse — Create Account'
-  if (pathname === '/forgot-password') return 'LivoraPulse — Reset Password'
+  if (pathname === '/login') return 'Sign in · LivoraPulse'
+  if (pathname === '/register') return 'Create an account · LivoraPulse'
+  if (pathname === '/forgot-password') return 'Reset your password · LivoraPulse'
   if (pathname === '/reset-password') return 'Set a new password'
   if (pathname === '/verify-email') return 'Confirm your email'
 
@@ -40,7 +40,7 @@ export function getTitleForPath(pathname: string) {
   if (pathname.startsWith('/nutrition')) return 'Nutrition'
   if (pathname.startsWith('/welcome')) return 'Set up your profile'
   if (pathname.startsWith('/digital')) return 'Digital Usage'
-  if (pathname.startsWith('/productivity')) return 'Productivity'
+  if (pathname.startsWith('/productivity')) return 'Focus'
   if (pathname.startsWith('/environment')) return 'Green habits'
   if (pathname.startsWith('/mood')) return 'Mood & Mindset'
   if (pathname.startsWith('/insights')) return 'Insights'
