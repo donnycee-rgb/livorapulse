@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Heart, Sparkles, TrendingDown, TrendingUp } from 'lucide-react'
+import { ArrowRight, TrendingDown, TrendingUp } from 'lucide-react'
 import clsx from 'clsx'
 import { fetchMoodModel, type MoodModel } from '../api/ml'
 import { describeEffect } from '../ml/moodWording'
@@ -27,26 +27,8 @@ export default function WhatHelpsYou({ model }: { model: MoodModel | null }) {
 
   const items = model.effects.map((e) => ({ e, s: describeEffect(e) })).filter((x) => x.s).slice(0, 4)
 
-  if (items.length === 0) {
-    return (
-      <section className="lp-card rounded-3xl p-6 max-sm:p-5 flex items-start gap-4 max-sm:flex-col">
-        <span className="w-10 h-10 rounded-full bg-[#E8F5E9] dark:bg-[#3D9A41]/15 text-[#3D9A41] flex items-center justify-center flex-shrink-0">
-          <Sparkles size={18} />
-        </span>
-        <div className="flex-1">
-          <h2 className="text-[17px] font-bold text-ui-ink">What helps you</h2>
-          <p className="text-sm text-black/55 dark:text-white/55 mt-1 leading-relaxed max-w-xl">
-            Log your mood on at least {model.minMoodDays} days, along with your sleep, steps or screen time, and
-            LivoraPulse will start learning which habits go with your better days.
-          </p>
-        </div>
-        <button type="button" onClick={() => navigate('/mood')}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-lp-btn-ink bg-lp-btn hover:opacity-95 transition-colors flex-shrink-0">
-          <Heart size={14} /> Log your mood
-        </button>
-      </section>
-    )
-  }
+  // Nothing to show yet: the Insights page's getting-started card explains the wait
+  if (items.length === 0) return null
 
   return (
     <section className="lp-card rounded-3xl p-6 max-sm:p-5">
