@@ -99,14 +99,18 @@ html.dark .landing {
   scrollbar-width: none;
 }
 
-/* Autofill override */
+/* Autofill (an email or password the phone filled in): keep the field's own
+   look. The browser would paint its yellow/blue background and its own text
+   colour; the text keeps the colour the field already has (dark on light
+   pages, white on dark ones). Never a fixed colour: white here once made a
+   filled-in email invisible on the light sign-in page. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
-  -webkit-text-fill-color: white !important;
-  caret-color: white;
+  -webkit-text-fill-color: currentColor !important;
+  caret-color: currentColor;
   transition: background-color 9999s ease 0s;
 }
 
